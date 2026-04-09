@@ -8,6 +8,13 @@ from travel_planner.services import day_service, trip_service
 
 router = APIRouter(prefix="/trips/{trip_id}/days", tags=["days"])
 
+def validate_day_date(day_date, trip):
+    if day_date and trip.start_date and trip.end_date:
+        if day_date < trip.start_date or day_date > trip.end_date:
+            raise HTTPException(
+                status_code=400,
+                detail="day_date must be within trip dates"
+            )
 
 def get_trip_or_404(trip_id: UUID, db: Session):
     trip = trip_service.get_by_id(db, trip_id)
@@ -36,13 +43,16 @@ def get_by_id(trip_id: UUID, day_id: UUID, db: Session = Depends(get_db)):
 
 @router.post("/", response_model=DayResponse, status_code=201)
 def create(trip_id: UUID, data: DayCreate, db: Session = Depends(get_db)):
-    get_trip_or_404(trip_id, db)
+    trip = get_trip_or_404(trip_id, db)
+    validate_day_date(data.day_date, trip)
     return day_service.create(db, trip_id, data)
 
 
 @router.patch("/{day_id}", response_model=DayResponse)
 def update(trip_id: UUID, day_id: UUID, data: DayUpdate, db: Session = Depends(get_db)):
+    trip = get_trip_or_404(trip_id, db)
     get_day_or_404(day_id, trip_id, db)
+    validate_day_date(data.day_date, trip)
     return day_service.update(db, day_id, data)
 
 
