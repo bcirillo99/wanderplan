@@ -28,6 +28,7 @@ class TransportType(enum.Enum):
     SHUTTLE = "shuttle"
     FERRY = "ferry"
     TAXI = "taxi"
+    OTHER = "other"
 
 
 class PackingCategory(enum.Enum):

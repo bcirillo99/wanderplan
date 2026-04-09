@@ -6,33 +6,69 @@ from travel_planner.db.enums import Status, TransportType
 
 
 class TransportBase(BaseModel):
-    type: TransportType | None = None
-    departure_location: str | None = None
-    arrival_location: str | None = None
-    departure_datetime: datetime | None = None
-    arrival_datetime: datetime | None = None
+    transport_type: TransportType
+    origin: str
+    destination: str
+    departure_time: datetime | None = None
+    arrival_time: datetime | None = None
     status: Status | None = None
     cost: float | None = None
     pay_method: str | None = None
     link: HttpUrl | None = None
+    operator: str | None = None
+    booking_reference: str | None = None
     extra_details: dict | None = None
     notes: str | None = None
 
-    @field_validator("arrival_datetime")
+    @field_validator("arrival_time")
     @classmethod
-    def validate_datetimes(cls, arrival_datetime, info):
-        departure_datetime = info.data.get("departure_datetime")
-        if departure_datetime and arrival_datetime and arrival_datetime < departure_datetime:
-            raise ValueError("arrival_datetime must be after departure_datetime")
-        return arrival_datetime
+    def validate_times(cls, arrival_time, info):
+        departure_time = info.data.get("departure_time")
+        if departure_time and arrival_time and arrival_time < departure_time:
+            raise ValueError("arrival_time must be after departure_time")
+        return arrival_time
+    
+    @field_validator("cost")
+    @classmethod
+    def validate_cost(cls, cost):
+        if cost is not None and cost < 0:
+            raise ValueError("cost must be positive")
+        return cost
 
 
 class TransportCreate(TransportBase):
     pass
 
 
-class TransportUpdate(TransportBase):
-    pass
+class TransportUpdate(BaseModel):
+    transport_type: TransportType | None = None
+    origin: str | None = None
+    destination: str | None = None
+    departure_time: datetime | None = None
+    arrival_time: datetime | None = None
+    status: Status | None = None
+    cost: float | None = None
+    pay_method: str | None = None
+    link: HttpUrl | None = None
+    operator: str | None = None
+    booking_reference: str | None = None
+    extra_details: dict | None = None
+    notes: str | None = None
+
+    @field_validator("arrival_time")
+    @classmethod
+    def validate_times(cls, arrival_time, info):
+        departure_time = info.data.get("departure_time")
+        if departure_time and arrival_time and arrival_time < departure_time:
+            raise ValueError("arrival_time must be after departure_time")
+        return arrival_time
+    
+    @field_validator("cost")
+    @classmethod
+    def validate_cost(cls, cost):
+        if cost is not None and cost < 0:
+            raise ValueError("cost must be positive")
+        return cost
 
 
 class TransportResponse(TransportBase):

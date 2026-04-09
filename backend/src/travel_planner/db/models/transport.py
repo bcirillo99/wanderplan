@@ -17,19 +17,19 @@ class Transport(Base):
     trip_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("trips.id", ondelete="CASCADE"), nullable=False
     )
-    type: Mapped[TransportType | None] = mapped_column(
-        SAEnum(TransportType), nullable=True
-    )
-    departure_location: Mapped[str | None] = mapped_column(String(255), nullable=True)
-    arrival_location: Mapped[str | None] = mapped_column(String(255), nullable=True)
-    departure_datetime: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
-    arrival_datetime: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    transport_type: Mapped[TransportType | None] = mapped_column(SAEnum(TransportType), nullable=False)
+    origin: Mapped[str] = mapped_column(String(255), nullable=False)
+    destination: Mapped[str] = mapped_column(String(255), nullable=False)
+    departure_time: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    arrival_time: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     status: Mapped[Status | None] = mapped_column(
         SAEnum(Status), nullable=True
     )
     cost: Mapped[float | None] = mapped_column(nullable=True)
     pay_method: Mapped[str | None] = mapped_column(String(255), nullable=True)
     link: Mapped[str | None] = mapped_column(Text, nullable=True)
+    operator: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    booking_reference: Mapped[str | None] = mapped_column(String(50), nullable=True)
     extra_details: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
 

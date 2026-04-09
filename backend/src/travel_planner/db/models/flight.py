@@ -17,8 +17,8 @@ class Flight(Base):
     trip_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("trips.id", ondelete="CASCADE"), nullable=False
     )
-    origin: Mapped[str] = mapped_column(String(10), nullable=False)
-    destination: Mapped[str] = mapped_column(String(10), nullable=False)
+    origin: Mapped[str] = mapped_column(String(255), nullable=False)
+    destination: Mapped[str] = mapped_column(String(255), nullable=False)
     departure_time: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     arrival_time: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     airline: Mapped[str | None] = mapped_column(String(255), nullable=True)
