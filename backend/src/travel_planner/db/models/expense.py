@@ -14,7 +14,7 @@ class Expense(Base):
         UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
     )
     trip_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("trips.id"), nullable=False
+        UUID(as_uuid=True), ForeignKey("trips.id", ondelete="CASCADE"), nullable=False
     )
     category: Mapped[ExpenseCategory | None] = mapped_column(SAEnum(ExpenseCategory), nullable=True)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
