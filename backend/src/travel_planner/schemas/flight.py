@@ -55,6 +55,21 @@ class FlightUpdate(BaseModel):
     link: HttpUrl | None = None
     notes: str | None = None
 
+    @field_validator("arrival_time")
+    @classmethod
+    def validate_times(cls, arrival_time, info):
+        departure_time = info.data.get("departure_time")
+        if departure_time and arrival_time and arrival_time < departure_time:
+            raise ValueError("arrival_time must be after departure_time")
+        return arrival_time
+    
+    @field_validator("cost")
+    @classmethod
+    def validate_cost(cls, cost):
+        if cost is not None and cost < 0:
+            raise ValueError("cost must be positive")
+        return cost
+
 
 class FlightResponse(FlightBase):
     id: UUID

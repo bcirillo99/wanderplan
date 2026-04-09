@@ -49,6 +49,21 @@ class ActivityUpdate(BaseModel):
     link: HttpUrl | None = None
     notes: str | None = None
 
+    @field_validator("end_time")
+    @classmethod
+    def validate_times(cls, end_time, info):
+        start_time = info.data.get("start_time")
+        if start_time and end_time and end_time < start_time:
+            raise ValueError("end_time must be after start_time")
+        return end_time
+    
+    @field_validator("cost")
+    @classmethod
+    def validate_cost(cls, cost):
+        if cost is not None and cost < 0:
+            raise ValueError("cost must be positive")
+        return cost
+
 class ActivityResponse(ActivityBase):
     id: UUID
     day_id: UUID

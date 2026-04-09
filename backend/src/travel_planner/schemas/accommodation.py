@@ -57,6 +57,21 @@ class AccommodationUpdate(BaseModel):
     notes: str | None = None
     booking_reference: str | None = None
 
+    @field_validator("check_out")
+    @classmethod
+    def validate_dates(cls, check_out, info):
+        check_in = info.data.get("check_in")
+        if check_in and check_out and check_out < check_in:
+            raise ValueError("check_out must be after check_in")
+        return check_out
+    
+    @field_validator("cost_per_night")
+    @classmethod
+    def validate_cost_per_night(cls, cost_per_night):
+        if cost_per_night is not None and cost_per_night < 0:
+            raise ValueError("cost_per_night must be positive")
+        return cost_per_night
+
 
 class AccommodationResponse(AccommodationBase):
     id: UUID
