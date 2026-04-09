@@ -38,7 +38,7 @@ class PackingCategory(enum.Enum):
     EXTRAS = "extras"
 
 
-class BudgetCategory(enum.Enum):
+class ExpenseCategory(enum.Enum):
     ACCOMMODATION = "accommodation"
     TRANSPORT = "transport"
     ACTIVITIES = "activities"

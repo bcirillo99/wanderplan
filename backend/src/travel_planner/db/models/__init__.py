@@ -6,4 +6,4 @@ from .accommodation import Accommodation
 from .flight import Flight
 from .transport import Transport
 from .packing_item import PackingItem
-from .budget import Budget
+from .expense import Expense

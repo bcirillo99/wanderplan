@@ -4,7 +4,7 @@ from .enums import (
     AccommodationType,
     TransportType,
     PackingCategory,
-    BudgetCategory,
+    ExpenseCategory,
 )
 
 from .base import Base

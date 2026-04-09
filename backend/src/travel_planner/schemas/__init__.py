@@ -6,4 +6,4 @@ from .accommodation import AccommodationCreate, AccommodationUpdate, Accommodati
 from .flight import FlightCreate, FlightUpdate, FlightResponse
 from .transport import TransportCreate, TransportUpdate, TransportResponse
 from .packing_item import PackingItemCreate, PackingItemUpdate, PackingItemResponse
-from .budget import BudgetCreate, BudgetUpdate, BudgetResponse
+from .expense import ExpenseCreate, ExpenseUpdate, ExpenseResponse

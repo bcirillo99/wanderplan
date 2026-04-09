@@ -50,7 +50,7 @@ The database is built around a `Trip` as the top-level entity. Everything else b
 | `Transport` | Any non-flight transfer (train, bus, car, ...) | Trip |
 | `Accommodation` | A place to stay (hotel, airbnb, lodge, ...) | Trip |
 | `PackingItem` | An item on the packing list | Trip |
-| `Budget` | A cost entry (estimated or actual) | Trip |
+| `Expense` | A cost entry (estimated or actual) | Trip |
 
 Relations: `Trip` 1:N `Day`, `Day` 1:N `Activity`, `Trip` 1:N everything else.
 
