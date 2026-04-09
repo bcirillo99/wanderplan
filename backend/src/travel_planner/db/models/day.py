@@ -1,7 +1,7 @@
-# backend/src/travel_planner/db/models/day.py  # <-- nome file sbagliato
+# backend/src/travel_planner/db/models/day.py 
 import uuid
 from datetime import date
-from sqlalchemy import String, Date, Text, ForeignKey  # <-- ForeignKey va qui con gli altri
+from sqlalchemy import String, Date, Text, ForeignKey 
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from travel_planner.db.base import Base
@@ -16,7 +16,7 @@ class Day(Base):
     trip_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("trips.id"), nullable=False
     )
-    day_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    day_date: Mapped[date] = mapped_column(Date, nullable=False)
     location: Mapped[str | None] = mapped_column(String(255), nullable=True)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
 
