@@ -18,7 +18,7 @@ class AccommodationType(enum.Enum):
     CAMPING = "camping"
     RESORT = "resort"
     APARTMENT = "apartment"
-    EXTRAS = "extras"
+    OTHER = "other"
 
 
 class TransportType(enum.Enum):

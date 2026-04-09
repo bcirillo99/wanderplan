@@ -22,28 +22,42 @@ def get_accommodation_or_404(accommodation_id: UUID, trip_id: UUID, db: Session)
         raise HTTPException(status_code=404, detail="Accommodation not found")
     return accommodation
 
+def _calculate_total_cost(acc) -> float | None:
+    if acc.cost_per_night and acc.check_in and acc.check_out:
+        return acc.cost_per_night * (acc.check_out - acc.check_in).days
+    return None
+
+
+def _build_response(acc) -> AccommodationResponse:
+    response = AccommodationResponse.model_validate(acc)
+    response.total_cost = _calculate_total_cost(acc)
+    return response
 
 @router.get("/", response_model=list[AccommodationResponse])
 def get_all(trip_id: UUID, db: Session = Depends(get_db)):
     get_trip_or_404(trip_id, db)
-    return accommodation_service.get_all_by_trip(db, trip_id)
+    accommodations = accommodation_service.get_all_by_trip(db, trip_id)
+    return [_build_response(acc) for acc in accommodations]
 
 
 @router.get("/{accommodation_id}", response_model=AccommodationResponse)
 def get_by_id(trip_id: UUID, accommodation_id: UUID, db: Session = Depends(get_db)):
-    return get_accommodation_or_404(accommodation_id, trip_id, db)
+    acc = get_accommodation_or_404(accommodation_id, trip_id, db)
+    return _build_response(acc)
 
 
 @router.post("/", response_model=AccommodationResponse, status_code=201)
 def create(trip_id: UUID, data: AccommodationCreate, db: Session = Depends(get_db)):
     get_trip_or_404(trip_id, db)
-    return accommodation_service.create(db, trip_id, data)
+    acc = accommodation_service.create(db, trip_id, data)
+    return _build_response(acc)
 
 
 @router.patch("/{accommodation_id}", response_model=AccommodationResponse)
 def update(trip_id: UUID, accommodation_id: UUID, data: AccommodationUpdate, db: Session = Depends(get_db)):
     get_accommodation_or_404(accommodation_id, trip_id, db)
-    return accommodation_service.update(db, accommodation_id, data)
+    acc = accommodation_service.update(db, accommodation_id, data)
+    return _build_response(acc)
 
 
 @router.delete("/{accommodation_id}", status_code=204)
