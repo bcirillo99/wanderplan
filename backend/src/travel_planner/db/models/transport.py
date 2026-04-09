@@ -1,0 +1,37 @@
+# backend/src/travel_planner/db/models/transport.py
+import uuid
+from datetime import datetime
+from sqlalchemy import ForeignKey, String, DateTime, Text, Enum as SAEnum
+from sqlalchemy.dialects.postgresql import UUID, JSONB
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+from travel_planner.db.base import Base
+from travel_planner.db.enums import Status, TransportType
+
+
+class Transport(Base):
+    __tablename__ = "transports"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    trip_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("trips.id"), nullable=False
+    )
+    type: Mapped[TransportType | None] = mapped_column(
+        SAEnum(TransportType), nullable=True
+    )
+    departure_location: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    arrival_location: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    departure_datetime: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    arrival_datetime: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    status: Mapped[Status | None] = mapped_column(
+        SAEnum(Status), nullable=True
+    )
+    cost: Mapped[float | None] = mapped_column(nullable=True)
+    pay_method: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    link: Mapped[str | None] = mapped_column(Text, nullable=True)
+    extra_details: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    # relationships
+    trip: Mapped["Trip"] = relationship(back_populates="transports")
