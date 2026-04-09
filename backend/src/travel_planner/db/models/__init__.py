@@ -1,3 +1,4 @@
+# backend/src/travel_planner/db/models/__init__.py
 from .trip import Trip
 from .day import Day
 from .activity import Activity

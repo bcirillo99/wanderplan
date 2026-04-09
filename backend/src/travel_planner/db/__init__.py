@@ -1,3 +1,4 @@
+# backend/src/travel_planner/db/__init__.py
 from .enums import (
     Status,
     AccommodationType,
@@ -5,3 +6,7 @@ from .enums import (
     PackingCategory,
     BudgetCategory,
 )
+
+from .base import Base
+
+from . import models 
