@@ -21,6 +21,8 @@ class Expense(Base):
     amount: Mapped[float | None] = mapped_column(nullable=True)
     is_estimated: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     actual_amount: Mapped[float | None] = mapped_column(nullable=True)
+    currency: Mapped[str | None] = mapped_column(String(3), nullable=True, default="EUR")
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
 
 
     # relationships

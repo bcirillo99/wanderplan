@@ -44,4 +44,4 @@ class ExpenseCategory(enum.Enum):
     ACTIVITIES = "activities"
     FOOD = "food"
     SHOPPING = "shopping"
-    EXTRAS = "extras"
+    OTHER = "other"
