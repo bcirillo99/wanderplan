@@ -1,6 +1,7 @@
 # backend/src/travel_planner/main.py
 from fastapi import FastAPI
 from travel_planner.routers import (
+    stats_router,
     trip_router,
     day_router,
     activity_router,
@@ -21,3 +22,4 @@ app.include_router(flight_router)
 app.include_router(transport_router)
 app.include_router(packing_item_router)
 app.include_router(expense_router)
+app.include_router(stats_router)
