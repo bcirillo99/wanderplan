@@ -17,18 +17,19 @@ class Flight(Base):
     trip_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("trips.id", ondelete="CASCADE"), nullable=False
     )
-    departure_airport: Mapped[str | None] = mapped_column(String(10), nullable=True)
-    arrival_airport: Mapped[str | None] = mapped_column(String(10), nullable=True)
-    departure_datetime: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
-    arrival_datetime: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
-    company: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    origin: Mapped[str] = mapped_column(String(10), nullable=False)
+    destination: Mapped[str] = mapped_column(String(10), nullable=False)
+    departure_time: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    arrival_time: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    airline: Mapped[str | None] = mapped_column(String(255), nullable=True)
     flight_number: Mapped[str | None] = mapped_column(String(20), nullable=True)
     baggage_included: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
-    status: Mapped[Status | None] = mapped_column(SAEnum(Status), nullable=True
-    )
+    status: Mapped[Status | None] = mapped_column(SAEnum(Status), nullable=True)
     cost: Mapped[float | None] = mapped_column(nullable=True)
     pay_method: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    booking_reference: Mapped[str | None] = mapped_column(String(50), nullable=True)
     link: Mapped[str | None] = mapped_column(Text, nullable=True)
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     # relationships
     trip: Mapped["Trip"] = relationship(back_populates="flights")

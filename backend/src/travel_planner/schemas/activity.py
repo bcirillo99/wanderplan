@@ -6,7 +6,7 @@ from travel_planner.db.enums import Status
 
 
 class ActivityBase(BaseModel):
-    title: str | None = None
+    title: str
     description: str | None = None
     start_time: time | None = None  
     end_time: time | None = None    
@@ -25,12 +25,29 @@ class ActivityBase(BaseModel):
         if start_time and end_time and end_time < start_time:
             raise ValueError("end_time must be after start_time")
         return end_time
+    
+    @field_validator("cost")
+    @classmethod
+    def validate_cost(cls, cost):
+        if cost is not None and cost < 0:
+            raise ValueError("cost must be positive")
+        return cost
 
 class ActivityCreate(ActivityBase):
     pass
 
-class ActivityUpdate(ActivityBase):
-    pass
+class ActivityUpdate(BaseModel):
+    title: str | None = None
+    description: str | None = None
+    start_time: time | None = None  
+    end_time: time | None = None    
+    location: str | None = None
+    status: Status | None = None
+    cost: float | None = None
+    pay_method: str | None = None
+    cancellation_date: date | None = None
+    link: HttpUrl | None = None
+    notes: str | None = None
 
 class ActivityResponse(ActivityBase):
     id: UUID
