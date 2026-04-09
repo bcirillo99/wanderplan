@@ -144,3 +144,7 @@ Run tests:
 ```bash
 uv run pytest
 ```
+
+# TODO:
+
+- look to sservices/tats_service.py for cross queries
