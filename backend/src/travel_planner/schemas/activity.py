@@ -1,0 +1,39 @@
+# backend/src/travel_planner/schemas/activity.py
+from uuid import UUID
+from datetime import date, time
+from pydantic import BaseModel, field_validator, HttpUrl
+from travel_planner.db.enums import Status
+
+
+class ActivityBase(BaseModel):
+    title: str | None = None
+    description: str | None = None
+    start_time: time | None = None  
+    end_time: time | None = None    
+    location: str | None = None
+    status: Status | None = None
+    cost: float | None = None
+    pay_method: str | None = None
+    cancellation_date: date | None = None
+    link: HttpUrl | None = None
+    notes: str | None = None
+
+    @field_validator("end_time")
+    @classmethod
+    def validate_times(cls, end_time, info):
+        start_time = info.data.get("start_time")
+        if start_time and end_time and end_time < start_time:
+            raise ValueError("end_time must be after start_time")
+        return end_time
+
+class ActivityCreate(ActivityBase):
+    pass
+
+class ActivityUpdate(ActivityBase):
+    pass
+
+class ActivityResponse(ActivityBase):
+    id: UUID
+    day_id: UUID
+
+    model_config = {"from_attributes": True}
