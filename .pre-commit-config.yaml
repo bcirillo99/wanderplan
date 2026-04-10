@@ -1,0 +1,9 @@
+repos:
+  - repo: local
+    hooks:
+      - id: backend-tests
+        name: Backend Tests
+        entry: bash -c 'cd backend && uv run pytest --tb=short -q'
+        language: system
+        pass_filenames: false
+        stages: [pre-commit]

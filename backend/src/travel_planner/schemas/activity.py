@@ -8,6 +8,7 @@ from datetime import date, time
 
 class ActivityBase(BaseModel):
     title: str
+    activity_date: date | None = None
     description: str | None = None
     start_time: time | None = None  
     end_time: time | None = None    
@@ -35,10 +36,11 @@ class ActivityBase(BaseModel):
         return cost
 
 class ActivityCreate(ActivityBase):
-    day_date: date
+    pass
 
 class ActivityUpdate(BaseModel):
     title: str | None = None
+    activity_date: date | None = None
     description: str | None = None
     start_time: time | None = None  
     end_time: time | None = None    
@@ -67,6 +69,6 @@ class ActivityUpdate(BaseModel):
 
 class ActivityResponse(ActivityBase):
     id: UUID
-    day_id: UUID
+    trip_id: UUID
 
     model_config = {"from_attributes": True}

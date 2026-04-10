@@ -39,7 +39,7 @@ def _create_flight(client: TestClient, trip_id: str, cost: float) -> dict:
 def _create_activity(client: TestClient, trip_id: str, cost: float) -> dict:
     r = client.post(f"/trips/{trip_id}/activities/", json={
         "title": "Test Activity",
-        "day_date": "2025-08-10",
+        "activity_date": "2025-08-10",
         "cost": cost,
     })
     assert r.status_code == 201
@@ -154,46 +154,45 @@ def test_trip_stats_isolated_per_trip(client):
 # GET /trips/{trip_id}/days/{day_id}/stats
 # ---------------------------------------------------------------------------
 
-def test_day_stats_empty(client):
+
+
+
+def test_date_stats_empty(client):
     trip = _create_trip(client)
-    day = _create_day(client, trip["id"])
-    r = client.get(f"/trips/{trip['id']}/days/{day['id']}/stats")
+    r = client.get(f"/trips/{trip['id']}/days/2025-08-10/stats")
     assert r.status_code == 200
     data = r.json()
     assert data["total"] == 0
     assert data["activities"] == 0
 
 
-def test_day_stats_with_activities(client):
+def test_date_stats_with_activities(client):
     trip = _create_trip(client)
-    day = _create_day(client, trip["id"])
     _create_activity(client, trip["id"], cost=25.0)
     _create_activity(client, trip["id"], cost=15.0)
 
-    r = client.get(f"/trips/{trip['id']}/days/{day['id']}/stats")
+    r = client.get(f"/trips/{trip['id']}/days/2025-08-10/stats")
     assert r.status_code == 200
     data = r.json()
     assert data["activities"] == 40.0
     assert data["total"] == 40.0
 
 
-def test_day_stats_isolated_per_day(client):
+def test_date_stats_isolated_per_date(client):
     trip = _create_trip(client)
-    day1 = _create_day(client, trip["id"], day_date="2025-08-10")
-    day2 = _create_day(client, trip["id"], day_date="2025-08-11")
-    _create_activity(client, trip["id"], cost=50.0)
+    _create_activity(client, trip["id"], cost=50.0)  # activity_date = 2025-08-10
 
-    r = client.get(f"/trips/{trip['id']}/days/{day2['id']}/stats")
+    r = client.get(f"/trips/{trip['id']}/days/2025-08-11/stats")
     assert r.json()["total"] == 0
 
-def test_day_stats_trip_not_found(client):
+
+def test_date_stats_trip_not_found(client):
     fake = "00000000-0000-0000-0000-000000000000"
-    r = client.get(f"/trips/{fake}/days/{fake}/stats")
+    r = client.get(f"/trips/{fake}/days/2025-08-10/stats")
     assert r.status_code == 404
 
 
-def test_day_stats_day_not_found(client):
+def test_date_stats_invalid_date(client):
     trip = _create_trip(client)
-    fake = "00000000-0000-0000-0000-000000000000"
-    r = client.get(f"/trips/{trip['id']}/days/{fake}/stats")
-    assert r.status_code == 404
+    r = client.get(f"/trips/{trip['id']}/days/not-a-date/stats")
+    assert r.status_code == 422

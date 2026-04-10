@@ -1,6 +1,5 @@
 # backend/src/travel_planner/services/__init__.py
 from . import trip_service
-from . import day_service
 from . import activity_service
 from . import accommodation_service
 from . import flight_service

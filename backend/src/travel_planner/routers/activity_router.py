@@ -8,7 +8,6 @@ from travel_planner.services import activity_service, trip_service
 
 router = APIRouter(prefix="/trips/{trip_id}/activities", tags=["activities"])
 
-
 def get_trip_or_404(trip_id: UUID, db: Session):
     trip = trip_service.get_by_id(db, trip_id)
     if not trip:
@@ -18,7 +17,7 @@ def get_trip_or_404(trip_id: UUID, db: Session):
 
 def get_activity_or_404(activity_id: UUID, trip_id: UUID, db: Session):
     activity = activity_service.get_by_id(db, activity_id)
-    if not activity or activity.day.trip_id != trip_id:
+    if not activity or activity.trip_id != trip_id:
         raise HTTPException(status_code=404, detail="Activity not found")
     return activity
 
@@ -38,7 +37,7 @@ def get_by_id(trip_id: UUID, activity_id: UUID, db: Session = Depends(get_db)):
 @router.post("/", response_model=ActivityResponse, status_code=201)
 def create(trip_id: UUID, data: ActivityCreate, db: Session = Depends(get_db)):
     get_trip_or_404(trip_id, db)
-    return activity_service.create(db, trip_id, data.day_date, data)
+    return activity_service.create(db, trip_id, data)
 
 
 @router.patch("/{activity_id}", response_model=ActivityResponse)

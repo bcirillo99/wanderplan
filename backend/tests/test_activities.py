@@ -29,9 +29,8 @@ def _create_trip(client: TestClient, **kwargs) -> dict:
 def _activities_url(trip_id: str) -> str:
     return f"/trips/{trip_id}/activities/"
 
-
 def _create_activity(client: TestClient, trip_id: str, **kwargs) -> dict:
-    payload = {"title": "Visit Museum", "day_date": "2025-08-10", **kwargs}
+    payload = {"title": "Visit Museum", "activity_date": "2025-08-10", **kwargs}
     r = client.post(_activities_url(trip_id), json=payload)
     assert r.status_code == 201
     return r.json()
@@ -83,12 +82,12 @@ def test_create_activity_minimal(client):
     trip = _create_trip(client)
     r = client.post(_activities_url(trip["id"]), json={
         "title": "Hike",
-        "day_date": "2025-08-10"
+        "activity_date": "2025-08-10"
     })
     assert r.status_code == 201
     data = r.json()
     assert data["title"] == "Hike"
-    assert "day_id" in data
+    assert "trip_id" in data  # era day_id
     assert "id" in data
 
 
@@ -115,18 +114,17 @@ def test_create_activity_full(client):
 
 
 def test_create_activity_same_date_reuses_day(client):
-    """Two activities on the same date should share the same day."""
     trip = _create_trip(client)
-    a1 = _create_activity(client, trip["id"], title="Morning", day_date="2025-08-10")
-    a2 = _create_activity(client, trip["id"], title="Evening", day_date="2025-08-10")
-    assert a1["day_id"] == a2["day_id"]
+    a1 = _create_activity(client, trip["id"], title="Morning", activity_date="2025-08-10")
+    a2 = _create_activity(client, trip["id"], title="Evening", activity_date="2025-08-10")
+    assert a1["activity_date"] == a2["activity_date"]
 
 
 def test_create_activity_different_dates_different_days(client):
     trip = _create_trip(client)
-    a1 = _create_activity(client, trip["id"], title="Day 1", day_date="2025-08-10")
-    a2 = _create_activity(client, trip["id"], title="Day 2", day_date="2025-08-11")
-    assert a1["day_id"] != a2["day_id"]
+    a1 = _create_activity(client, trip["id"], title="Day 1", activity_date="2025-08-10")
+    a2 = _create_activity(client, trip["id"], title="Day 2", activity_date="2025-08-11")
+    assert a1["activity_date"] != a2["activity_date"]
 
 
 def test_create_activity_missing_title_rejected(client):
@@ -138,7 +136,7 @@ def test_create_activity_missing_title_rejected(client):
 def test_create_activity_missing_day_date_rejected(client):
     trip = _create_trip(client)
     r = client.post(_activities_url(trip["id"]), json={"title": "No date"})
-    assert r.status_code == 422
+    assert r.status_code == 201
 
 
 def test_create_activity_all_valid_statuses(client):

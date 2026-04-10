@@ -2,7 +2,6 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from travel_planner.routers import (
     trip_router,
-    day_router,
     activity_router,
     accommodation_router,
     flight_router,
@@ -23,7 +22,6 @@ app.add_middleware(
 )
 
 app.include_router(trip_router)
-app.include_router(day_router)
 app.include_router(activity_router)
 app.include_router(accommodation_router)
 app.include_router(flight_router)

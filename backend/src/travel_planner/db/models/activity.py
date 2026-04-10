@@ -14,10 +14,11 @@ class Activity(Base):
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
     )
-    day_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("days.id", ondelete="CASCADE"), nullable=False
+    trip_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("trips.id", ondelete="CASCADE"), nullable=False
     )
     title: Mapped[str | None] = mapped_column(String(255), nullable=False)
+    activity_date: Mapped[date | None] = mapped_column(Date, nullable=True)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     start_time: Mapped[time | None] = mapped_column(Time, nullable=True)
     end_time: Mapped[time | None] = mapped_column(Time, nullable=True)
@@ -30,8 +31,8 @@ class Activity(Base):
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     # relationships
-    day: Mapped["Day"] = relationship(back_populates="activities")
+    trip: Mapped["Trip"] = relationship(back_populates="activities")
 
     @property
-    def day_date(self) -> date | None:
-        return self.day.day_date if self.day else None
+    def trip_date(self) -> date | None:
+        return self.trip.trip_date if self.trip else None

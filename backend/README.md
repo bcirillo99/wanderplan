@@ -146,10 +146,15 @@ uv run pytest
 ```
 
 # TODO:
-
+- l'entita giorno non ha senso o quantomeno ha senso nel momento in cui si vogliono soltanto mettere note per quel giorno. Secodno me deve essere levata. Forse ha più senso creare una vista per giorno delle attività dei trasporti etc quando accedo al sotto menu.
+- Aggiungere menu iniziale quando si accede al viaggio con dei ripiloghi come- costo stimato (magare utilizzare quelle funznioni accessorie che avevamo creato)- cose da fare - panoramica breve attività per giorno come documento word
 - attività per viaggio e non solo per giorno (cosi penso che a frontend vedrà anche attività)
 - aggiungere magari una vista che raccoglie tutto e ordina per ora e giorni in una voce sumary
 - aggiungere note per scrivere quello che si pensa
--  Non funziona bene Expense nel senso che vorrei vedere: totale stimato ma anche quello sicur
+- Non funziona bene Expense nel senso che vorrei vedere: totale stimato ma anche quello sicur
 - poter modificare viaggio anche quando si clicca sul viaggio
+
+- Non è attualmente modificare gli item dai loro sotto menu. Non va bene.
+
+
 - Versione 1.1 permettere di poter scaricare documento word stile viaggio Perù mio.

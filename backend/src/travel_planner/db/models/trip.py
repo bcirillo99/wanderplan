@@ -20,9 +20,10 @@ class Trip(Base):
     end_date: Mapped[date | None] = mapped_column(Date, nullable=True)
     destination: Mapped[str | None] = mapped_column(String(255), nullable=True)
     cover_image: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     # relationships
-    days: Mapped[list["Day"]] = relationship(back_populates="trip", cascade="all, delete-orphan")
+    activities: Mapped[list["Activity"]] = relationship(back_populates="trip", cascade="all, delete-orphan")
     flights: Mapped[list["Flight"]] = relationship(back_populates="trip", cascade="all, delete-orphan")
     accommodations: Mapped[list["Accommodation"]] = relationship(back_populates="trip", cascade="all, delete-orphan")
     transports: Mapped[list["Transport"]] = relationship(back_populates="trip", cascade="all, delete-orphan")
