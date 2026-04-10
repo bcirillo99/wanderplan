@@ -31,3 +31,7 @@ class Activity(Base):
 
     # relationships
     day: Mapped["Day"] = relationship(back_populates="activities")
+
+    @property
+    def day_date(self) -> date | None:
+        return self.day.day_date if self.day else None

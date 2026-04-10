@@ -94,8 +94,10 @@ function ActivityCard({ activity, onEdit, onDelete }: {
 }
 
 // ── Activity Form ─────────────────────────────────────────────────────────────
+type ActivityFormData = Omit<ActivityCreate, 'day_date'>
+
 function ActivityForm({ initial, onSubmit, loading }: {
-  initial?: Partial<Activity>; onSubmit: (d: ActivityCreate) => void; loading: boolean
+  initial?: Partial<Activity>; onSubmit: (d: ActivityFormData) => void; loading: boolean
 }) {
   const [title, setTitle]       = useState(initial?.title ?? '')
   const [description, setDesc]  = useState(initial?.description ?? '')
@@ -147,8 +149,13 @@ export default function TripDayPage() {
 
   useEffect(() => {
     if (!tripId || !dayId) return
-    Promise.all([getTrip(tripId), getDay(tripId, dayId), getActivities(tripId, dayId)])
-      .then(([t, d, a]) => { setTrip(t); setDay(d); setActivities(a); setLoading(false) })
+    Promise.all([getTrip(tripId), getDay(tripId, dayId), getActivities(tripId)])
+      .then(([t, d, a]) => {
+        setTrip(t)
+        setDay(d)
+        setActivities(a.filter((activity) => activity.day_id === d.id))
+        setLoading(false)
+      })
       .catch((error) => { console.error('Error loading day data:', error); setLoading(false) })
   }, [tripId, dayId])
 
@@ -162,19 +169,31 @@ export default function TripDayPage() {
 
   const totalCost = activities.reduce((s, a) => s + (a.cost ?? 0), 0)
 
-  const handleAdd = async (data: ActivityCreate) => {
+  const handleAdd = async (data: ActivityFormData) => {
+    if (!day?.day_date) return
     setSaving(true)
-    try { const r = await createActivity(tripId, dayId, data); setActivities((p) => [...p, r]); setModal(null) }
-    finally { setSaving(false) }
+    try {
+      const r = await createActivity(tripId, { ...data, day_date: day.day_date })
+      setActivities((p) => [...p, r])
+      setModal(null)
+    } finally {
+      setSaving(false)
+    }
   }
-  const handleEdit = async (data: ActivityCreate) => {
+  const handleEdit = async (data: ActivityFormData) => {
     if (!editTarget) return
     setSaving(true)
-    try { const r = await updateActivity(tripId, dayId, editTarget.id, data); setActivities((p) => p.map((a) => a.id === r.id ? r : a)); setModal(null); setEditTarget(null) }
-    finally { setSaving(false) }
+    try {
+      const r = await updateActivity(tripId, editTarget.id, data)
+      setActivities((p) => p.map((a) => a.id === r.id ? r : a))
+      setModal(null)
+      setEditTarget(null)
+    } finally {
+      setSaving(false)
+    }
   }
   const handleDelete = async (id: string) => {
-    await deleteActivity(tripId, dayId, id)
+    await deleteActivity(tripId, id)
     setActivities((p) => p.filter((a) => a.id !== id))
   }
 

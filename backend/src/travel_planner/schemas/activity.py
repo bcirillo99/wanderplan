@@ -3,6 +3,7 @@ from uuid import UUID
 from datetime import date, time
 from pydantic import BaseModel, field_validator
 from travel_planner.db.enums import Status
+from datetime import date, time
 
 
 class ActivityBase(BaseModel):
@@ -34,7 +35,7 @@ class ActivityBase(BaseModel):
         return cost
 
 class ActivityCreate(ActivityBase):
-    pass
+    day_date: date
 
 class ActivityUpdate(BaseModel):
     title: str | None = None

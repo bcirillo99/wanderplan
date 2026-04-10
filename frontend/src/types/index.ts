@@ -31,6 +31,7 @@ export interface Day {
 export interface Activity {
   id: string
   day_id: string
+  day_date?: string | null
   title?: string | null
   description?: string | null
   start_time?: string | null
@@ -134,7 +135,7 @@ export interface TripStats {
 
 export type TripCreate = Omit<Trip, 'id'>
 export type DayCreate = Omit<Day, 'id' | 'trip_id'>
-export type ActivityCreate = Omit<Activity, 'id' | 'day_id'>
+export type ActivityCreate = Omit<Activity, 'id' | 'day_id'> & { day_date: string }
 export type FlightCreate = Omit<Flight, 'id' | 'trip_id'>
 export type AccommodationCreate = Omit<Accommodation, 'id' | 'trip_id' | 'total_cost'>
 export type TransportCreate = Omit<Transport, 'id' | 'trip_id'>

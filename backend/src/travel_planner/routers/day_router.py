@@ -45,6 +45,9 @@ def get_by_id(trip_id: UUID, day_id: UUID, db: Session = Depends(get_db)):
 def create(trip_id: UUID, data: DayCreate, db: Session = Depends(get_db)):
     trip = get_trip_or_404(trip_id, db)
     validate_day_date(data.day_date, trip)
+    existing = day_service.get_by_date(db, trip_id, data.day_date)
+    if existing:
+        raise HTTPException(status_code=409, detail="A day with this date already exists")
     return day_service.create(db, trip_id, data)
 
 

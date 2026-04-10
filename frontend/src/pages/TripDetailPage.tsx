@@ -13,10 +13,11 @@ import { getTransports, createTransport, deleteTransport } from '../api/transpor
 import { getExpenses, createExpense, deleteExpense } from '../api/expenses'
 import { getPackingItems, createPackingItem, deletePackingItem, togglePackingItem } from '../api/packing_items'
 import { getTripStats } from '../api/stats'
+import { getActivities, createActivity, updateActivity, deleteActivity } from '../api/activities'
 import type {
-  Trip, Day, Flight, Accommodation, Transport, Expense, PackingItem, TripStats,
+  Trip, Day, Activity, Flight, Accommodation, Transport, Expense, PackingItem, TripStats,
   Status, AccommodationType, TransportType, ExpenseCategory, PackingCategory,
-  DayCreate, FlightCreate, AccommodationCreate, TransportCreate, ExpenseCreate, PackingItemCreate,
+  DayCreate, ActivityCreate, FlightCreate, AccommodationCreate, TransportCreate, ExpenseCreate, PackingItemCreate,
 } from '../types'
 
 // ── Options ───────────────────────────────────────────────────────────────────
@@ -57,15 +58,16 @@ function fmtTime(d?: string | null) {
   return new Date(d).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
 }
 
-type Tab = 'days' | 'flights' | 'accommodations' | 'transports' | 'expenses' | 'packing' | 'stats'
+type Tab = 'days' | 'activities' | 'flights' | 'accommodations' | 'transports' | 'expenses' | 'packing' | 'stats'
 const TABS: { id: Tab; label: string; icon: string }[] = [
-  { id: 'days',           label: 'Days',    icon: '📅' },
-  { id: 'flights',        label: 'Flights',      icon: '✈️' },
-  { id: 'accommodations', label: 'Accommodations',   icon: '🏨' },
-  { id: 'transports',     label: 'Transports', icon: '🚌' },
-  { id: 'expenses',       label: 'Expenses',     icon: '💰' },
-  { id: 'packing',        label: 'Packing',   icon: '🎒' },
-  { id: 'stats',          label: 'Budget',    icon: '📊' },
+  { id: 'days',           label: 'Days',          icon: '📅' },
+  { id: 'activities',    label: 'Activities',    icon: '🗓️' },
+  { id: 'flights',        label: 'Flights',       icon: '✈️' },
+  { id: 'accommodations', label: 'Accommodations', icon: '🏨' },
+  { id: 'transports',     label: 'Transports',    icon: '🚌' },
+  { id: 'expenses',       label: 'Expenses',      icon: '💰' },
+  { id: 'packing',        label: 'Packing',       icon: '🎒' },
+  { id: 'stats',          label: 'Budget',         icon: '📊' },
 ]
 
 // ── Shared: Section header + Item card ───────────────────────────────────────
@@ -124,6 +126,58 @@ function DaysTab({ tripId, days, onDelete, onAdd }: {
                 <p style={{ fontSize: '0.75rem', color: 'var(--sage)', marginTop: 10 }}>Tap for activities →</p>
               </div>
             </ItemCard>
+          ))}
+        </div>
+      )}
+    </>
+  )
+}
+
+// ── ACTIVITIES ─────────────────────────────────────────────────────────────────
+function ActivitiesTab({ days, activities, onDelete, onAdd }: {
+  days: Day[]; activities: Activity[]; onDelete: (id: string) => void; onAdd: () => void
+}) {
+  const grouped = activities.reduce<Record<string, Activity[]>>((acc, activity) => {
+    const day = days.find(d => d.id === activity.day_id)
+    const key = day ? day.day_date : 'No date'
+    if (!acc[key]) acc[key] = []
+    acc[key].push(activity)
+    return acc
+  }, {})
+
+  const dates = Object.keys(grouped).sort((a, b) => a.localeCompare(b))
+
+  return (
+    <>
+      <SectionHeader title="Trip Activities" onAdd={onAdd} />
+      {activities.length === 0 ? <TabEmpty msg="No activities added" /> : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+          {dates.map((date) => (
+            <div key={date} style={{ background: '#fff', borderRadius: 20, border: '1px solid var(--cream-dark)', padding: 20, boxShadow: '0 6px 18px rgba(15, 23, 42, 0.04)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 16 }}>
+                <div>
+                  <p style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--forest)' }}>{date === 'No date' ? 'Unscheduled' : fmt(date)}</p>
+                  {date !== 'No date' && (
+                    <p style={{ fontSize: '0.8rem', color: '#6b7280', marginTop: 4 }}>{days.find((d) => d.day_date === date)?.location ?? 'No day yet'}</p>
+                  )}
+                </div>
+              </div>
+              <div style={{ display: 'grid', gap: 14 }}>
+                {grouped[date].map((activity) => (
+                  <ItemCard key={activity.id} onDelete={() => onDelete(activity.id)}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+                        <h4 style={{ margin: 0, fontSize: '1rem', fontWeight: 700, color: 'var(--forest)' }}>{activity.title || 'Untitled activity'}</h4>
+                        <span style={{ fontSize: '0.8rem', color: '#6b7280' }}>{activity.start_time ? fmtTime(activity.start_time) : ''}</span>
+                        {activity.location ? <span style={{ fontSize: '0.8rem', color: '#6b7280' }}>· {activity.location}</span> : null}
+                        {activity.cost != null ? <span style={{ fontSize: '0.8rem', color: '#6b7280' }}>· €{activity.cost.toFixed(2)}</span> : null}
+                      </div>
+                      {activity.description ? <p style={{ margin: 0, color: '#4b5563', fontSize: '0.9rem' }}>{activity.description}</p> : null}
+                    </div>
+                  </ItemCard>
+                ))}
+              </div>
+            </div>
           ))}
         </div>
       )}
@@ -511,6 +565,43 @@ function AddPackingForm({ onSubmit, loading }: { onSubmit: (p: PackingItemCreate
   )
 }
 
+function AddActivityForm({ onSubmit, loading, minDate, maxDate }: { onSubmit: (a: ActivityCreate) => void; loading: boolean; minDate?: string; maxDate?: string }) {
+  const [dayDate, setDayDate] = useState('')
+  const [title, setTitle] = useState('')
+  const [description, setDescription] = useState('')
+  const [startTime, setStartTime] = useState('')
+  const [endTime, setEndTime] = useState('')
+  const [location, setLocation] = useState('')
+  const [status, setStatus] = useState<Status>('draft')
+  const [cost, setCost] = useState('')
+  const [link, setLink] = useState('')
+  const [notes, setNotes] = useState('')
+
+  return (
+    <div className="form-stack">
+      <FormField label="Date" type="input" inputType="date" value={dayDate} onChange={setDayDate} required min={minDate} max={maxDate} />
+      <FormField label="Title" type="input" value={title} onChange={setTitle} placeholder="Walk along the waterfront" />
+      <FormField label="Description" type="textarea" value={description} onChange={setDescription} rows={2} />
+      <div className="form-grid-2">
+        <FormField label="Start" type="input" inputType="time" value={startTime} onChange={setStartTime} />
+        <FormField label="End" type="input" inputType="time" value={endTime} onChange={setEndTime} />
+      </div>
+      <div className="form-grid-2">
+        <FormField label="Location" type="input" value={location} onChange={setLocation} placeholder="Malecon" />
+        <FormField label="Cost (€)" type="input" inputType="number" value={cost} onChange={setCost} />
+      </div>
+      <FormField label="Status" type="select" value={status} onChange={(v) => setStatus(v as Status)} options={STATUS_OPTIONS} />
+      <FormField label="Link" type="input" value={link} onChange={setLink} placeholder="https://..." />
+      <FormField label="Notes" type="textarea" value={notes} onChange={setNotes} rows={2} />
+      <button className="btn-primary" style={{ width: '100%', justifyContent: 'center' }}
+        onClick={() => onSubmit({ day_date: dayDate, title: title || null, description: description || null, start_time: startTime || null, end_time: endTime || null, location: location || null, status: status || null, cost: cost ? parseFloat(cost) : null, pay_method: null, cancellation_date: null, link: link || null, notes: notes || null })}
+        disabled={loading || !dayDate || !title}>
+        {loading ? 'Saving...' : 'Add Activity'}
+      </button>
+    </div>
+  )
+}
+
 // ── MAIN PAGE ─────────────────────────────────────────────────────────────────
 export default function TripDetailPage() {
   const { tripId } = useParams<{ tripId: string }>()
@@ -521,6 +612,7 @@ export default function TripDetailPage() {
   const [accommodations, setAccommodations] = useState<Accommodation[]>([])
   const [transports, setTransports] = useState<Transport[]>([])
   const [expenses, setExpenses] = useState<Expense[]>([])
+  const [activities, setActivities] = useState<Activity[]>([])
   const [packingItems, setPackingItems] = useState<PackingItem[]>([])
   const [stats, setStats] = useState<TripStats | null>(null)
   const [modal, setModal] = useState<Tab | null>(null)
@@ -532,13 +624,30 @@ export default function TripDetailPage() {
     Promise.all([
       getTrip(tripId), getDays(tripId), getFlights(tripId),
       getAccommodations(tripId), getTransports(tripId),
-      getExpenses(tripId), getPackingItems(tripId), getTripStats(tripId),
-    ]).then(([t, d, f, a, tr, e, p, s]) => {
+      getExpenses(tripId), getActivities(tripId), getPackingItems(tripId), getTripStats(tripId),
+    ]).then(([t, d, f, a, tr, e, act, p, s]) => {
       setTrip(t); setDays(d); setFlights(f); setAccommodations(a)
-      setTransports(tr); setExpenses(e); setPackingItems(p); setStats(s)
+      setTransports(tr); setExpenses(e); setActivities(act); setPackingItems(p); setStats(s)
       setLoading(false)
     }).catch(() => setLoading(false))
   }, [tripId])
+
+  const handleAddActivity = async (activity: ActivityCreate) => {
+    if (!tripId) return
+    setSaving(true)
+    try {
+      const existingDay = days.find((d) => d.day_date === activity.day_date)
+      if (!existingDay) {
+        const created = await createDay(tripId, { day_date: activity.day_date, location: null, notes: null })
+        setDays((prev) => [...prev, created])
+      }
+      const createdActivity = await createActivity(tripId, activity)
+      setActivities((prev) => [...prev, createdActivity])
+      setModal(null)
+    } finally {
+      setSaving(false)
+    }
+  }
 
   if (!tripId) return null
 
@@ -607,6 +716,11 @@ export default function TripDetailPage() {
             onDelete={async (id) => { await deleteFlight(tripId, id); setFlights((p) => p.filter((f) => f.id !== id)) }}
             onAdd={() => setModal('flights')} />
         )}
+        {tab === 'activities' && (
+          <ActivitiesTab activities={activities} days={days}
+            onDelete={async (id) => { await deleteActivity(tripId, id); setActivities((p) => p.filter((a) => a.id !== id)) }}
+            onAdd={() => setModal('activities')} />
+        )}
         {tab === 'accommodations' && (
           <AccommodationsTab accommodations={accommodations}
             onDelete={async (id) => { await deleteAccommodation(tripId, id); setAccommodations((p) => p.filter((a) => a.id !== id)) }}
@@ -652,6 +766,16 @@ export default function TripDetailPage() {
             minDateTime={trip?.start_date ? `${trip.start_date}T00:00` : undefined}
             maxDateTime={trip?.end_date ? `${trip.end_date}T23:59` : undefined}
             onSubmit={async (f) => { setSaving(true); try { const r = await createFlight(tripId, f); setFlights((p) => [...p, r]); setModal(null) } finally { setSaving(false) } }}
+          />
+        </Modal>
+      )}
+      {modal === 'activities' && (
+        <Modal title="Add Activity" onClose={() => setModal(null)} size="lg">
+          <AddActivityForm
+            loading={saving}
+            minDate={trip?.start_date ?? undefined}
+            maxDate={trip?.end_date ?? undefined}
+            onSubmit={handleAddActivity}
           />
         </Modal>
       )}
