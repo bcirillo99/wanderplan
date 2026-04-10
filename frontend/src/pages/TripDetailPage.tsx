@@ -358,13 +358,13 @@ function StatsTab({ stats }: { stats: TripStats | null }) {
 }
 
 // ── ADD FORMS ─────────────────────────────────────────────────────────────────
-function AddDayForm({ onSubmit, loading }: { onSubmit: (d: DayCreate) => void; loading: boolean }) {
+function AddDayForm({ onSubmit, loading, minDate, maxDate }: { onSubmit: (d: DayCreate) => void; loading: boolean; minDate?: string; maxDate?: string }) {
   const [date, setDate] = useState('')
   const [location, setLocation] = useState('')
   const [notes, setNotes] = useState('')
   return (
     <div className="form-stack">
-      <FormField label="Date" type="input" inputType="date" value={date} onChange={setDate} required />
+      <FormField label="Date" type="input" inputType="date" value={date} onChange={setDate} required min={minDate} max={maxDate} />
       <FormField label="Location" type="input" value={location} onChange={setLocation} placeholder="e.g. Rome" />
       <FormField label="Notes" type="textarea" value={notes} onChange={setNotes} rows={2} />
       <button className="btn-primary" style={{ width: '100%', justifyContent: 'center' }}
@@ -376,7 +376,7 @@ function AddDayForm({ onSubmit, loading }: { onSubmit: (d: DayCreate) => void; l
   )
 }
 
-function AddFlightForm({ onSubmit, loading }: { onSubmit: (f: FlightCreate) => void; loading: boolean }) {
+function AddFlightForm({ onSubmit, loading, minDateTime, maxDateTime }: { onSubmit: (f: FlightCreate) => void; loading: boolean; minDateTime?: string; maxDateTime?: string }) {
   const [origin, setOrigin] = useState(''); const [dest, setDest] = useState('')
   const [dep, setDep] = useState(''); const [arr, setArr] = useState('')
   const [airline, setAirline] = useState(''); const [flightNo, setFlightNo] = useState('')
@@ -389,8 +389,8 @@ function AddFlightForm({ onSubmit, loading }: { onSubmit: (f: FlightCreate) => v
         <FormField label="Destination" type="input" value={dest} onChange={setDest} placeholder="NRT" required />
       </div>
       <div className="form-grid-2">
-        <FormField label="Departure" type="input" inputType="datetime-local" value={dep} onChange={setDep} />
-        <FormField label="Arrival" type="input" inputType="datetime-local" value={arr} onChange={setArr} />
+        <FormField label="Departure" type="input" inputType="datetime-local" value={dep} onChange={setDep} min={minDateTime} max={maxDateTime} />
+        <FormField label="Arrival" type="input" inputType="datetime-local" value={arr} onChange={setArr} min={dep || minDateTime} max={maxDateTime} />
       </div>
       <div className="form-grid-2">
         <FormField label="Airline" type="input" value={airline} onChange={setAirline} placeholder="Ryanair" />
@@ -410,7 +410,7 @@ function AddFlightForm({ onSubmit, loading }: { onSubmit: (f: FlightCreate) => v
   )
 }
 
-function AddAccommodationForm({ onSubmit, loading }: { onSubmit: (a: AccommodationCreate) => void; loading: boolean }) {
+function AddAccommodationForm({ onSubmit, loading, minDate, maxDate }: { onSubmit: (a: AccommodationCreate) => void; loading: boolean; minDate?: string; maxDate?: string }) {
   const [name, setName] = useState(''); const [type, setType] = useState<AccommodationType | ''>('')
   const [address, setAddress] = useState(''); const [checkIn, setCheckIn] = useState('')
   const [checkOut, setCheckOut] = useState(''); const [costPerNight, setCost] = useState('')
@@ -424,8 +424,8 @@ function AddAccommodationForm({ onSubmit, loading }: { onSubmit: (a: Accommodati
       </div>
       <FormField label="Address" type="input" value={address} onChange={setAddress} placeholder="123 Main St" />
       <div className="form-grid-2">
-        <FormField label="Check-in" type="input" inputType="date" value={checkIn} onChange={setCheckIn} />
-        <FormField label="Check-out" type="input" inputType="date" value={checkOut} onChange={setCheckOut} />
+        <FormField label="Check-in" type="input" inputType="date" value={checkIn} onChange={setCheckIn} min={minDate} max={maxDate} />
+        <FormField label="Check-out" type="input" inputType="date" value={checkOut} onChange={setCheckOut} min={checkIn || minDate} max={maxDate} />
       </div>
       <div className="form-grid-2">
         <FormField label="Cost/Night (€)" type="input" inputType="number" value={costPerNight} onChange={setCost} />
@@ -440,7 +440,7 @@ function AddAccommodationForm({ onSubmit, loading }: { onSubmit: (a: Accommodati
   )
 }
 
-function AddTransportForm({ onSubmit, loading }: { onSubmit: (t: TransportCreate) => void; loading: boolean }) {
+function AddTransportForm({ onSubmit, loading, minDateTime, maxDateTime }: { onSubmit: (t: TransportCreate) => void; loading: boolean; minDateTime?: string; maxDateTime?: string }) {
   const [type, setType] = useState<TransportType>('train')
   const [origin, setOrigin] = useState(''); const [dest, setDest] = useState('')
   const [dep, setDep] = useState(''); const [arr, setArr] = useState('')
@@ -454,8 +454,8 @@ function AddTransportForm({ onSubmit, loading }: { onSubmit: (t: TransportCreate
         <FormField label="To" type="input" value={dest} onChange={setDest} placeholder="Naples" required />
       </div>
       <div className="form-grid-2">
-        <FormField label="Departure" type="input" inputType="datetime-local" value={dep} onChange={setDep} />
-        <FormField label="Arrival" type="input" inputType="datetime-local" value={arr} onChange={setArr} />
+        <FormField label="Departure" type="input" inputType="datetime-local" value={dep} onChange={setDep} min={minDateTime} max={maxDateTime} />
+        <FormField label="Arrival" type="input" inputType="datetime-local" value={arr} onChange={setArr} min={dep || minDateTime} max={maxDateTime} />
       </div>
       <div className="form-grid-2">
         <FormField label="Operator" type="input" value={operator} onChange={setOperator} placeholder="Trenitalia" />
@@ -637,22 +637,42 @@ export default function TripDetailPage() {
       {/* Add Modals */}
       {modal === 'days' && (
         <Modal title="Add Day" onClose={() => setModal(null)}>
-          <AddDayForm loading={saving} onSubmit={async (d) => { setSaving(true); try { const r = await createDay(tripId, d); setDays((p) => [...p, r]); setModal(null) } finally { setSaving(false) } }} />
+          <AddDayForm
+            loading={saving}
+            minDate={trip?.start_date ?? undefined}
+            maxDate={trip?.end_date ?? undefined}
+            onSubmit={async (d) => { setSaving(true); try { const r = await createDay(tripId, d); setDays((p) => [...p, r]); setModal(null) } finally { setSaving(false) } }}
+          />
         </Modal>
       )}
       {modal === 'flights' && (
         <Modal title="Add Flight" onClose={() => setModal(null)} size="lg">
-          <AddFlightForm loading={saving} onSubmit={async (f) => { setSaving(true); try { const r = await createFlight(tripId, f); setFlights((p) => [...p, r]); setModal(null) } finally { setSaving(false) } }} />
+          <AddFlightForm
+            loading={saving}
+            minDateTime={trip?.start_date ? `${trip.start_date}T00:00` : undefined}
+            maxDateTime={trip?.end_date ? `${trip.end_date}T23:59` : undefined}
+            onSubmit={async (f) => { setSaving(true); try { const r = await createFlight(tripId, f); setFlights((p) => [...p, r]); setModal(null) } finally { setSaving(false) } }}
+          />
         </Modal>
       )}
       {modal === 'accommodations' && (
         <Modal title="Add Accommodation" onClose={() => setModal(null)} size="lg">
-          <AddAccommodationForm loading={saving} onSubmit={async (a) => { setSaving(true); try { const r = await createAccommodation(tripId, a); setAccommodations((p) => [...p, r]); setModal(null) } finally { setSaving(false) } }} />
+          <AddAccommodationForm
+            loading={saving}
+            minDate={trip?.start_date ?? undefined}
+            maxDate={trip?.end_date ?? undefined}
+            onSubmit={async (a) => { setSaving(true); try { const r = await createAccommodation(tripId, a); setAccommodations((p) => [...p, r]); setModal(null) } finally { setSaving(false) } }}
+          />
         </Modal>
       )}
       {modal === 'transports' && (
         <Modal title="Add Transport" onClose={() => setModal(null)}>
-          <AddTransportForm loading={saving} onSubmit={async (t) => { setSaving(true); try { const r = await createTransport(tripId, t); setTransports((p) => [...p, r]); setModal(null) } finally { setSaving(false) } }} />
+          <AddTransportForm
+            loading={saving}
+            minDateTime={trip?.start_date ? `${trip.start_date}T00:00` : undefined}
+            maxDateTime={trip?.end_date ? `${trip.end_date}T23:59` : undefined}
+            onSubmit={async (t) => { setSaving(true); try { const r = await createTransport(tripId, t); setTransports((p) => [...p, r]); setModal(null) } finally { setSaving(false) } }}
+          />
         </Modal>
       )}
       {modal === 'expenses' && (

@@ -148,4 +148,5 @@ uv run pytest
 # TODO:
 
 - attività per viaggio e non solo per giorno (cosi penso che a frontend vedrà anche attività)
-- quando imposto data di fine del viaggio o data di un attiivà mi porta nel peridoo giusto
+- poter modificare viaggio anche quando si clicca sul viaggio
+- Versione 1.1 permettere di poter scaricare documento word stile viaggio Perù mio.

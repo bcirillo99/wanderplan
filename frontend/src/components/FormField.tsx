@@ -1,7 +1,7 @@
 // frontend/src/components/FormField.tsx
 
 interface BaseProps { label: string; required?: boolean }
-interface InputProps    extends BaseProps { type: 'input';    inputType?: string; value: string; onChange: (v: string) => void; placeholder?: string }
+interface InputProps    extends BaseProps { type: 'input';    inputType?: string; value: string; onChange: (v: string) => void; placeholder?: string; min?: string; max?: string }
 interface TextareaProps extends BaseProps { type: 'textarea'; value: string; onChange: (v: string) => void; placeholder?: string; rows?: number }
 interface SelectProps   extends BaseProps { type: 'select';   value: string; onChange: (v: string) => void; options: { value: string; label: string }[] }
 
@@ -28,7 +28,7 @@ export default function FormField(props: FormFieldProps) {
           value={props.value}
           onChange={(e) => props.onChange(e.target.value)}
         >
-          <option value="">— Seleziona —</option>
+          <option value="">— Select —</option>
           {props.options.map((o) => (
             <option key={o.value} value={o.value}>{o.label}</option>
           ))}
@@ -41,6 +41,8 @@ export default function FormField(props: FormFieldProps) {
           onChange={(e) => props.onChange(e.target.value)}
           placeholder={props.placeholder}
           required={props.required}
+          min={props.min}
+          max={props.max}
         />
       )}
     </div>

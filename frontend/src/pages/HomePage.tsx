@@ -106,8 +106,8 @@ function TripForm({ initial, onSubmit, loading }: {
       <FormField label="Trip Title" type="input" value={title} onChange={setTitle} placeholder="e.g. Japanese Adventure" required />
       <FormField label="Destination" type="input" value={destination} onChange={setDest} placeholder="e.g. Tokyo, Kyoto" />
       <div className="form-grid-2">
-        <FormField label="Start Date" type="input" inputType="date" value={startDate} onChange={setStart} />
-        <FormField label="End Date"   type="input" inputType="date" value={endDate}   onChange={setEnd} />
+        <FormField label="Start Date" type="input" inputType="date" value={startDate} onChange={setStart} max={endDate || undefined} />
+        <FormField label="End Date"   type="input" inputType="date" value={endDate}   onChange={setEnd} min={startDate || undefined} />
       </div>
       <FormField label="Description" type="textarea" value={description} onChange={setDesc} placeholder="Trip notes..." rows={2} />
       <FormField label="Cover Image URL" type="input" value={coverImage} onChange={setCover} placeholder="https://images.unsplash.com/..." />
