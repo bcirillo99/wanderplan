@@ -1,7 +1,6 @@
-# backend/src/travel_planner/main.py
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from travel_planner.routers import (
-    stats_router,
     trip_router,
     day_router,
     activity_router,
@@ -10,9 +9,18 @@ from travel_planner.routers import (
     transport_router,
     packing_item_router,
     expense_router,
+    stats_router,
 )
 
 app = FastAPI(title="Wanderplan API")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 app.include_router(trip_router)
 app.include_router(day_router)

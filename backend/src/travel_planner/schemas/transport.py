@@ -1,7 +1,7 @@
 # backend/src/travel_planner/schemas/transport.py
 from uuid import UUID
 from datetime import datetime
-from pydantic import BaseModel, HttpUrl, field_validator
+from pydantic import BaseModel, field_validator
 from travel_planner.db.enums import Status, TransportType
 
 
@@ -14,7 +14,7 @@ class TransportBase(BaseModel):
     status: Status | None = None
     cost: float | None = None
     pay_method: str | None = None
-    link: HttpUrl | None = None
+    link: str | None = None
     operator: str | None = None
     booking_reference: str | None = None
     extra_details: dict | None = None
@@ -49,7 +49,7 @@ class TransportUpdate(BaseModel):
     status: Status | None = None
     cost: float | None = None
     pay_method: str | None = None
-    link: HttpUrl | None = None
+    link: str | None = None
     operator: str | None = None
     booking_reference: str | None = None
     extra_details: dict | None = None

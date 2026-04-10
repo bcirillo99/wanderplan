@@ -1,7 +1,7 @@
 # backend/src/travel_planner/schemas/accommodation.py
 from uuid import UUID
 from datetime import date
-from pydantic import BaseModel, field_validator, HttpUrl
+from pydantic import BaseModel, field_validator
 from travel_planner.db.enums import Status, AccommodationType
 
 
@@ -16,7 +16,7 @@ class AccommodationBase(BaseModel):
     cost_per_night: float | None = None
     pay_method: str | None = None
     cancellation_date: date | None = None
-    link: HttpUrl | None = None
+    link: str | None = None
     extra_details: dict | None = None
     notes: str | None = None
     booking_reference: str | None = None
@@ -52,7 +52,7 @@ class AccommodationUpdate(BaseModel):
     cost_per_night: float | None = None
     pay_method: str | None = None
     cancellation_date: date | None = None
-    link: HttpUrl | None = None
+    link: str | None = None
     extra_details: dict | None = None
     notes: str | None = None
     booking_reference: str | None = None

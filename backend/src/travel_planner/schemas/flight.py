@@ -1,7 +1,7 @@
 # backend/src/travel_planner/schemas/flight.py
 from uuid import UUID
 from datetime import datetime
-from pydantic import BaseModel, HttpUrl, field_validator
+from pydantic import BaseModel, field_validator
 from travel_planner.db.enums import Status
 
 
@@ -17,7 +17,7 @@ class FlightBase(BaseModel):
     cost: float | None = None
     pay_method: str | None = None
     booking_reference: str | None = None
-    link: HttpUrl | None = None
+    link: str | None = None
     notes: str | None = None
 
     @field_validator("arrival_time")
@@ -52,7 +52,7 @@ class FlightUpdate(BaseModel):
     cost: float | None = None
     pay_method: str | None = None
     booking_reference: str | None = None
-    link: HttpUrl | None = None
+    link: str | None = None
     notes: str | None = None
 
     @field_validator("arrival_time")

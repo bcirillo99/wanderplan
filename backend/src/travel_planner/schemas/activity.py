@@ -1,7 +1,7 @@
 # backend/src/travel_planner/schemas/activity.py
 from uuid import UUID
 from datetime import date, time
-from pydantic import BaseModel, field_validator, HttpUrl
+from pydantic import BaseModel, field_validator
 from travel_planner.db.enums import Status
 
 
@@ -15,7 +15,7 @@ class ActivityBase(BaseModel):
     cost: float | None = None
     pay_method: str | None = None
     cancellation_date: date | None = None
-    link: HttpUrl | None = None
+    link: str | None = None
     notes: str | None = None
 
     @field_validator("end_time")
@@ -46,7 +46,7 @@ class ActivityUpdate(BaseModel):
     cost: float | None = None
     pay_method: str | None = None
     cancellation_date: date | None = None
-    link: HttpUrl | None = None
+    link: str | None = None
     notes: str | None = None
 
     @field_validator("end_time")

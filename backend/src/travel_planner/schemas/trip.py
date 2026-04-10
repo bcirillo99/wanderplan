@@ -1,7 +1,7 @@
 # backend/src/travel_planner/schemas/trip.py
 from uuid import UUID
 from datetime import date
-from pydantic import BaseModel, field_validator, HttpUrl
+from pydantic import BaseModel, field_validator
 
 
 class TripBase(BaseModel):
@@ -10,7 +10,7 @@ class TripBase(BaseModel):
     start_date: date | None = None
     end_date: date | None = None
     destination: str | None = None
-    cover_image: HttpUrl | None = None
+    cover_image: str | None = None
 
     @field_validator("end_date")
     @classmethod
@@ -31,7 +31,7 @@ class TripUpdate(BaseModel):
     start_date: date | None = None
     end_date: date | None = None
     destination: str | None = None
-    cover_image: HttpUrl | None = None
+    cover_image: str | None = None
 
 
 class TripResponse(TripBase):
