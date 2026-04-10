@@ -2,8 +2,7 @@
 import type { Status } from '../types'
 
 const labels: Record<Status, string> = {
-  draft: 'Bozza', to_book: 'Da prenotare',
-  booked: 'Prenotato', cancelled: 'Annullato', completed: 'Completato',
+  draft: 'Draft', to_book: 'To Book', booked: 'Booked', cancelled: 'Cancelled', completed: 'Completed',
 }
 
 export default function StatusBadge({ status }: { status?: Status | null }) {

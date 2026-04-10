@@ -148,5 +148,6 @@ uv run pytest
 # TODO:
 
 - attività per viaggio e non solo per giorno (cosi penso che a frontend vedrà anche attività)
+-  Non funziona bene Expense nel senso che non vedo poi un budget i risultati e se provavo ad aggiungere un 
 - poter modificare viaggio anche quando si clicca sul viaggio
 - Versione 1.1 permettere di poter scaricare documento word stile viaggio Perù mio.
