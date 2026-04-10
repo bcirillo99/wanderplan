@@ -43,6 +43,10 @@ def get_by_id(trip_id: UUID, day_id: UUID, activity_id: UUID, db: Session = Depe
     get_day_or_404(day_id, trip_id, db)
     return get_activity_or_404(activity_id, day_id, db)
 
+"""@router.get("/by-trip/{trip_id}")
+def get_by_trip(trip_id: UUID, db: Session = Depends(get_db)):
+    return get_all_by_trip(db, trip_id)
+"""
 
 @router.post("/", response_model=ActivityResponse, status_code=201)
 def create(trip_id: UUID, day_id: UUID, data: ActivityCreate, db: Session = Depends(get_db)):

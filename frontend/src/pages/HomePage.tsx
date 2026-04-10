@@ -1,620 +1,259 @@
+// frontend/src/pages/HomePage.tsx
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { getTrips, createTrip, deleteTrip } from '../api/trips'
+import Navbar from '../components/Navbar'
+import Modal from '../components/Modal'
+import FormField from '../components/FormField'
+import { getTrips, createTrip, updateTrip, deleteTrip } from '../api/trips'
 import type { Trip, TripCreate } from '../types'
 
+const HERO_IMAGES = [
+  'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1600&q=80',
+  'https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?w=1600&q=80',
+  'https://images.unsplash.com/photo-1502602898657-3e91760cbb34?w=1600&q=80',
+]
+const CARD_IMAGES = [
+  'https://images.unsplash.com/photo-1518548419970-58e3b4079ab2?w=800&q=70',
+  'https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=800&q=70',
+  'https://images.unsplash.com/photo-1523482580672-f109ba8cb9be?w=800&q=70',
+  'https://images.unsplash.com/photo-1504214208698-ea1916a2195a?w=800&q=70',
+  'https://images.unsplash.com/photo-1519677100203-a0e668c92439?w=800&q=70',
+  'https://images.unsplash.com/photo-1543832923-44667a44c804?w=800&q=70',
+]
+
+function formatDateRange(start?: string | null, end?: string | null) {
+  if (!start) return 'Dates to be defined'
+  const s = new Date(start).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })
+  if (!end) return s
+  const e = new Date(end).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })
+  return `${s} → ${e}`
+}
+
+function tripDays(start?: string | null, end?: string | null) {
+  if (!start || !end) return null
+  const diff = Math.ceil((new Date(end).getTime() - new Date(start).getTime()) / 86400000)
+  return diff > 0 ? `${diff} days` : null
+}
+
+// ── Empty State ────────────────────────────────────────────────────────────────
+function EmptyState({ onAdd }: { onAdd: () => void }) {
+  return (
+    <div className="empty-state animate-fade-up">
+      <div className="empty-state__icon">
+        <svg width="32" height="32" viewBox="0 0 32 32" fill="none" style={{ color: 'var(--sage)' }}>
+          <circle cx="16" cy="16" r="14" stroke="currentColor" strokeWidth="1.5"/>
+          <path d="M16 9v14M9 16h14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+        </svg>
+      </div>
+      <h3 className="empty-state__title">No trips yet</h3>
+      <p className="empty-state__sub">Your next big trip starts here. Create your first itinerary.</p>
+      <button className="btn-primary" onClick={onAdd}>Create Your First Trip</button>
+    </div>
+  )
+}
+
+// ── Trip Card ──────────────────────────────────────────────────────────────────
+function TripCard({ trip, index, onEdit, onDelete, onClick }: {
+  trip: Trip; index: number
+  onEdit: (t: Trip) => void; onDelete: (t: Trip) => void; onClick: (t: Trip) => void
+}) {
+  const imgUrl = trip.cover_image || CARD_IMAGES[index % CARD_IMAGES.length]
+  const days = tripDays(trip.start_date, trip.end_date)
+
+  return (
+    <article className="trip-card animate-fade-up" style={{ animationDelay: `${0.05 * index}s` }} onClick={() => onClick(trip)}>
+      <div className="trip-card__img-wrap">
+        <img src={imgUrl} alt={trip.title} className="trip-card__img" />
+        <div className="trip-card__img-overlay" />
+        {days && <span className="trip-card__days-badge">{days}</span>}
+        <div className="trip-card__actions" onClick={(e) => e.stopPropagation()}>
+          <button className="trip-card__action-btn" onClick={() => onEdit(trip)} title="Edit">
+            <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+              <path d="M9 1.5l2.5 2.5L3.5 11.5H1v-2.5L9 1.5z" stroke="var(--forest)" strokeWidth="1.2" strokeLinejoin="round"/>
+            </svg>
+          </button>
+          <button className="trip-card__action-btn" onClick={() => onDelete(trip)} title="Delete">
+            <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+              <path d="M2 3h9M5 3V2h3v1M4 3l.5 8h4l.5-8" stroke="#9b2020" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </button>
+        </div>
+        {trip.destination && <span className="trip-card__destination">{trip.destination}</span>}
+      </div>
+      <div className="trip-card__body">
+        <h3 className="trip-card__title">{trip.title}</h3>
+        <p className="trip-card__date">{formatDateRange(trip.start_date, trip.end_date)}</p>
+        {trip.description && <p className="trip-card__desc">{trip.description}</p>}
+        <div className="trip-card__footer">View itinerary →</div>
+      </div>
+    </article>
+  )
+}
+
+// ── Trip Form ──────────────────────────────────────────────────────────────────
+function TripForm({ initial, onSubmit, loading }: {
+  initial?: Partial<TripCreate>; onSubmit: (d: TripCreate) => void; loading: boolean
+}) {
+  const [title, setTitle]       = useState(initial?.title ?? '')
+  const [destination, setDest]  = useState(initial?.destination ?? '')
+  const [description, setDesc]  = useState(initial?.description ?? '')
+  const [startDate, setStart]   = useState(initial?.start_date ?? '')
+  const [endDate, setEnd]       = useState(initial?.end_date ?? '')
+  const [coverImage, setCover]  = useState(initial?.cover_image ?? '')
+
+  return (
+    <div className="form-stack">
+      <FormField label="Trip Title" type="input" value={title} onChange={setTitle} placeholder="e.g. Japanese Adventure" required />
+      <FormField label="Destination" type="input" value={destination} onChange={setDest} placeholder="e.g. Tokyo, Kyoto" />
+      <div className="form-grid-2">
+        <FormField label="Start Date" type="input" inputType="date" value={startDate} onChange={setStart} />
+        <FormField label="End Date"   type="input" inputType="date" value={endDate}   onChange={setEnd} />
+      </div>
+      <FormField label="Description" type="textarea" value={description} onChange={setDesc} placeholder="Trip notes..." rows={2} />
+      <FormField label="Cover Image URL" type="input" value={coverImage} onChange={setCover} placeholder="https://images.unsplash.com/..." />
+      <button
+        className="btn-primary"
+        style={{ width: '100%', justifyContent: 'center', marginTop: 8 }}
+        onClick={() => title.trim() && onSubmit({ title: title.trim(), destination: destination || null, description: description || null, start_date: startDate || null, end_date: endDate || null, cover_image: coverImage || null })}
+        disabled={loading || !title.trim()}
+      >
+        {loading ? 'Saving...' : 'Save Trip'}
+      </button>
+    </div>
+  )
+}
+
+// ── HomePage ───────────────────────────────────────────────────────────────────
 export default function HomePage() {
   const navigate = useNavigate()
-  const [trips, setTrips] = useState<Trip[]>([])
-  const [loading, setLoading] = useState(true)
-  const [showModal, setShowModal] = useState(false)
-  const [destination, setDestination] = useState('')
-  const [form, setForm] = useState<Partial<TripCreate>>({})
+  const [trips, setTrips]           = useState<Trip[]>([])
+  const [loading, setLoading]       = useState(true)
+  const [saving, setSaving]         = useState(false)
+  const [showCreate, setShowCreate] = useState(false)
+  const [editTrip, setEditTrip]     = useState<Trip | null>(null)
+  const [deleteTarget, setDelete]   = useState<Trip | null>(null)
+  const [heroIdx]                   = useState(() => Math.floor(Math.random() * HERO_IMAGES.length))
 
   useEffect(() => {
-    getTrips()
-      .then(setTrips)
-      .finally(() => setLoading(false))
+    getTrips().then((d) => { setTrips(d); setLoading(false) }).catch(() => setLoading(false))
   }, [])
 
-  const handleSearch = () => {
-    if (destination.trim()) {
-      setForm({ destination: destination.trim() })
-      setShowModal(true)
-    } else {
-      setShowModal(true)
-    }
+  const handleCreate = async (data: TripCreate) => {
+    setSaving(true)
+    try { const t = await createTrip(data); setTrips((p) => [t, ...p]); setShowCreate(false) }
+    finally { setSaving(false) }
   }
-
-  const handleCreate = async () => {
-    if (!form.title) return
-    const trip = await createTrip(form as TripCreate)
-    setTrips(prev => [...prev, trip])
-    setShowModal(false)
-    setForm({})
-    setDestination('')
-    navigate(`/trips/${trip.id}`)
+  const handleEdit = async (data: TripCreate) => {
+    if (!editTrip) return
+    setSaving(true)
+    try { const t = await updateTrip(editTrip.id, data); setTrips((p) => p.map((x) => x.id === t.id ? t : x)); setEditTrip(null) }
+    finally { setSaving(false) }
   }
-
-  const handleDelete = async (e: React.MouseEvent, id: string) => {
-    e.stopPropagation()
-    await deleteTrip(id)
-    setTrips(prev => prev.filter(t => t.id !== id))
-  }
-
-  const formatDate = (d?: string | null) =>
-    d ? new Date(d).toLocaleDateString('it-IT', { day: '2-digit', month: 'short', year: 'numeric' }) : null
-
-  const getDuration = (start?: string | null, end?: string | null) => {
-    if (!start || !end) return null
-    const days = Math.ceil((new Date(end).getTime() - new Date(start).getTime()) / (1000 * 60 * 60 * 24))
-    if (days === 0) return '1 giorno'
-    return `${days} giorni`
+  const handleDelete = async () => {
+    if (!deleteTarget) return
+    setSaving(true)
+    try { await deleteTrip(deleteTarget.id); setTrips((p) => p.filter((x) => x.id !== deleteTarget.id)); setDelete(null) }
+    finally { setSaving(false) }
   }
 
   return (
-    <div style={{ fontFamily: "'Syne', sans-serif", minHeight: '100vh', background: '#0a0a0a', color: '#f5f0e8' }}>
-      <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Fraunces:ital,wght@0,300;0,400;1,300&display=swap" rel="stylesheet" />
-
-      <style>{`
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        ::selection { background: #e8c547; color: #0a0a0a; }
-
-        .hero {
-          position: relative;
-          height: 88vh;
-          display: flex;
-          flex-direction: column;
-          justify-content: flex-end;
-          padding: 0 5vw 8vh;
-          overflow: hidden;
-        }
-
-        .hero-bg {
-          position: absolute;
-          inset: 0;
-          background: 
-            radial-gradient(ellipse at 20% 50%, rgba(232, 197, 71, 0.12) 0%, transparent 60%),
-            radial-gradient(ellipse at 80% 20%, rgba(180, 120, 60, 0.08) 0%, transparent 50%),
-            #0a0a0a;
-        }
-
-        .hero-grid {
-          position: absolute;
-          inset: 0;
-          background-image: 
-            linear-gradient(rgba(245, 240, 232, 0.03) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(245, 240, 232, 0.03) 1px, transparent 1px);
-          background-size: 80px 80px;
-        }
-
-        .nav {
-          position: fixed;
-          top: 0; left: 0; right: 0;
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          padding: 28px 5vw;
-          z-index: 100;
-          mix-blend-mode: normal;
-        }
-
-        .nav-logo {
-          font-size: 22px;
-          font-weight: 800;
-          letter-spacing: -0.5px;
-          color: #f5f0e8;
-        }
-
-        .nav-logo span {
-          color: #e8c547;
-        }
-
-        .nav-links {
-          display: flex;
-          gap: 36px;
-          font-size: 13px;
-          font-weight: 600;
-          letter-spacing: 0.08em;
-          text-transform: uppercase;
-          color: rgba(245, 240, 232, 0.5);
-        }
-
-        .nav-links a {
-          text-decoration: none;
-          color: inherit;
-          transition: color 0.2s;
-          cursor: pointer;
-        }
-
-        .nav-links a:hover { color: #f5f0e8; }
-
-        .hero-eyebrow {
-          font-family: "'Fraunces', serif";
-          font-size: 13px;
-          font-weight: 300;
-          font-style: italic;
-          letter-spacing: 0.15em;
-          color: #e8c547;
-          margin-bottom: 20px;
-          position: relative;
-          z-index: 2;
-        }
-
-        .hero-title {
-          font-size: clamp(52px, 8vw, 110px);
-          font-weight: 800;
-          line-height: 0.92;
-          letter-spacing: -0.03em;
-          position: relative;
-          z-index: 2;
-          margin-bottom: 48px;
-        }
-
-        .hero-title .accent {
-          color: #e8c547;
-          font-style: italic;
-          font-family: "'Fraunces', serif";
-          font-weight: 300;
-        }
-
-        .search-bar {
-          display: flex;
-          align-items: center;
-          background: rgba(245, 240, 232, 0.06);
-          border: 1px solid rgba(245, 240, 232, 0.12);
-          backdrop-filter: blur(20px);
-          border-radius: 4px;
-          padding: 6px 6px 6px 28px;
-          max-width: 580px;
-          position: relative;
-          z-index: 2;
-          transition: border-color 0.2s;
-        }
-
-        .search-bar:focus-within {
-          border-color: rgba(232, 197, 71, 0.4);
-        }
-
-        .search-bar input {
-          flex: 1;
-          background: none;
-          border: none;
-          outline: none;
-          color: #f5f0e8;
-          font-family: "'Syne', sans-serif";
-          font-size: 15px;
-          font-weight: 600;
-          letter-spacing: 0.02em;
-        }
-
-        .search-bar input::placeholder {
-          color: rgba(245, 240, 232, 0.3);
-          font-weight: 400;
-        }
-
-        .search-btn {
-          background: #e8c547;
-          color: #0a0a0a;
-          border: none;
-          border-radius: 2px;
-          padding: 14px 28px;
-          font-family: "'Syne', sans-serif";
-          font-size: 12px;
-          font-weight: 700;
-          letter-spacing: 0.1em;
-          text-transform: uppercase;
-          cursor: pointer;
-          transition: background 0.2s, transform 0.1s;
-          white-space: nowrap;
-        }
-
-        .search-btn:hover { background: #f0d060; transform: translateY(-1px); }
-        .search-btn:active { transform: translateY(0); }
-
-        .section {
-          padding: 80px 5vw;
-        }
-
-        .section-header {
-          display: flex;
-          align-items: baseline;
-          justify-content: space-between;
-          margin-bottom: 48px;
-        }
-
-        .section-title {
-          font-size: 13px;
-          font-weight: 700;
-          letter-spacing: 0.12em;
-          text-transform: uppercase;
-          color: rgba(245, 240, 232, 0.4);
-        }
-
-        .trip-count {
-          font-family: "'Fraunces', serif";
-          font-size: 13px;
-          font-style: italic;
-          color: rgba(245, 240, 232, 0.3);
-        }
-
-        .trips-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-          gap: 2px;
-        }
-
-        .trip-card {
-          position: relative;
-          background: rgba(245, 240, 232, 0.03);
-          border: 1px solid rgba(245, 240, 232, 0.06);
-          padding: 36px;
-          cursor: pointer;
-          transition: background 0.3s, border-color 0.3s;
-          overflow: hidden;
-          min-height: 240px;
-          display: flex;
-          flex-direction: column;
-          justify-content: space-between;
-        }
-
-        .trip-card::before {
-          content: '';
-          position: absolute;
-          top: 0; left: 0;
-          width: 3px;
-          height: 0;
-          background: #e8c547;
-          transition: height 0.3s ease;
-        }
-
-        .trip-card:hover {
-          background: rgba(245, 240, 232, 0.05);
-          border-color: rgba(245, 240, 232, 0.12);
-        }
-
-        .trip-card:hover::before { height: 100%; }
-
-        .trip-destination {
-          font-size: 11px;
-          font-weight: 700;
-          letter-spacing: 0.15em;
-          text-transform: uppercase;
-          color: #e8c547;
-          margin-bottom: 12px;
-        }
-
-        .trip-title {
-          font-size: 26px;
-          font-weight: 700;
-          line-height: 1.1;
-          letter-spacing: -0.02em;
-          margin-bottom: 16px;
-          flex: 1;
-        }
-
-        .trip-meta {
-          display: flex;
-          align-items: center;
-          gap: 16px;
-          flex-wrap: wrap;
-        }
-
-        .trip-date {
-          font-family: "'Fraunces', serif";
-          font-size: 13px;
-          font-weight: 300;
-          font-style: italic;
-          color: rgba(245, 240, 232, 0.5);
-        }
-
-        .trip-duration {
-          font-size: 11px;
-          font-weight: 700;
-          letter-spacing: 0.08em;
-          text-transform: uppercase;
-          color: rgba(245, 240, 232, 0.3);
-          border: 1px solid rgba(245, 240, 232, 0.12);
-          padding: 3px 10px;
-          border-radius: 2px;
-        }
-
-        .trip-delete {
-          position: absolute;
-          top: 16px; right: 16px;
-          background: none;
-          border: 1px solid rgba(245, 240, 232, 0.1);
-          color: rgba(245, 240, 232, 0.3);
-          width: 28px; height: 28px;
-          border-radius: 2px;
-          cursor: pointer;
-          font-size: 14px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          opacity: 0;
-          transition: opacity 0.2s, color 0.2s, border-color 0.2s;
-        }
-
-        .trip-card:hover .trip-delete { opacity: 1; }
-        .trip-delete:hover { color: #ff6b6b; border-color: rgba(255, 107, 107, 0.3); }
-
-        .empty-state {
-          grid-column: 1 / -1;
-          padding: 80px 40px;
-          text-align: center;
-          border: 1px dashed rgba(245, 240, 232, 0.1);
-        }
-
-        .empty-state p {
-          font-family: "'Fraunces', serif";
-          font-size: 18px;
-          font-weight: 300;
-          font-style: italic;
-          color: rgba(245, 240, 232, 0.3);
-          margin-bottom: 24px;
-        }
-
-        .modal-overlay {
-          position: fixed;
-          inset: 0;
-          background: rgba(10, 10, 10, 0.85);
-          backdrop-filter: blur(8px);
-          z-index: 200;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          padding: 20px;
-        }
-
-        .modal {
-          background: #111;
-          border: 1px solid rgba(245, 240, 232, 0.1);
-          padding: 48px;
-          width: 100%;
-          max-width: 480px;
-        }
-
-        .modal-title {
-          font-size: 28px;
-          font-weight: 800;
-          letter-spacing: -0.02em;
-          margin-bottom: 8px;
-        }
-
-        .modal-subtitle {
-          font-family: "'Fraunces', serif";
-          font-size: 14px;
-          font-weight: 300;
-          font-style: italic;
-          color: rgba(245, 240, 232, 0.4);
-          margin-bottom: 36px;
-        }
-
-        .field {
-          margin-bottom: 20px;
-        }
-
-        .field label {
-          display: block;
-          font-size: 11px;
-          font-weight: 700;
-          letter-spacing: 0.12em;
-          text-transform: uppercase;
-          color: rgba(245, 240, 232, 0.4);
-          margin-bottom: 8px;
-        }
-
-        .field input {
-          width: 100%;
-          background: rgba(245, 240, 232, 0.04);
-          border: 1px solid rgba(245, 240, 232, 0.1);
-          color: #f5f0e8;
-          font-family: "'Syne', sans-serif";
-          font-size: 15px;
-          font-weight: 600;
-          padding: 14px 16px;
-          outline: none;
-          transition: border-color 0.2s;
-          border-radius: 2px;
-        }
-
-        .field input:focus { border-color: rgba(232, 197, 71, 0.5); }
-        .field input::placeholder { color: rgba(245, 240, 232, 0.2); font-weight: 400; }
-
-        .modal-actions {
-          display: flex;
-          gap: 12px;
-          margin-top: 32px;
-        }
-
-        .btn-primary {
-          flex: 1;
-          background: #e8c547;
-          color: #0a0a0a;
-          border: none;
-          padding: 16px;
-          font-family: "'Syne', sans-serif";
-          font-size: 12px;
-          font-weight: 700;
-          letter-spacing: 0.1em;
-          text-transform: uppercase;
-          cursor: pointer;
-          border-radius: 2px;
-          transition: background 0.2s;
-        }
-
-        .btn-primary:hover { background: #f0d060; }
-        .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
-
-        .btn-ghost {
-          background: none;
-          border: 1px solid rgba(245, 240, 232, 0.12);
-          color: rgba(245, 240, 232, 0.5);
-          padding: 16px 24px;
-          font-family: "'Syne', sans-serif";
-          font-size: 12px;
-          font-weight: 700;
-          letter-spacing: 0.1em;
-          text-transform: uppercase;
-          cursor: pointer;
-          border-radius: 2px;
-          transition: border-color 0.2s, color 0.2s;
-        }
-
-        .btn-ghost:hover { border-color: rgba(245, 240, 232, 0.3); color: #f5f0e8; }
-      `}</style>
-
-      {/* Nav */}
-      <nav className="nav">
-        <div className="nav-logo">wander<span>plan</span></div>
-        <div className="nav-links">
-          <a>Viaggi</a>
-          <a>Packing</a>
-          <a>Budget</a>
-        </div>
-      </nav>
+    <div style={{ minHeight: '100vh', background: 'var(--ivory)' }}>
+      <Navbar />
 
       {/* Hero */}
-      <div className="hero">
-        <div className="hero-bg" />
-        <div className="hero-grid" />
-        <div className="hero-eyebrow">il tuo pianificatore di viaggi</div>
-        <h1 className="hero-title">
-          Dove vuoi<br />
-          andare <span className="accent">dopo?</span>
-        </h1>
-        <div className="search-bar">
-          <input
-            type="text"
-            placeholder="Destinazione..."
-            value={destination}
-            onChange={e => setDestination(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && handleSearch()}
-          />
-          <button className="search-btn" onClick={handleSearch}>
-            Nuovo viaggio
+      <section className="hero noise">
+        <img src={HERO_IMAGES[heroIdx]} alt="hero" className="hero__img" />
+        <div className="hero__overlay" />
+        <div className="hero__content">
+          <p className="hero__eyebrow animate-fade-up">Your travel planner</p>
+          <h1 className="hero__title animate-fade-up delay-100">
+            Plan.<br /><em>Explore.</em>
+          </h1>
+          <p className="hero__sub animate-fade-up delay-200">
+            Organize every detail of your next trip in one place.
+          </p>
+          <button className="hero__cta animate-fade-up delay-300" onClick={() => setShowCreate(true)}>
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+              <circle cx="9" cy="9" r="8" stroke="currentColor" strokeWidth="1.5"/>
+              <path d="M9 5v8M5 9h8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+            </svg>
+            New Trip
           </button>
         </div>
-      </div>
+      </section>
 
       {/* Trips */}
-      <div className="section">
-        <div className="section-header">
-          <span className="section-title">I tuoi viaggi</span>
-          {trips.length > 0 && (
-            <span className="trip-count">{trips.length} {trips.length === 1 ? 'viaggio' : 'viaggi'}</span>
+      <section className="trips-section">
+        <div className="container">
+          <div className="trips-header">
+            <div>
+              <h2 className="trips-header__title">My Trips</h2>
+              {trips.length > 0 && (
+                <p className="trips-header__count">{trips.length} {trips.length === 1 ? 'trip' : 'trips'} saved</p>
+              )}
+            </div>
+            <button className="btn-primary" onClick={() => setShowCreate(true)}>
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                <path d="M6 1v10M1 6h10" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+              </svg>
+              Add Trip
+            </button>
+          </div>
+
+          {loading ? (
+            <div className="trips-grid">
+              {[1,2,3].map((i) => <div key={i} className="skeleton" style={{ height: 280 }} />)}
+            </div>
+          ) : trips.length === 0 ? (
+            <EmptyState onAdd={() => setShowCreate(true)} />
+          ) : (
+            <div className="trips-grid">
+              {trips.map((trip, i) => (
+                <TripCard
+                  key={trip.id} trip={trip} index={i}
+                  onClick={(t) => navigate(`/trips/${t.id}`)}
+                  onEdit={(t) => setEditTrip(t)}
+                  onDelete={(t) => setDelete(t)}
+                />
+              ))}
+            </div>
           )}
         </div>
+      </section>
 
-        {loading ? (
-          <div style={{ color: 'rgba(245,240,232,0.3)', fontStyle: 'italic', fontFamily: 'Fraunces, serif' }}>
-            Caricamento...
-          </div>
-        ) : (
-          <div className="trips-grid">
-            {trips.length === 0 ? (
-              <div className="empty-state">
-                <p>Nessun viaggio ancora. Dove vuoi andare?</p>
-                <button className="search-btn" onClick={() => setShowModal(true)}>
-                  Crea il primo viaggio
-                </button>
-              </div>
-            ) : (
-              trips.map(trip => (
-                <div
-                  key={trip.id}
-                  className="trip-card"
-                  onClick={() => navigate(`/trips/${trip.id}`)}
-                >
-                  <button
-                    className="trip-delete"
-                    onClick={e => handleDelete(e, trip.id)}
-                    title="Elimina viaggio"
-                  >
-                    ×
-                  </button>
-                  <div>
-                    {trip.destination && (
-                      <div className="trip-destination">{trip.destination}</div>
-                    )}
-                    <div className="trip-title">{trip.title}</div>
-                  </div>
-                  <div className="trip-meta">
-                    {trip.start_date && (
-                      <span className="trip-date">{formatDate(trip.start_date)}</span>
-                    )}
-                    {getDuration(trip.start_date, trip.end_date) && (
-                      <span className="trip-duration">{getDuration(trip.start_date, trip.end_date)}</span>
-                    )}
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        )}
-      </div>
+      <footer className="footer">Wanderplan — every trip is a story</footer>
 
-      {/* Modal */}
-      {showModal && (
-        <div className="modal-overlay" onClick={() => setShowModal(false)}>
-          <div className="modal" onClick={e => e.stopPropagation()}>
-            <div className="modal-title">Nuovo viaggio</div>
-            <div className="modal-subtitle">ogni grande avventura inizia con un nome</div>
-
-            <div className="field">
-              <label>Nome del viaggio *</label>
-              <input
-                type="text"
-                placeholder="es. Perù 2025"
-                value={form.title ?? ''}
-                onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
-                autoFocus
-              />
+      {/* Modals */}
+      {showCreate && (
+        <Modal title="New Trip" onClose={() => setShowCreate(false)}>
+          <TripForm onSubmit={handleCreate} loading={saving} />
+        </Modal>
+      )}
+      {editTrip && (
+        <Modal title="Edit Trip" onClose={() => setEditTrip(null)}>
+          <TripForm initial={editTrip} onSubmit={handleEdit} loading={saving} />
+        </Modal>
+      )}
+      {deleteTarget && (
+        <Modal title="Delete Trip" onClose={() => setDelete(null)} size="sm">
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ width: 56, height: 56, background: '#fee2e2', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" stroke="#9b2020" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
             </div>
-
-            <div className="field">
-              <label>Destinazione</label>
-              <input
-                type="text"
-                placeholder="es. Peru"
-                value={form.destination ?? destination}
-                onChange={e => setForm(f => ({ ...f, destination: e.target.value }))}
-              />
-            </div>
-
-            <div className="field">
-              <label>Data di partenza</label>
-              <input
-                type="date"
-                value={form.start_date ?? ''}
-                onChange={e => setForm(f => ({ ...f, start_date: e.target.value }))}
-              />
-            </div>
-
-            <div className="field">
-              <label>Data di ritorno</label>
-              <input
-                type="date"
-                value={form.end_date ?? ''}
-                onChange={e => setForm(f => ({ ...f, end_date: e.target.value }))}
-              />
-            </div>
-
-            <div className="modal-actions">
-              <button className="btn-ghost" onClick={() => setShowModal(false)}>
-                Annulla
-              </button>
-              <button
-                className="btn-primary"
-                onClick={handleCreate}
-                disabled={!form.title?.trim()}
-              >
-                Crea viaggio
+            <p style={{ fontWeight: 600, color: 'var(--charcoal)', marginBottom: 6 }}>Are you sure?</p>
+            <p style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: 24 }}>
+              You will delete <strong>{deleteTarget.title}</strong> and all associated data.
+            </p>
+            <div style={{ display: 'flex', gap: 12 }}>
+              <button className="btn-secondary" style={{ flex: 1, justifyContent: 'center' }} onClick={() => setDelete(null)}>Cancel</button>
+              <button className="btn-danger" style={{ flex: 1 }} onClick={handleDelete} disabled={saving}>
+                {saving ? 'Deleting...' : 'Delete'}
               </button>
             </div>
           </div>
-        </div>
+        </Modal>
       )}
     </div>
   )

@@ -147,4 +147,5 @@ uv run pytest
 
 # TODO:
 
-- look to sservices/tats_service.py for cross queries
+- attività per viaggio e non solo per giorno (cosi penso che a frontend vedrà anche attività)
+- quando imposto data di fine del viaggio o data di un attiivà mi porta nel peridoo giusto

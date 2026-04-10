@@ -1,12 +1,20 @@
 # backend/src/travel_planner/services/activity_service.py
 from uuid import UUID
 from sqlalchemy.orm import Session
-from travel_planner.db.models import Activity
+from travel_planner.db.models import Activity, Day
 from travel_planner.schemas import ActivityCreate, ActivityUpdate
 
 
 def get_all(db: Session) -> list[Activity]:
     return db.query(Activity).all()
+
+def get_all_by_trip(db: Session, trip_id: UUID) -> list[Activity]:
+    return (
+        db.query(Activity)
+        .join(Day, Activity.day_id == Day.id)
+        .filter(Day.trip_id == trip_id)
+        .all()
+    )
 
 def get_all_by_day(db: Session, day_id: UUID) -> list[Activity]:
     return db.query(Activity).filter(Activity.day_id == day_id).all()

@@ -3,30 +3,30 @@ import client from './client'
 import type { PackingItem, PackingItemCreate, PackingItemUpdate } from '../types'
 
 export const getPackingItems = async (tripId: string): Promise<PackingItem[]> => {
-  const { data } = await client.get(`/trips/${tripId}/packing-items`)
+  const { data } = await client.get(`/trips/${tripId}/packing_items`)
   return data
 }
 
 export const getPackingItem = async (tripId: string, itemId: string): Promise<PackingItem> => {
-  const { data } = await client.get(`/trips/${tripId}/packing-items/${itemId}`)
+  const { data } = await client.get(`/trips/${tripId}/packing_items/${itemId}`)
   return data
 }
 
 export const createPackingItem = async (tripId: string, item: PackingItemCreate): Promise<PackingItem> => {
-  const { data } = await client.post(`/trips/${tripId}/packing-items`, item)
+  const { data } = await client.post(`/trips/${tripId}/packing_items`, item)
   return data
 }
 
 export const updatePackingItem = async (tripId: string, itemId: string, item: PackingItemUpdate): Promise<PackingItem> => {
-  const { data } = await client.patch(`/trips/${tripId}/packing-items/${itemId}`, item)
+  const { data } = await client.patch(`/trips/${tripId}/packing_items/${itemId}`, item)
   return data
 }
 
 export const togglePackingItem = async (tripId: string, itemId: string): Promise<PackingItem> => {
-  const { data } = await client.patch(`/trips/${tripId}/packing-items/${itemId}/toggle`)
+  const { data } = await client.patch(`/trips/${tripId}/packing_items/${itemId}/toggle`)
   return data
 }
 
 export const deletePackingItem = async (tripId: string, itemId: string): Promise<void> => {
-  await client.delete(`/trips/${tripId}/packing-items/${itemId}`)
+  await client.delete(`/trips/${tripId}/packing_items/${itemId}`)
 }
