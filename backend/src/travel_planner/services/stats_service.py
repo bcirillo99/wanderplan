@@ -1,6 +1,8 @@
 # backend/src/travel_planner/services/stats_service.py
 from datetime import date
 from uuid import UUID
+from sqlalchemy import text
+from datetime import date as DateType
 from sqlalchemy.orm import Session
 from travel_planner.db.models import Trip, Flight, Transport, Accommodation, Activity, Expense
 
@@ -44,3 +46,15 @@ def get_date_cost_summary(db: Session, trip_id: UUID, activity_date: date) -> di
         "activities": total,
         "total": total,
     }
+
+def get_daily_summary(db: Session, trip_id: UUID, summary_date: DateType) -> list[dict]:
+    result = db.execute(
+        text("""
+            SELECT type, id, label, time, cost
+            FROM daily_summary
+            WHERE trip_id = :trip_id AND date = :date
+            ORDER BY time NULLS LAST
+        """),
+        {"trip_id": str(trip_id), "date": summary_date}
+    ).fetchall()
+    return [dict(row._mapping) for row in result]

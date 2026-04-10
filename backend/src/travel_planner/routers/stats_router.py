@@ -7,6 +7,8 @@ from travel_planner.db.session import get_db
 from travel_planner.services import trip_service
 from travel_planner.services import stats_service
 from travel_planner.services.stats_service import get_trip_cost_summary
+from datetime import date as DateType
+from travel_planner.schemas.daily_summary import DailySummaryItem
 
 router = APIRouter(prefix="/trips", tags=["stats"])
 
@@ -25,3 +27,11 @@ def date_stats(trip_id: UUID, activity_date: date, db: Session = Depends(get_db)
     if not trip:
         raise HTTPException(status_code=404, detail="Trip not found")
     return stats_service.get_date_cost_summary(db, trip_id, activity_date)
+
+
+@router.get("/{trip_id}/days/{summary_date}/summary", response_model=list[DailySummaryItem])
+def daily_summary(trip_id: UUID, summary_date: DateType, db: Session = Depends(get_db)):
+    trip = trip_service.get_by_id(db, trip_id)
+    if not trip:
+        raise HTTPException(status_code=404, detail="Trip not found")
+    return stats_service.get_daily_summary(db, trip_id, summary_date)
