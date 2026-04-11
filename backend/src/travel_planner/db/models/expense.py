@@ -16,7 +16,7 @@ class Expense(Base):
     trip_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("trips.id", ondelete="CASCADE"), nullable=False
     )
-    category: Mapped[ExpenseCategory | None] = mapped_column(SAEnum(ExpenseCategory), nullable=True)
+    category: Mapped[ExpenseCategory | None] = mapped_column(SAEnum(ExpenseCategory, values_callable=lambda x: [e.value for e in x]), nullable=True)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     amount: Mapped[float | None] = mapped_column(nullable=True)
     is_estimated: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)

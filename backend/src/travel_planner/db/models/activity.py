@@ -23,7 +23,7 @@ class Activity(Base):
     start_time: Mapped[time | None] = mapped_column(Time, nullable=True)
     end_time: Mapped[time | None] = mapped_column(Time, nullable=True)
     location: Mapped[str | None] = mapped_column(String(255), nullable=True)
-    status: Mapped[Status | None] = mapped_column(SAEnum(Status), nullable=True)
+    status: Mapped[Status | None] = mapped_column(SAEnum(Status, values_callable=lambda x: [e.value for e in x]), nullable=True)
     cost: Mapped[float | None] = mapped_column(nullable=True)
     pay_method: Mapped[str | None] = mapped_column(String(255), nullable=True)
     cancellation_date: Mapped[date | None] = mapped_column(Date, nullable=True)

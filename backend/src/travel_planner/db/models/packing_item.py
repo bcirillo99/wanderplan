@@ -18,7 +18,8 @@ class PackingItem(Base):
     )
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     category: Mapped[PackingCategory | None] = mapped_column(
-        SAEnum(PackingCategory), nullable=True
+        SAEnum(PackingCategory, values_callable=lambda x: [e.value for e in x]),
+        nullable=True
     )
     checked: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)

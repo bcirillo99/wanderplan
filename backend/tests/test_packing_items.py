@@ -44,7 +44,9 @@ def test_list_items_empty(client):
     trip = _create_trip(client)
     response = client.get(_items_url(trip["id"]))
     assert response.status_code == 200
-    assert response.json() == []
+    # not empty anymore — default items are created on trip creation
+    data = response.json()
+    assert len(data) == 41  # number of default items
 
 
 def test_list_items_returns_created_items(client):
@@ -62,13 +64,21 @@ def test_list_items_trip_not_found(client):
     response = client.get(_items_url("00000000-0000-0000-0000-000000000000"))
     assert response.status_code == 404
 
-
 def test_list_items_isolated_per_trip(client):
     trip1 = _create_trip(client)
     trip2 = _create_trip(client)
-    _create_item(client, trip1["id"])
+    _create_item(client, trip1["id"], name="Extra item")
 
-    assert client.get(_items_url(trip2["id"])).json() == []
+    items1 = client.get(_items_url(trip1["id"])).json()
+    items2 = client.get(_items_url(trip2["id"])).json()
+
+    # trip1 has default items + 1 extra
+    assert len(items1) == 42
+    # trip2 has only default items
+    assert len(items2) == 41
+    # extra item not in trip2
+    names2 = [i["name"] for i in items2]
+    assert "Extra item" not in names2
 
 
 # ---------------------------------------------------------------------------

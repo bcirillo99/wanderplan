@@ -24,7 +24,7 @@ class Flight(Base):
     airline: Mapped[str | None] = mapped_column(String(255), nullable=True)
     flight_number: Mapped[str | None] = mapped_column(String(20), nullable=True)
     baggage_included: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
-    status: Mapped[Status | None] = mapped_column(SAEnum(Status), nullable=True)
+    status: Mapped[Status | None] = mapped_column(SAEnum(Status, values_callable=lambda x: [e.value for e in x]), nullable=True)
     cost: Mapped[float | None] = mapped_column(nullable=True)
     pay_method: Mapped[str | None] = mapped_column(String(255), nullable=True)
     booking_reference: Mapped[str | None] = mapped_column(String(50), nullable=True)

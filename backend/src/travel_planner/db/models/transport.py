@@ -17,13 +17,13 @@ class Transport(Base):
     trip_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("trips.id", ondelete="CASCADE"), nullable=False
     )
-    transport_type: Mapped[TransportType | None] = mapped_column(SAEnum(TransportType), nullable=False)
+    transport_type: Mapped[TransportType | None] = mapped_column(SAEnum(TransportType, values_callable=lambda x: [e.value for e in x]), nullable=False)
     origin: Mapped[str] = mapped_column(String(255), nullable=False)
     destination: Mapped[str] = mapped_column(String(255), nullable=False)
     departure_time: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     arrival_time: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     status: Mapped[Status | None] = mapped_column(
-        SAEnum(Status), nullable=True
+        SAEnum(Status, values_callable=lambda x: [e.value for e in x]), nullable=True
     )
     cost: Mapped[float | None] = mapped_column(nullable=True)
     pay_method: Mapped[str | None] = mapped_column(String(255), nullable=True)

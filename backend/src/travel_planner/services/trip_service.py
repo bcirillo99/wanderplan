@@ -1,7 +1,9 @@
 # backend/src/travel_planner/services/trip_service.py
 from uuid import UUID
 from sqlalchemy.orm import Session
+from travel_planner.db.enums import DEFAULT_PACKING_ITEMS, PackingCategory
 from travel_planner.db.models import Trip
+from travel_planner.db.models.packing_item import PackingItem
 from travel_planner.schemas import TripCreate, TripUpdate
 
 
@@ -12,10 +14,21 @@ def get_all(db: Session) -> list[Trip]:
 def get_by_id(db: Session, trip_id: UUID) -> Trip | None:
     return db.get(Trip, trip_id)
 
-
 def create(db: Session, data: TripCreate) -> Trip:
-    trip = Trip(**data.model_dump())
+    dump = data.model_dump()
+    trip = Trip(**dump)
     db.add(trip)
+    db.flush()  # ottieni l'id prima del commit
+
+    for item in DEFAULT_PACKING_ITEMS:
+        packing_item = PackingItem(
+            trip_id=trip.id,
+            name=item["name"],
+            category=PackingCategory(item["category"]),
+            checked=False,
+        )
+        db.add(packing_item)
+
     db.commit()
     db.refresh(trip)
     return trip

@@ -3,6 +3,8 @@ Integration tests for /trips endpoints.
 """
 import pytest
 from fastapi.testclient import TestClient
+from travel_planner.services.trip_service import DEFAULT_PACKING_ITEMS
+
 
 
 TRIPS = "/trips/"
@@ -89,6 +91,22 @@ def test_create_trip_missing_title_rejected(client):
     response = client.post(TRIPS, json={"description": "No title here"})
     assert response.status_code == 422
 
+
+def test_create_trip_generates_default_packing_items(client):
+    trip = _create_trip(client)
+    r = client.get(f"/trips/{trip['id']}/packing_items/")
+    assert r.status_code == 200
+    items = r.json()
+    
+    expected_names = {i["name"] for i in DEFAULT_PACKING_ITEMS}
+    expected_categories = {i["category"] for i in DEFAULT_PACKING_ITEMS}
+    
+    actual_names = {i["name"] for i in items}
+    actual_categories = {i["category"] for i in items}
+    
+    assert expected_names.issubset(actual_names)
+    assert expected_categories.issubset(actual_categories)
+    assert len(items) == len(DEFAULT_PACKING_ITEMS)
 
 # ---------------------------------------------------------------------------
 # GET /trips/{trip_id}
