@@ -6,7 +6,16 @@ export type AccommodationType = 'hotel' | 'hostel' | 'airbnb' | 'lodge' | 'campi
 
 export type TransportType = 'train' | 'bus' | 'car' | 'shuttle' | 'ferry' | 'taxi' | 'other'
 
-export type PackingCategory = 'documents' | 'clothing' | 'medicine' | 'technology' | 'extras'
+export type PackingCategory =
+  | 'documents'
+  | 'clothing'
+  | 'medicine'
+  | 'technology'
+  | 'toiletries'
+  | 'accessories'
+  | 'food'
+  | 'comfort'
+  | 'extras'
 
 export type ExpenseCategory = 'accommodation' | 'transport' | 'activity' | 'food' | 'shopping' | 'other'
 
@@ -18,6 +27,7 @@ export interface Trip {
   end_date?: string | null
   destination?: string | null
   cover_image?: string | null
+  notes?: string | null
 }
 
 export interface Day {
@@ -30,8 +40,8 @@ export interface Day {
 
 export interface Activity {
   id: string
-  day_id: string
-  day_date?: string | null
+  trip_id: string
+  activity_date?: string | null
   title?: string | null
   description?: string | null
   start_time?: string | null
@@ -131,11 +141,19 @@ export interface TripStats {
   total: number
 }
 
+export interface DailySummaryItem {
+  type: 'activity' | 'flight' | 'transport' | 'accommodation'
+  id: string
+  label?: string | null
+  time?: string | null
+  cost?: number | null
+}
+
 // ---- Create types ----
 
 export type TripCreate = Omit<Trip, 'id'>
 export type DayCreate = Omit<Day, 'id' | 'trip_id'>
-export type ActivityCreate = Omit<Activity, 'id' | 'day_id'> & { day_date: string }
+export type ActivityCreate = Omit<Activity, 'id' | 'trip_id'> & { activity_date: string }
 export type FlightCreate = Omit<Flight, 'id' | 'trip_id'>
 export type AccommodationCreate = Omit<Accommodation, 'id' | 'trip_id' | 'total_cost'>
 export type TransportCreate = Omit<Transport, 'id' | 'trip_id'>
@@ -146,7 +164,7 @@ export type ExpenseCreate = Omit<Expense, 'id' | 'trip_id'>
 
 export type TripUpdate = Partial<Omit<Trip, 'id'>>
 export type DayUpdate = Partial<Omit<Day, 'id' | 'trip_id'>>
-export type ActivityUpdate = Partial<Omit<Activity, 'id' | 'day_id'>>
+export type ActivityUpdate = Partial<Omit<Activity, 'id' | 'trip_id'>>
 export type FlightUpdate = Partial<Omit<Flight, 'id' | 'trip_id'>>
 export type AccommodationUpdate = Partial<Omit<Accommodation, 'id' | 'trip_id' | 'total_cost'>>
 export type TransportUpdate = Partial<Omit<Transport, 'id' | 'trip_id'>>

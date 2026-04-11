@@ -5,7 +5,7 @@ from travel_planner.db.enums import PackingCategory
 
 # `checked` is intentionally excluded from Base and Update schemas.
 # Toggling a packing item is a dedicated action, not a generic field update.
-# Use PATCH /packing-items/{id}/toggle to flip the checked state.
+# Use PATCH /packingitems/{id}/toggle to flip the checked state.
 # This keeps the update endpoint clean and the toggle logic explicit.
 class PackingItemBase(BaseModel):
     name: str
