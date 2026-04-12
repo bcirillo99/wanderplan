@@ -241,7 +241,7 @@ export function AccommodationForm({ initial, onSubmit, loading, minDate, maxDate
       <button className="btn-primary" style={{ width: '100%', justifyContent: 'center' }}
         onClick={() => name && onSubmit({ name, accommodation_type: type as AccommodationType || null, address: address || null, location: null, check_in: checkIn || null, check_out: checkOut || null, cost_per_night: costPerNight ? parseFloat(costPerNight) : null, status, pay_method: null, cancellation_date: null, link: null, extra_details: null, booking_reference: ref || null, notes: null })}
         disabled={loading || !name}>
-        {loading ? 'Saving...' : 'Add Accommodation'}
+        {loading ? 'Saving...' : initial?.id ? 'Update Accommodation' : 'Add Accommodation'}
       </button>
     </div>
   )
@@ -289,7 +289,7 @@ export function FlightForm({ initial, onSubmit, loading, minDateTime, maxDateTim
       <button className="btn-primary" style={{ width: '100%', justifyContent: 'center' }}
         onClick={() => origin && dest && onSubmit({ origin, destination: dest, departure_time: dep || null, arrival_time: arr || null, airline: airline || null, flight_number: flightNo || null, cost: cost ? parseFloat(cost) : null, status, booking_reference: ref || null, baggage_included: null, pay_method: null, link: null, notes: null })}
         disabled={loading || !origin || !dest}>
-        {loading ? 'Saving...' : 'Add Flight'}
+        {loading ? 'Saving...' : initial?.id ? 'Update Flight' : 'Add Flight'}
       </button>
     </div>
   )

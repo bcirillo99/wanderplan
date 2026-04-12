@@ -409,15 +409,20 @@ select option {
 /* ── Item card ────────────────────────────────────── */
 .item-card { position: relative; background: #fff; border-radius: 16px; border: 1px solid var(--cream-dark); padding: 18px 20px; box-shadow: 0 1px 6px rgba(26,58,42,0.05); transition: box-shadow 0.2s; }
 .item-card:hover { box-shadow: 0 6px 24px rgba(26,58,42,0.10); }
-.item-card__delete {
+.item-card__actions {
   position: absolute; top: 12px; right: 12px;
+  display: flex; gap: 4px;
+  opacity: 0; transition: opacity 0.2s;
+}
+.item-card:hover .item-card__actions { opacity: 1; }
+.item-card__action {
   width: 28px; height: 28px; border-radius: 50%;
   border: none; background: transparent; cursor: pointer;
   display: flex; align-items: center; justify-content: center;
-  color: #d1d5db; opacity: 0; transition: opacity 0.2s, background 0.2s, color 0.2s;
+  color: #d1d5db; transition: background 0.2s, color 0.2s;
 }
-.item-card:hover .item-card__delete { opacity: 1; }
-.item-card__delete:hover { background: #fee2e2; color: #dc2626; }
+.item-card__action--edit:hover { background: #eff6ff; color: #3b82f6; }
+.item-card__action--delete:hover { background: #fee2e2; color: #dc2626; }
 
 /* ── Flight card ──────────────────────────────────── */
 .flight-route { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }

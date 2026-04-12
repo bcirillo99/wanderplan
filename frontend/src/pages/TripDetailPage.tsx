@@ -30,6 +30,16 @@ function fmtTime(d?: string | null) {
   if (!d) return '—'
   return new Date(d).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
 }
+function fmtDateTime(d?: string): string | null {
+  if (!d) return null;
+  return new Date(d).toLocaleString('en-US', { 
+    weekday: 'short',      // Lun
+    month: 'short',        // Apr
+    day: 'numeric',        // 12
+    hour: '2-digit',       // 14
+    minute: '2-digit'      // 30
+  });
+}
 
 // ── Tab types ─────────────────────────────────────────────────────────────────
 type Tab = 'days' | 'activities' | 'flights' | 'accommodations' | 'transports' | 'expenses' | 'packing' | 'stats'
@@ -66,15 +76,15 @@ function ItemCard({ children, onDelete, onEdit }: {
 }) {
   return (
     <div className="item-card">
-      <div style={{ display: 'flex', gap: 6 }}>
+      <div className="item-card__actions">
         {onEdit && (
-          <button className="item-card__delete" onClick={onEdit} title="Edit" style={{ color: '#6b7280' }}>
+          <button className="item-card__action item-card__action--edit" onClick={onEdit} title="Edit">
             <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
               <path d="M8 1.5l2.5 2.5-7 7H1v-2.5l7-7Z" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
           </button>
         )}
-        <button className="item-card__delete" onClick={onDelete} title="Delete">
+        <button className="item-card__action item-card__action--delete" onClick={onDelete} title="Delete">
           <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
             <path d="M1 1l9 9M10 1L1 10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
           </svg>
@@ -180,7 +190,7 @@ function ActivitiesTab({ activities, onAdd, onEdit, onDelete }: {
                           {activity.title || 'Untitled activity'}
                         </h4>
                         <StatusBadge status={activity.status} />
-                        {activity.start_time && <span style={{ fontSize: '0.8rem', color: '#6b7280' }}>{fmtTime(activity.start_time)}</span>}
+                        {activity.start_time && <span style={{ fontSize: '0.8rem', color: '#6b7280' }}>{fmtDateTime(activity.start_time)}</span>}
                         {activity.location && <span style={{ fontSize: '0.8rem', color: '#6b7280' }}>· {activity.location}</span>}
                         {activity.cost != null && <span style={{ fontSize: '0.8rem', color: '#6b7280' }}>· €{activity.cost.toFixed(2)}</span>}
                       </div>
@@ -216,7 +226,7 @@ function FlightsTab({ flights, onAdd, onEdit, onDelete }: {
               <div className="flight-route">
                 <div className="flight-airport">
                   <p className="flight-airport__code">{f.origin}</p>
-                  <p className="flight-airport__time">{fmtTime(f.departure_time)}</p>
+                  <p className="flight-airport__time">{fmtDateTime(f.departure_time)}</p>
                 </div>
                 <div className="flight-line">
                   <div className="flight-line__track">
@@ -228,11 +238,11 @@ function FlightsTab({ flights, onAdd, onEdit, onDelete }: {
                 </div>
                 <div className="flight-airport">
                   <p className="flight-airport__code">{f.destination}</p>
-                  <p className="flight-airport__time">{fmtTime(f.arrival_time)}</p>
+                  <p className="flight-airport__time">{fmtDateTime(f.arrival_time)}</p>
                 </div>
-                <StatusBadge status={f.status} />
               </div>
               <div className="flight-footer">
+                <StatusBadge status={f.status} />
                 {f.flight_number && <span>Flight: <strong>{f.flight_number}</strong></span>}
                 {f.booking_reference && <span>Ref: <strong>{f.booking_reference}</strong></span>}
                 {f.cost != null && <span className="flight-footer__cost">€ {f.cost.toFixed(2)}</span>}
@@ -259,18 +269,18 @@ function AccommodationsTab({ accommodations, onAdd, onEdit, onDelete }: {
         <div className="accom-grid">
           {accommodations.map((a) => (
             <ItemCard key={a.id} onDelete={() => onDelete(a.id)} onEdit={() => onEdit(a)}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
-                <div>
-                  <p style={{ fontWeight: 600, color: 'var(--forest)', marginBottom: 4 }}>{a.name}</p>
-                  {a.accommodation_type && (
-                    <span style={{
-                      fontSize: '0.72rem', background: 'var(--mist)',
-                      color: 'var(--forest-mid)', padding: '2px 8px',
-                      borderRadius: 20, textTransform: 'capitalize',
-                    }}>{a.accommodation_type}</span>
-                  )}
+              <div style={{ marginBottom: 10 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 4 }}>
+                  <p style={{ fontWeight: 600, color: 'var(--forest)', margin: 0 }}>{a.name}</p>
+                  <StatusBadge status={a.status} />
                 </div>
-                <StatusBadge status={a.status} />
+                {a.accommodation_type && (
+                  <span style={{
+                    fontSize: '0.72rem', background: 'var(--mist)',
+                    color: 'var(--forest-mid)', padding: '2px 8px',
+                    borderRadius: 20, textTransform: 'capitalize',
+                  }}>{a.accommodation_type}</span>
+                )}
               </div>
               <div style={{ fontSize: '0.78rem', color: '#6b7280', lineHeight: 1.8 }}>
                 {a.address && <p>📍 {a.address}</p>}
@@ -307,19 +317,19 @@ function TransportsTab({ transports, onAdd, onEdit, onDelete }: {
               <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
                 <span style={{ fontSize: '1.6rem' }}>{icons[t.transport_type] ?? '🚀'}</span>
                 <div style={{ flex: 1 }}>
-                  <p style={{ fontWeight: 600, color: 'var(--forest)' }}>{t.origin} → {t.destination}</p>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                    <p style={{ fontWeight: 600, color: 'var(--forest)', margin: 0 }}>{t.origin} → {t.destination}</p>
+                    <StatusBadge status={t.status} />
+                  </div>
                   <p style={{ fontSize: '0.75rem', color: '#9ca3af', marginTop: 2 }}>
-                    {fmtTime(t.departure_time)}{t.operator ? ` · ${t.operator}` : ''}
+                    {fmtDateTime(t.departure_time)}{t.operator ? ` · ${t.operator}` : ''}
                   </p>
                 </div>
-                <div style={{ textAlign: 'right' }}>
-                  <StatusBadge status={t.status} />
-                  {t.cost != null && (
-                    <p style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--forest)', marginTop: 4 }}>
-                      € {t.cost.toFixed(2)}
-                    </p>
-                  )}
-                </div>
+                {t.cost != null && (
+                  <p style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--forest)' }}>
+                    € {t.cost.toFixed(2)}
+                  </p>
+                )}
               </div>
             </ItemCard>
           ))}
