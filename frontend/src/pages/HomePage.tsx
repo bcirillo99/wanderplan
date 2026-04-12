@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Navbar from '../components/Navbar'
 import Modal from '../components/Modal'
-import FormField from '../components/FormField'
+import TripForm from '../components/forms/TripForm'
 import { getTrips, createTrip, updateTrip, deleteTrip } from '../api/trips'
 import type { Trip, TripCreate } from '../types'
 
@@ -87,39 +87,6 @@ function TripCard({ trip, index, onEdit, onDelete, onClick }: {
         <div className="trip-card__footer">View itinerary →</div>
       </div>
     </article>
-  )
-}
-
-// ── Trip Form ──────────────────────────────────────────────────────────────────
-function TripForm({ initial, onSubmit, loading }: {
-  initial?: Partial<TripCreate>; onSubmit: (d: TripCreate) => void; loading: boolean
-}) {
-  const [title, setTitle]       = useState(initial?.title ?? '')
-  const [destination, setDest]  = useState(initial?.destination ?? '')
-  const [description, setDesc]  = useState(initial?.description ?? '')
-  const [startDate, setStart]   = useState(initial?.start_date ?? '')
-  const [endDate, setEnd]       = useState(initial?.end_date ?? '')
-  const [coverImage, setCover]  = useState(initial?.cover_image ?? '')
-
-  return (
-    <div className="form-stack">
-      <FormField label="Trip Title" type="input" value={title} onChange={setTitle} placeholder="e.g. Japanese Adventure" required />
-      <FormField label="Destination" type="input" value={destination} onChange={setDest} placeholder="e.g. Tokyo, Kyoto" />
-      <div className="form-grid-2">
-        <FormField label="Start Date" type="input" inputType="date" value={startDate} onChange={setStart} max={endDate || undefined} required/>
-        <FormField label="End Date"   type="input" inputType="date" value={endDate}   onChange={setEnd} min={startDate || undefined} required />
-      </div>
-      <FormField label="Description" type="textarea" value={description} onChange={setDesc} placeholder="Trip notes..." rows={2} />
-      <FormField label="Cover Image URL" type="input" value={coverImage} onChange={setCover} placeholder="https://images.unsplash.com/..." />
-      <button
-        className="btn-primary"
-        style={{ width: '100%', justifyContent: 'center', marginTop: 8 }}
-        onClick={() => title.trim() && onSubmit({ title: title.trim(), destination: destination || null, description: description || null, start_date: startDate, end_date: endDate, cover_image: coverImage || null })}
-        disabled={loading || !title.trim() || !startDate || !endDate}
-      >
-        {loading ? 'Saving...' : 'Save Trip'}
-      </button>
-    </div>
   )
 }
 

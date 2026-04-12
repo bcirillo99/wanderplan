@@ -3,18 +3,13 @@ import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import Navbar from '../components/Navbar'
 import Modal from '../components/Modal'
-import FormField from '../components/FormField'
 import StatusBadge from '../components/StatusBadge'
 import { getTrip } from '../api/trips'
-import { getActivities, createActivity, updateActivity, deleteActivity } from '../api/activities'
+import { createActivity, updateActivity } from '../api/activities'
 import { getDailySummary } from '../api/daily_summary'
-import type { Trip, Activity, ActivityCreate, ActivityUpdate, Status, DailySummaryItem } from '../types'
+import type { Trip, Activity, ActivityCreate, DailySummaryItem } from '../types'
+import { ActivityForm } from '../components/forms/Forms'
 
-const STATUS_OPTIONS: { value: Status; label: string }[] = [
-  { value: 'draft', label: 'Draft' }, { value: 'to_book', label: 'To Book' },
-  { value: 'booked', label: 'Booked' }, { value: 'cancelled', label: 'Cancelled' },
-  { value: 'completed', label: 'Completed' },
-]
 
 function fmtDay(d?: string | null) {
   if (!d) return '—'
@@ -54,67 +49,6 @@ function SummaryItemCard({ item }: { item: DailySummaryItem }) {
             {item.cost != null && <span className="activity-card__cost">€ {item.cost.toFixed(2)}</span>}
           </div>
         </div>
-      </div>
-    </div>
-  )
-}
-
-// ── Activity Card ─────────────────────────────────────────────────────────────
-function ActivityCard({ activity, onView, onEdit, onDelete }: {
-  activity: Activity
-  onView: (a: Activity) => void
-  onEdit: (a: Activity) => void
-  onDelete: (id: string) => void
-}) {
-  return (
-    <div className="activity-card animate-fade-up">
-      <div className="activity-card__inner" style={{ cursor: 'pointer' }} onClick={() => onView(activity)}>
-        <div className="activity-card__time">
-          {activity.start_time ? (
-            <>
-              <p className="activity-card__time-start">{fmtTime(activity.start_time)}</p>
-              {activity.end_time && (
-                <>
-                  <div className="activity-card__time-div" />
-                  <p className="activity-card__time-end">{fmtTime(activity.end_time)}</p>
-                </>
-              )}
-            </>
-          ) : (
-            <div className="activity-card__dot" />
-          )}
-        </div>
-        <div className="activity-card__body">
-          <div className="activity-card__header">
-            <h4 className="activity-card__title">{activity.title ?? 'Untitled Activity'}</h4>
-            <StatusBadge status={activity.status} />
-          </div>
-          {activity.description && <p className="activity-card__desc">{activity.description}</p>}
-          <div className="activity-card__meta">
-            {activity.location && <span>📍 {activity.location}</span>}
-            {activity.cost != null && <span className="activity-card__cost">€ {activity.cost.toFixed(2)}</span>}
-            {activity.link && (
-              <a href={activity.link} target="_blank" rel="noopener noreferrer"
-                style={{ color: 'var(--forest-light)', textDecoration: 'none' }}
-                onClick={(e) => e.stopPropagation()}>
-                Link →
-              </a>
-            )}
-          </div>
-          {activity.notes && <p className="activity-card__notes">{activity.notes}</p>}
-        </div>
-      </div>
-      <div className="activity-card__actions">
-        <button className="activity-card__action" onClick={(e) => { e.stopPropagation(); onEdit(activity) }} title="Edit">
-          <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
-            <path d="M7.5 1L10 3.5 3.5 10H1V7.5L7.5 1z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round"/>
-          </svg>
-        </button>
-        <button className="activity-card__action activity-card__action--del" onClick={(e) => { e.stopPropagation(); onDelete(activity.id) }} title="Delete">
-          <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
-            <path d="M1 1l9 9M10 1L1 10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-          </svg>
-        </button>
       </div>
     </div>
   )
@@ -184,83 +118,6 @@ function ActivityDetailView({ activity, onEdit, onClose }: {
   )
 }
 
-// ── Activity Form ─────────────────────────────────────────────────────────────
-function ActivityForm({ initial, onSubmit, loading, showDayPicker, tripStartDate, tripEndDate }: {
-  initial?: Partial<Activity>
-  onSubmit: (d: ActivityCreate) => void
-  loading: boolean
-  showDayPicker?: boolean
-  tripStartDate?: string | null
-  tripEndDate?: string | null
-}) {
-  const [activityDate, setActivityDate] = useState(initial?.activity_date ?? '')
-  const [title, setTitle]               = useState(initial?.title ?? '')
-  const [description, setDesc]          = useState(initial?.description ?? '')
-  const [startTime, setStart]           = useState(initial?.start_time ?? '')
-  const [endTime, setEnd]               = useState(initial?.end_time ?? '')
-  const [location, setLocation]         = useState(initial?.location ?? '')
-  const [status, setStatus]             = useState<Status>(initial?.status ?? 'draft')
-  const [cost, setCost]                 = useState(initial?.cost?.toString() ?? '')
-  const [link, setLink]                 = useState(initial?.link ?? '')
-  const [notes, setNotes]               = useState(initial?.notes ?? '')
-
-  useEffect(() => {
-    if (initial) {
-      setActivityDate(initial.activity_date ?? '')
-      setTitle(initial.title ?? '')
-      setDesc(initial.description ?? '')
-      setStart(initial.start_time ?? '')
-      setEnd(initial.end_time ?? '')
-      setLocation(initial.location ?? '')
-      setStatus(initial.status ?? 'draft')
-      setCost(initial.cost?.toString() ?? '')
-      setLink(initial.link ?? '')
-      setNotes(initial.notes ?? '')
-    }
-  }, [initial])
-
-  return (
-    <div className="form-stack">
-      {showDayPicker && (
-        <FormField label="Date" type="input" inputType="date" value={activityDate} onChange={setActivityDate}
-          min={tripStartDate ?? undefined} max={tripEndDate ?? undefined} />
-      )}
-      <FormField label="Title" type="input" value={title} onChange={setTitle} placeholder="Visit to the Colosseum" />
-      <FormField label="Description" type="textarea" value={description} onChange={setDesc} rows={2} />
-      <div className="form-grid-2">
-        <FormField label="Start" type="input" inputType="time" value={startTime} onChange={setStart} />
-        <FormField label="End"   type="input" inputType="time" value={endTime}   onChange={setEnd} />
-      </div>
-      <div className="form-grid-2">
-        <FormField label="Location" type="input" value={location} onChange={setLocation} placeholder="Via Sacra, Rome" />
-        <FormField label="Cost (€)" type="input" inputType="number" value={cost} onChange={setCost} />
-      </div>
-      <FormField label="Status" type="select" value={status} onChange={(v) => setStatus(v as Status)} options={STATUS_OPTIONS} />
-      <FormField label="Link" type="input" value={link} onChange={setLink} placeholder="https://..." />
-      <FormField label="Notes" type="textarea" value={notes} onChange={setNotes} rows={2} />
-      <button className="btn-primary" style={{ width: '100%', justifyContent: 'center' }}
-        onClick={() => onSubmit({
-          activity_date: activityDate,
-          title: title || null,
-          description: description || null,
-          start_time: startTime || null,
-          end_time: endTime || null,
-          location: location || null,
-          status: status || null,
-          cost: cost ? parseFloat(cost) : null,
-          pay_method: null,
-          cancellation_date: null,
-          link: link || null,
-          notes: notes || null,
-        })}
-        disabled={loading}
-      >
-        {loading ? 'Saving...' : 'Save Activity'}
-      </button>
-    </div>
-  )
-}
-
 // ── Main Page ─────────────────────────────────────────────────────────────────
 export default function TripDayPage() {
   const { tripId, date } = useParams<{ tripId: string; date: string }>()
@@ -319,11 +176,6 @@ export default function TripDayPage() {
     } finally {
       setSaving(false)
     }
-  }
-
-  const handleDelete = async (id: string) => {
-    await deleteActivity(tripId, id)
-    await loadDaySummary()
   }
 
   const openEdit = (act: Activity) => {
@@ -393,10 +245,17 @@ export default function TripDayPage() {
       </main>
 
       {modal === 'add' && (
-        <Modal title="New Activity" onClose={() => setModal(null)} size="lg">
-          <ActivityForm loading={saving} onSubmit={handleAdd} />
-        </Modal>
-      )}
+      <Modal title="New Activity" onClose={() => setModal(null)} size="lg">
+        <ActivityForm
+          initial={{ activity_date: date }}
+          loading={saving}
+          onSubmit={handleAdd}
+          showDayPicker={false}
+          tripStartDate={trip?.start_date}
+          tripEndDate={trip?.end_date}
+        />
+      </Modal>
+    )}
       {modal === 'view' && viewTarget && (
         <Modal title="Activity Details" onClose={() => { setModal(null); setViewTarget(null) }} size="lg">
           <ActivityDetailView

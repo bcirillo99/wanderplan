@@ -15,20 +15,16 @@ import { getTripStats } from '../api/stats'
 import { getActivities, createActivity, deleteActivity } from '../api/activities'
 import type {
   Trip, Activity, Flight, Accommodation, Transport, Expense, PackingItem, TripStats,
-  Status, AccommodationType, TransportType, ExpenseCategory, PackingCategory,
-  ActivityCreate, FlightCreate, AccommodationCreate, TransportCreate, ExpenseCreate, PackingItemCreate,
+  Status, TransportType, ExpenseCategory, PackingCategory,
+  ActivityCreate, FlightCreate, TransportCreate, ExpenseCreate, PackingItemCreate,
 } from '../types'
+import ActivityForm from '../components/forms/ActivityForm'
+import AccommodationForm from '../components/forms/AccommodationForm'
 
 const STATUS_OPTIONS: { value: Status; label: string }[] = [
   { value: 'draft', label: 'Draft' }, { value: 'to_book', label: 'To Book' },
   { value: 'booked', label: 'Booked' }, { value: 'cancelled', label: 'Cancelled' },
   { value: 'completed', label: 'Completed' },
-]
-const ACCOM_TYPES: { value: AccommodationType; label: string }[] = [
-  { value: 'hotel', label: 'Hotel' }, { value: 'hostel', label: 'Hostel' },
-  { value: 'airbnb', label: 'Airbnb' }, { value: 'lodge', label: 'Lodge' },
-  { value: 'camping', label: 'Camping' }, { value: 'resort', label: 'Resort' },
-  { value: 'apartment', label: 'Apartment' }, { value: 'other', label: 'Other' },
 ]
 const TRANSPORT_TYPES: { value: TransportType; label: string }[] = [
   { value: 'train', label: 'Train' }, { value: 'bus', label: 'Bus' },
@@ -406,57 +402,6 @@ function StatsTab({ stats }: { stats: TripStats | null }) {
 }
 
 // ── ADD FORMS ─────────────────────────────────────────────────────────────────
-function AddActivityForm({ onSubmit, loading, minDate, maxDate }: {
-  onSubmit: (a: ActivityCreate) => void; loading: boolean; minDate?: string; maxDate?: string
-}) {
-  const [activityDate, setActivityDate] = useState('')
-  const [title, setTitle] = useState('')
-  const [description, setDescription] = useState('')
-  const [startTime, setStartTime] = useState('')
-  const [endTime, setEndTime] = useState('')
-  const [location, setLocation] = useState('')
-  const [status, setStatus] = useState<Status>('draft')
-  const [cost, setCost] = useState('')
-  const [link, setLink] = useState('')
-  const [notes, setNotes] = useState('')
-
-  return (
-    <div className="form-stack">
-      <FormField label="Date" type="input" inputType="date" value={activityDate} onChange={setActivityDate} required min={minDate} max={maxDate} />
-      <FormField label="Title" type="input" value={title} onChange={setTitle} placeholder="Walk along the waterfront" required />
-      <FormField label="Description" type="textarea" value={description} onChange={setDescription} rows={2} />
-      <div className="form-grid-2">
-        <FormField label="Start" type="input" inputType="time" value={startTime} onChange={setStartTime} />
-        <FormField label="End" type="input" inputType="time" value={endTime} onChange={setEndTime} />
-      </div>
-      <div className="form-grid-2">
-        <FormField label="Location" type="input" value={location} onChange={setLocation} placeholder="Malecon" />
-        <FormField label="Cost (€)" type="input" inputType="number" value={cost} onChange={setCost} />
-      </div>
-      <FormField label="Status" type="select" value={status} onChange={(v) => setStatus(v as Status)} options={STATUS_OPTIONS} />
-      <FormField label="Link" type="input" value={link} onChange={setLink} placeholder="https://..." />
-      <FormField label="Notes" type="textarea" value={notes} onChange={setNotes} rows={2} />
-      <button className="btn-primary" style={{ width: '100%', justifyContent: 'center' }}
-        onClick={() => onSubmit({
-          activity_date: activityDate,
-          title: title,
-          description: description || null,
-          start_time: startTime || null,
-          end_time: endTime || null,
-          location: location || null,
-          status: status || null,
-          cost: cost ? parseFloat(cost) : null,
-          pay_method: null,
-          cancellation_date: null,
-          link: link || null,
-          notes: notes || null,
-        })}
-        disabled={loading || !activityDate || !title}>
-        {loading ? 'Saving...' : 'Add Activity'}
-      </button>
-    </div>
-  )
-}
 
 function AddFlightForm({ onSubmit, loading, minDateTime, maxDateTime }: { onSubmit: (f: FlightCreate) => void; loading: boolean; minDateTime?: string; maxDateTime?: string }) {
   const [origin, setOrigin] = useState(''); const [dest, setDest] = useState('')
@@ -487,36 +432,6 @@ function AddFlightForm({ onSubmit, loading, minDateTime, maxDateTime }: { onSubm
         onClick={() => origin && dest && onSubmit({ origin, destination: dest, departure_time: dep || null, arrival_time: arr || null, airline: airline || null, flight_number: flightNo || null, cost: cost ? parseFloat(cost) : null, status, booking_reference: ref || null, baggage_included: null, pay_method: null, link: null, notes: null })}
         disabled={loading || !origin || !dest}>
         {loading ? 'Saving...' : 'Add Flight'}
-      </button>
-    </div>
-  )
-}
-
-function AddAccommodationForm({ onSubmit, loading, minDate, maxDate }: { onSubmit: (a: AccommodationCreate) => void; loading: boolean; minDate?: string; maxDate?: string }) {
-  const [name, setName] = useState(''); const [type, setType] = useState<AccommodationType | ''>('')
-  const [address, setAddress] = useState(''); const [checkIn, setCheckIn] = useState('')
-  const [checkOut, setCheckOut] = useState(''); const [costPerNight, setCost] = useState('')
-  const [status, setStatus] = useState<Status>('to_book'); const [ref, setRef] = useState('')
-  return (
-    <div className="form-stack">
-      <FormField label="Property Name" type="input" value={name} onChange={setName} placeholder="Hotel Negresco" required />
-      <div className="form-grid-2">
-        <FormField label="Type" type="select" value={type} onChange={(v) => setType(v as AccommodationType)} options={ACCOM_TYPES} />
-        <FormField label="Status" type="select" value={status} onChange={(v) => setStatus(v as Status)} options={STATUS_OPTIONS} />
-      </div>
-      <FormField label="Address" type="input" value={address} onChange={setAddress} placeholder="123 Main St" />
-      <div className="form-grid-2">
-        <FormField label="Check-in" type="input" inputType="date" value={checkIn} onChange={setCheckIn} min={minDate} max={maxDate} />
-        <FormField label="Check-out" type="input" inputType="date" value={checkOut} onChange={setCheckOut} min={checkIn || minDate} max={maxDate} />
-      </div>
-      <div className="form-grid-2">
-        <FormField label="Cost/Night (€)" type="input" inputType="number" value={costPerNight} onChange={setCost} />
-        <FormField label="Booking Ref" type="input" value={ref} onChange={setRef} placeholder="ABC123" />
-      </div>
-      <button className="btn-primary" style={{ width: '100%', justifyContent: 'center' }}
-        onClick={() => name && onSubmit({ name, accommodation_type: type as AccommodationType || null, address: address || null, location: null, check_in: checkIn || null, check_out: checkOut || null, cost_per_night: costPerNight ? parseFloat(costPerNight) : null, status, pay_method: null, cancellation_date: null, link: null, extra_details: null, booking_reference: ref || null, notes: null })}
-        disabled={loading || !name}>
-        {loading ? 'Saving...' : 'Add Accommodation'}
       </button>
     </div>
   )
@@ -737,7 +652,13 @@ export default function TripDetailPage() {
 
       {modal === 'activities' && (
         <Modal title="Add Activity" onClose={() => setModal(null)} size="lg">
-          <AddActivityForm loading={saving} minDate={trip?.start_date ?? undefined} maxDate={trip?.end_date ?? undefined} onSubmit={handleAddActivity} />
+          <ActivityForm
+            loading={saving}
+            onSubmit={handleAddActivity}
+            showDayPicker
+            tripStartDate={trip?.start_date}
+            tripEndDate={trip?.end_date}
+          />
         </Modal>
       )}
       {modal === 'flights' && (
@@ -748,7 +669,7 @@ export default function TripDetailPage() {
       )}
       {modal === 'accommodations' && (
         <Modal title="Add Accommodation" onClose={() => setModal(null)} size="lg">
-          <AddAccommodationForm loading={saving} minDate={trip?.start_date ?? undefined} maxDate={trip?.end_date ?? undefined}
+          <AccommodationForm loading={saving} minDate={trip?.start_date ?? undefined} maxDate={trip?.end_date ?? undefined}
             onSubmit={async (a) => { setSaving(true); try { const r = await createAccommodation(tripId, a); setAccommodations((p) => [...p, r]); setModal(null) } finally { setSaving(false) } }} />
         </Modal>
       )}

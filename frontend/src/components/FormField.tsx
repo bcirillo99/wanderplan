@@ -1,7 +1,7 @@
 // frontend/src/components/FormField.tsx
 
 interface BaseProps { label: string; required?: boolean }
-interface InputProps    extends BaseProps { type: 'input';    inputType?: string; value: string; onChange: (v: string) => void; placeholder?: string; min?: string; max?: string }
+interface InputProps    extends BaseProps { type: 'input';    inputType?: string; value: string; onChange: (v: string) => void; placeholder?: string; min?: string; max?: string; disabled?: boolean }
 interface TextareaProps extends BaseProps { type: 'textarea'; value: string; onChange: (v: string) => void; placeholder?: string; rows?: number }
 interface SelectProps   extends BaseProps { type: 'select';   value: string; onChange: (v: string) => void; options: { value: string; label: string }[] }
 
@@ -43,6 +43,7 @@ export default function FormField(props: FormFieldProps) {
           required={props.required}
           min={props.min}
           max={props.max}
+          disabled={props.disabled}
         />
       )}
     </div>
