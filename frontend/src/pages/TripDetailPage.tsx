@@ -1,10 +1,10 @@
 // frontend/src/pages/TripDetailPage.tsx
-import { useState, useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import Navbar from '../components/Navbar'
 import Modal from '../components/Modal'
 import StatusBadge from '../components/StatusBadge'
-import { getTrip } from '../api/trips'
+import { getTrip, updateTrip, deleteTrip } from '../api/trips'
 import { getFlights, createFlight, updateFlight, deleteFlight } from '../api/flights'
 import { getAccommodations, createAccommodation, updateAccommodation, deleteAccommodation } from '../api/accommodations'
 import { getTransports, createTransport, updateTransport, deleteTransport } from '../api/transports'
@@ -15,9 +15,10 @@ import { getActivities, createActivity, updateActivity, deleteActivity } from '.
 import type {
   Trip, Activity, Flight, Accommodation, Transport, Expense, PackingItem, TripStats,
   ActivityCreate, FlightCreate, AccommodationCreate, TransportCreate, ExpenseCreate, PackingItemCreate,
+  TripCreate,
 } from '../types'
 import {
-  ActivityForm, FlightForm, AccommodationForm, TransportForm, ExpenseForm, PackingForm,
+  ActivityForm, FlightForm, AccommodationForm, TransportForm, ExpenseForm, PackingForm, TripForm,
 } from '../components/forms/Forms'
 import { PACKING_CATS } from '../components/forms/tripOptions'
 
@@ -42,8 +43,9 @@ function fmtDateTime(d?: string): string | null {
 }
 
 // ── Tab types ─────────────────────────────────────────────────────────────────
-type Tab = 'days' | 'activities' | 'flights' | 'accommodations' | 'transports' | 'expenses' | 'packing' | 'stats'
+type Tab = 'summary' | 'days' | 'activities' | 'flights' | 'accommodations' | 'transports' | 'expenses' | 'packing' | 'stats'
 const TABS: { id: Tab; label: string; icon: string }[] = [
+  { id: 'summary',        label: 'Overview',       icon: '🗺️' },
   { id: 'days',           label: 'Days',           icon: '📅' },
   { id: 'activities',     label: 'Activities',     icon: '🗓️' },
   { id: 'flights',        label: 'Flights',        icon: '✈️' },
@@ -99,8 +101,274 @@ function TabEmpty({ msg }: { msg: string }) {
   return <div className="tab-empty">{msg}</div>
 }
 
-// ── DAYS ──────────────────────────────────────────────────────────────────────
+// ── SUMMARY ───────────────────────────────────────────────────────────────────
 const PREVIEW_LIMIT = 3
+
+type TodoItem = { icon: string; label: string; category: string }
+
+function SummaryTab({
+  trip, tripId, activities, flights, accommodations, transports, stats, dates,
+  onEditTrip, onDeleteTrip, onSaveNotes, savingNotes,
+}: {
+  trip: Trip | null; tripId: string
+  activities: Activity[]; flights: Flight[]
+  accommodations: Accommodation[]; transports: Transport[]
+  stats: TripStats | null; dates: string[]
+  onEditTrip: () => void; onDeleteTrip: () => void
+  onSaveNotes: (notes: string) => Promise<void>; savingNotes: boolean
+}) {
+  const navigate = useNavigate()
+  const [notes, setNotes] = useState(trip?.notes ?? '')
+  const [notesEditing, setNotesEditing] = useState(false)
+  const savedNotesRef = React.useRef(trip?.notes ?? '')
+
+  useEffect(() => {
+    setNotes(trip?.notes ?? '')
+    savedNotesRef.current = trip?.notes ?? ''
+  }, [trip?.notes])
+
+  const handleNotesBlur = async () => {
+    setNotesEditing(false)
+    if (notes !== savedNotesRef.current) {
+      savedNotesRef.current = notes
+      await onSaveNotes(notes)
+    }
+  }
+
+  // Activities grouped by date for the day strip
+  const byDate = activities.reduce<Record<string, Activity[]>>((acc, a) => {
+    if (!a.activity_date) return acc
+    if (!acc[a.activity_date]) acc[a.activity_date] = []
+    acc[a.activity_date].push(a)
+    return acc
+  }, {})
+  Object.values(byDate).forEach((list) =>
+    list.sort((a, b) => (!a.start_time ? 1 : !b.start_time ? -1 : a.start_time.localeCompare(b.start_time)))
+  )
+
+  // Things still to book
+  const todoItems: TodoItem[] = [
+    ...flights.filter((f) => f.status === 'to_book' || f.status === 'draft')
+      .map((f) => ({ icon: '✈️', label: `${f.origin} → ${f.destination}`, category: 'Flight' })),
+    ...accommodations.filter((a) => a.status === 'to_book' || a.status === 'draft')
+      .map((a) => ({ icon: '🏨', label: a.name, category: 'Accommodation' })),
+    ...activities.filter((a) => a.status === 'to_book' || a.status === 'draft')
+      .map((a) => ({ icon: '🗓️', label: a.title ?? 'Activity', category: 'Activity' })),
+    ...transports.filter((t) => t.status === 'to_book' || t.status === 'draft')
+      .map((t) => ({ icon: '🚌', label: `${t.origin} → ${t.destination}`, category: 'Transport' })),
+  ]
+
+  return (
+    <div>
+      {/* ── Trip actions ── */}
+      <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginBottom: 28 }}>
+        <button onClick={onEditTrip} style={{
+          display: 'flex', alignItems: 'center', gap: 6,
+          padding: '8px 16px', borderRadius: 10, border: '1.5px solid var(--forest)',
+          background: 'transparent', color: 'var(--forest)', cursor: 'pointer',
+          fontSize: '0.82rem', fontWeight: 600,
+        }}>
+          <svg width="13" height="13" viewBox="0 0 12 12" fill="none">
+            <path d="M8 1.5l2.5 2.5-7 7H1v-2.5l7-7Z" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+          Edit Trip
+        </button>
+        <button onClick={onDeleteTrip} style={{
+          display: 'flex', alignItems: 'center', gap: 6,
+          padding: '8px 16px', borderRadius: 10, border: '1.5px solid #fca5a5',
+          background: 'transparent', color: '#dc2626', cursor: 'pointer',
+          fontSize: '0.82rem', fontWeight: 600,
+        }}>
+          <svg width="13" height="13" viewBox="0 0 11 11" fill="none">
+            <path d="M1 1l9 9M10 1L1 10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+          </svg>
+          Delete Trip
+        </button>
+      </div>
+
+      {/* ── Main grid ── */}
+      <div className="summary-grid">
+
+        {/* Left column: Notes + To-do */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+
+          {/* Notes */}
+          <div className="summary-section">
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <p className="summary-section__title">📝 Trip Notes</p>
+              <button
+                onClick={() => setNotesEditing((v) => !v)}
+                style={{
+                  fontSize: '0.72rem', fontWeight: 600, color: 'var(--forest-mid)',
+                  background: 'var(--mist)', border: 'none', borderRadius: 8,
+                  padding: '3px 10px', cursor: 'pointer',
+                }}
+              >
+                {notesEditing ? 'Preview' : 'Edit'}
+              </button>
+            </div>
+
+            {notesEditing ? (
+              <textarea
+                className="form-control notes-textarea"
+                value={notes}
+                autoFocus
+                onChange={(e) => setNotes(e.target.value)}
+                onBlur={handleNotesBlur}
+                rows={7}
+                placeholder="Aggiungi note, promemoria, info importanti..."
+                style={{ resize: 'vertical', fontFamily: 'inherit', fontSize: '0.875rem' }}
+              />
+            ) : (
+              <div
+                className="notes-preview"
+                onClick={() => setNotesEditing(true)}
+                title="Click to edit"
+              >
+                {notes ? (
+                  notes.split('\n').map((line, i) => (
+                    line.trim() === ''
+                      ? <br key={i} />
+                      : <p key={i} style={{ margin: '0 0 4px', fontSize: '0.875rem', color: 'var(--charcoal)', lineHeight: 1.6 }}>
+                          {line}
+                        </p>
+                  ))
+                ) : (
+                  <p style={{ fontSize: '0.85rem', color: '#d1d5db', fontStyle: 'italic', margin: 0 }}>
+                    Click to add notes, reminders, important info...
+                  </p>
+                )}
+              </div>
+            )}
+
+            {savingNotes && (
+              <p style={{ fontSize: '0.7rem', color: 'var(--sage)', margin: 0, alignSelf: 'flex-end' }}>
+                Saving...
+              </p>
+            )}
+          </div>
+
+          {/* To-do */}
+          <div className="summary-section">
+            <p className="summary-section__title">
+              {todoItems.length === 0 ? '✅ All confirmed!' : `🔖 Still to book (${todoItems.length})`}
+            </p>
+            {todoItems.length === 0 ? (
+              <p style={{ fontSize: '0.85rem', color: 'var(--sage)', margin: 0 }}>
+                Everything is confirmed — you're good to go!
+              </p>
+            ) : (
+              <div style={{
+                display: 'flex', flexDirection: 'column', gap: 8,
+                maxHeight: 220, overflowY: 'auto',
+                paddingRight: 4,
+              }}>
+                {todoItems.map((item, i) => (
+                  <div key={i} style={{
+                    display: 'flex', alignItems: 'center', gap: 10,
+                    padding: '8px 12px', background: 'var(--ivory)', borderRadius: 10,
+                    flexShrink: 0,
+                  }}>
+                    <span style={{ fontSize: '1rem' }}>{item.icon}</span>
+                    <div>
+                      <p style={{ fontSize: '0.82rem', fontWeight: 500, color: 'var(--forest)', margin: 0 }}>{item.label}</p>
+                      <p style={{ fontSize: '0.7rem', color: 'var(--sage)', margin: 0 }}>{item.category}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Right column: Budget */}
+        <div className="summary-section">
+          <p className="summary-section__title">💰 Budget Summary</p>
+          {!stats ? (
+            <p style={{ fontSize: '0.85rem', color: 'var(--sage)' }}>Loading...</p>
+          ) : (
+            <>
+              <div style={{
+                background: 'var(--forest)', borderRadius: 14,
+                padding: '16px 18px', marginBottom: 16,
+              }}>
+                <p style={{ fontSize: '0.72rem', color: 'var(--mint)', margin: '0 0 4px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Total Estimated</p>
+                <p style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.9rem', fontWeight: 700, color: '#fff', margin: 0 }}>
+                  € {stats.total.toFixed(2)}
+                </p>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                {[
+                  { icon: '✈️', label: 'Flights',        value: stats.flights },
+                  { icon: '🏨', label: 'Accommodations', value: stats.accommodation },
+                  { icon: '🚌', label: 'Transports',     value: stats.transport },
+                  { icon: '🗓️', label: 'Activities',     value: stats.activities },
+                  { icon: '💰', label: 'Expenses',       value: stats.expenses },
+                ].map((row) => (
+                  <div key={row.label} style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    padding: '10px 0', borderBottom: '1px solid var(--cream-dark)',
+                  }}>
+                    <span style={{ fontSize: '0.82rem', color: 'var(--forest-mid)' }}>{row.icon} {row.label}</span>
+                    <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--forest)' }}>€ {row.value.toFixed(2)}</span>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* ── Day strip ── */}
+      <div style={{ marginTop: 12 }}>
+        <p className="summary-section__title" style={{ marginBottom: 14 }}>📅 Days</p>
+        {dates.length === 0 ? (
+          <p style={{ fontSize: '0.85rem', color: 'var(--sage)' }}>Set trip start/end dates to see days here</p>
+        ) : (
+          <div className="day-strip">
+            {dates.map((date) => {
+              const dayActs = byDate[date] ?? []
+              const preview = dayActs.slice(0, PREVIEW_LIMIT)
+              const extra = dayActs.length - PREVIEW_LIMIT
+              return (
+                <div key={date} className="day-strip__card" onClick={() => navigate(`/trips/${tripId}/days/${date}`)}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+                    <div style={{
+                      width: 30, height: 30, borderRadius: '50%', background: 'var(--mist)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontWeight: 700, fontSize: '0.78rem', color: 'var(--forest)', flexShrink: 0,
+                    }}>
+                      {new Date(date).getDate()}
+                    </div>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--forest-mid)', fontWeight: 600 }}>{fmt(date)}</span>
+                  </div>
+                  {preview.length === 0 ? (
+                    <p style={{ fontSize: '0.7rem', color: '#d1d5db', fontStyle: 'italic', margin: 0 }}>No activities</p>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                      {preview.map((a) => (
+                        <div key={a.id} style={{ display: 'flex', alignItems: 'baseline', gap: 5 }}>
+                          <span style={{ width: 4, height: 4, borderRadius: '50%', background: 'var(--forest-light)', flexShrink: 0, marginTop: 2, display: 'inline-block' }} />
+                          <span style={{ fontSize: '0.7rem', color: 'var(--forest-mid)', lineHeight: 1.4 }}>
+                            {a.start_time && <span style={{ color: '#9ca3af', marginRight: 3 }}>{a.start_time.slice(0, 5)}</span>}
+                            {a.title ?? 'Untitled'}
+                          </span>
+                        </div>
+                      ))}
+                      {extra > 0 && <p style={{ fontSize: '0.68rem', color: '#9ca3af', margin: '1px 0 0 9px' }}>+{extra} more</p>}
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// ── DAYS ──────────────────────────────────────────────────────────────────────
 
 function DaysTab({ tripId, dates, activities }: {
   tripId: string
@@ -538,13 +806,15 @@ function StatsTab({ stats }: { stats: TripStats | null }) {
 type ModalType =
   | 'add-activity' | 'add-flight' | 'add-accommodation' | 'add-transport' | 'add-expense' | 'add-packing'
   | 'edit-activity' | 'edit-flight' | 'edit-accommodation' | 'edit-transport'
+  | 'edit-trip' | 'confirm-delete'
   | null
 
 export default function TripDetailPage() {
   const { tripId } = useParams<{ tripId: string }>()
+  const navigate = useNavigate()
 
   // ── Data state ──
-  const [tab, setTab] = useState<Tab>('days')
+  const [tab, setTab] = useState<Tab>('summary')
   const [trip, setTrip] = useState<Trip | null>(null)
   const [activities, setActivities] = useState<Activity[]>([])
   const [flights, setFlights] = useState<Flight[]>([])
@@ -557,6 +827,7 @@ export default function TripDetailPage() {
   // ── UI state ──
   const [modal, setModal] = useState<ModalType>(null)
   const [saving, setSaving] = useState(false)
+  const [savingNotes, setSavingNotes] = useState(false)
   const [loading, setLoading] = useState(true)
 
   // ── Edit targets ──
@@ -729,6 +1000,31 @@ export default function TripDetailPage() {
     setPackingItems((p) => p.map((i) => i.id === id ? updated : i))
   }
 
+  // ── Trip-level handlers ──
+  const handleSaveNotes = async (notes: string) => {
+    if (!tripId) return
+    setSavingNotes(true)
+    try {
+      const r = await updateTrip(tripId, { notes })
+      setTrip(r)
+    } finally { setSavingNotes(false) }
+  }
+
+  const handleUpdateTrip = async (data: TripCreate) => {
+    if (!tripId) return
+    setSaving(true)
+    try {
+      const r = await updateTrip(tripId, data)
+      setTrip(r); setModal(null)
+    } finally { setSaving(false) }
+  }
+
+  const handleDeleteTrip = async () => {
+    if (!tripId) return
+    await deleteTrip(tripId)
+    navigate('/')
+  }
+
   // ── Header helpers ──
   const fmtLong = (d?: string | null) => {
     if (!d) return ''
@@ -792,6 +1088,23 @@ export default function TripDetailPage() {
 
       {/* Tab content */}
       <main className="container" style={{ paddingTop: 32, paddingBottom: 64 }}>
+        {tab === 'summary' && (
+          <SummaryTab
+            trip={trip}
+            tripId={tripId}
+            activities={activities}
+            flights={flights}
+            accommodations={accommodations}
+            transports={transports}
+            stats={stats}
+            dates={uniqueDates}
+            onEditTrip={() => setModal('edit-trip')}
+            onDeleteTrip={() => setModal('confirm-delete')}
+            onSaveNotes={handleSaveNotes}
+            savingNotes={savingNotes}
+          />
+        )}
+
         {tab === 'days' && <DaysTab tripId={tripId} dates={uniqueDates} activities={activities} />}
 
         {tab === 'activities' && (
@@ -955,6 +1268,44 @@ export default function TripDetailPage() {
             minDateTime={tripMin}
             maxDateTime={tripMax}
           />
+        </Modal>
+      )}
+
+      {modal === 'edit-trip' && (
+        <Modal title="Edit Trip" onClose={closeModal}>
+          <TripForm initial={trip ?? undefined} onSubmit={handleUpdateTrip} loading={saving} />
+        </Modal>
+      )}
+
+      {modal === 'confirm-delete' && (
+        <Modal title="Delete Trip" onClose={closeModal} size="sm">
+          <div style={{ textAlign: 'center' }}>
+            <div style={{
+              width: 56, height: 56, background: '#fee2e2', borderRadius: '50%',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px',
+            }}>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" stroke="#9b2020" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </div>
+            <p style={{ fontWeight: 600, color: 'var(--charcoal)', marginBottom: 6 }}>Delete this trip?</p>
+            <p style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: 24 }}>
+              <strong>{trip?.title}</strong> and all associated data will be permanently removed.
+            </p>
+            <div style={{ display: 'flex', gap: 12 }}>
+              <button
+                className="btn-secondary"
+                style={{ flex: 1, justifyContent: 'center' }}
+                onClick={closeModal}
+              >Cancel</button>
+              <button
+                className="btn-danger"
+                style={{ flex: 1 }}
+                onClick={handleDeleteTrip}
+                disabled={saving}
+              >Delete</button>
+            </div>
+          </div>
         </Modal>
       )}
     </div>
