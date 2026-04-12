@@ -19,7 +19,7 @@ TRIPS = "/trips/"
 # ---------------------------------------------------------------------------
 
 def _create_trip(client: TestClient, **kwargs) -> dict:
-    payload = {"title": "Packing Test Trip", **kwargs}
+    payload = {"title": "Packing Test Trip", "start_date": "2025-07-01", "end_date": "2025-07-15", **kwargs}
     response = client.post(TRIPS, json=payload)
     assert response.status_code == 201
     return response.json()

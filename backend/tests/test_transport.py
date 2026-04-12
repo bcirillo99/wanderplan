@@ -21,7 +21,7 @@ VALID_TRANSPORT_TYPES = ("train", "bus", "car", "ferry", "taxi", "other")
 # ---------------------------------------------------------------------------
 
 def _create_trip(client: TestClient, **kwargs) -> dict:
-    payload = {"title": "Transport Test Trip", **kwargs}
+    payload = {"title": "Transport Test Trip", "start_date": "2025-07-01", "end_date": "2025-07-15", **kwargs}
     r = client.post(TRIPS, json=payload)
     assert r.status_code == 201
     return r.json()

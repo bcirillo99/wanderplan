@@ -7,8 +7,8 @@ from pydantic import BaseModel, field_validator
 class TripBase(BaseModel):
     title: str
     description: str | None = None
-    start_date: date | None = None
-    end_date: date | None = None
+    start_date: date
+    end_date: date
     destination: str | None = None
     cover_image: str | None = None
 

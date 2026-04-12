@@ -19,7 +19,7 @@ VALID_STATUSES = ("draft", "to_book", "booked", "cancelled", "completed")
 # ---------------------------------------------------------------------------
 
 def _create_trip(client: TestClient, **kwargs) -> dict:
-    payload = {"title": "Flight Test Trip", **kwargs}
+    payload = {"title": "Flight Test Trip", "start_date": "2025-07-01", "end_date": "2025-07-15", **kwargs}
     r = client.post(TRIPS, json=payload)
     assert r.status_code == 201
     return r.json()

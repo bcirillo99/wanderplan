@@ -11,7 +11,7 @@ TRIPS = "/trips/"
 
 
 def _create_trip(client: TestClient, **kwargs) -> dict:
-    payload = {"title": "Test Trip", **kwargs}
+    payload = {"title": "Test Trip", "start_date": "2025-07-01", "end_date": "2025-07-15", **kwargs}
     response = client.post(TRIPS, json=payload)
     assert response.status_code == 201
     return response.json()
@@ -43,7 +43,7 @@ def test_list_trips_returns_all(client):
 # ---------------------------------------------------------------------------
 
 def test_create_trip_minimal(client):
-    response = client.post(TRIPS, json={"title": "My Trip"})
+    response = client.post(TRIPS, json={"title": "My Trip", "start_date": "2025-07-01", "end_date": "2025-07-15"})
     assert response.status_code == 201
     data = response.json()
     assert data["title"] == "My Trip"

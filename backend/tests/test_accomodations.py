@@ -22,7 +22,7 @@ VALID_ACCOMMODATION_TYPES = ("hotel", "airbnb", "hostel", "resort", "other")
 # ---------------------------------------------------------------------------
 
 def _create_trip(client: TestClient, **kwargs) -> dict:
-    payload = {"title": "Accommodation Test Trip", **kwargs}
+    payload = {"title": "Accommodation Test Trip", "start_date": "2025-07-01", "end_date": "2025-07-15", **kwargs}
     r = client.post(TRIPS, json=payload)
     assert r.status_code == 201
     return r.json()
