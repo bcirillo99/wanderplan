@@ -23,8 +23,8 @@ export interface Trip {
   id: string
   title: string
   description?: string | null
-  start_date?: string | null
-  end_date?: string | null
+  start_date: string | null
+  end_date: string | null
   destination?: string | null
   cover_image?: string | null
   notes?: string | null

@@ -423,7 +423,7 @@ function AddActivityForm({ onSubmit, loading, minDate, maxDate }: {
   return (
     <div className="form-stack">
       <FormField label="Date" type="input" inputType="date" value={activityDate} onChange={setActivityDate} required min={minDate} max={maxDate} />
-      <FormField label="Title" type="input" value={title} onChange={setTitle} placeholder="Walk along the waterfront" />
+      <FormField label="Title" type="input" value={title} onChange={setTitle} placeholder="Walk along the waterfront" required />
       <FormField label="Description" type="textarea" value={description} onChange={setDescription} rows={2} />
       <div className="form-grid-2">
         <FormField label="Start" type="input" inputType="time" value={startTime} onChange={setStartTime} />
@@ -439,7 +439,7 @@ function AddActivityForm({ onSubmit, loading, minDate, maxDate }: {
       <button className="btn-primary" style={{ width: '100%', justifyContent: 'center' }}
         onClick={() => onSubmit({
           activity_date: activityDate,
-          title: title || null,
+          title: title,
           description: description || null,
           start_time: startTime || null,
           end_time: endTime || null,
@@ -559,7 +559,7 @@ function AddExpenseForm({ onSubmit, loading }: { onSubmit: (e: ExpenseCreate) =>
   const [currency, setCurrency] = useState('EUR'); const [isEstimated, setIsEstimated] = useState(false)
   return (
     <div className="form-stack">
-      <FormField label="Description" type="input" value={desc} onChange={setDesc} placeholder="Restaurant dinner" />
+      <FormField label="Description" type="input" value={desc} onChange={setDesc} placeholder="Restaurant dinner" required/>
       <div className="form-grid-2">
         <FormField label="Amount" type="input" inputType="number" value={amount} onChange={setAmount} required />
         <FormField label="Currency" type="input" value={currency} onChange={setCurrency} placeholder="EUR" />
@@ -570,8 +570,8 @@ function AddExpenseForm({ onSubmit, loading }: { onSubmit: (e: ExpenseCreate) =>
         Estimated Amount
       </label>
       <button className="btn-primary" style={{ width: '100%', justifyContent: 'center' }}
-        onClick={() => amount && onSubmit({ description: desc || null, amount: parseFloat(amount), category: category as ExpenseCategory || null, currency: currency || null, is_estimated: isEstimated, actual_amount: null, notes: null })}
-        disabled={loading || !amount}>
+        onClick={() => amount && onSubmit({ description: desc.trim() , amount: parseFloat(amount), category: category as ExpenseCategory || null, currency: currency || null, is_estimated: isEstimated, actual_amount: null, notes: null })}
+        disabled={loading || !amount || !desc.trim()}>
         {loading ? 'Saving...' : 'Add Expense'}
       </button>
     </div>
@@ -623,9 +623,17 @@ export default function TripDetailPage() {
   }, [tripId])
 
   // derive unique dates from activities
-  const uniqueDates = [...new Set(
-    activities.map(a => a.activity_date).filter(Boolean)
-  )].sort() as string[]
+  //const uniqueDates = // Generate all dates from trip.start_date to trip.end_date
+  const uniqueDates = trip?.start_date && trip?.end_date ? (() => {
+    const dates: string[] = []
+    const current = new Date(trip.start_date)
+    const end = new Date(trip.end_date)
+    while (current <= end) {
+      dates.push(current.toISOString().split('T')[0])
+      current.setDate(current.getDate() + 1)
+    }
+    return dates
+  })() : []
 
   const handleAddActivity = async (activity: ActivityCreate) => {
     if (!tripId) return
