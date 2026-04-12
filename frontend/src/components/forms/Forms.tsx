@@ -5,7 +5,7 @@ import type {
   Activity, ActivityCreate,
   Accommodation, AccommodationCreate,
   Flight, FlightCreate,
-  TransportCreate,
+  Transport, TransportCreate,
   ExpenseCreate,
   PackingItemCreate,
   TripCreate,
@@ -297,21 +297,35 @@ export function FlightForm({ initial, onSubmit, loading, minDateTime, maxDateTim
 
 // ── TransportForm ─────────────────────────────────────────────────────────────
 type TransportFormProps = {
+  initial?: Partial<Transport>
   onSubmit: (data: TransportCreate) => void
   loading: boolean
   minDateTime?: string
   maxDateTime?: string
 }
 
-export function TransportForm({ onSubmit, loading, minDateTime, maxDateTime }: TransportFormProps) {
-  const [type, setType]         = useState<TransportType>('train')
-  const [origin, setOrigin]     = useState('')
-  const [dest, setDest]         = useState('')
-  const [dep, setDep]           = useState('')
-  const [arr, setArr]           = useState('')
-  const [operator, setOperator] = useState('')
-  const [cost, setCost]         = useState('')
-  const [status, setStatus]     = useState<Status>('to_book')
+export function TransportForm({ initial, onSubmit, loading, minDateTime, maxDateTime }: TransportFormProps) {
+  const [type, setType]         = useState<TransportType>(initial?.transport_type ?? 'train')
+  const [origin, setOrigin]     = useState(initial?.origin ?? '')
+  const [dest, setDest]         = useState(initial?.destination ?? '')
+  const [dep, setDep]           = useState(initial?.departure_time ?? '')
+  const [arr, setArr]           = useState(initial?.arrival_time ?? '')
+  const [operator, setOperator] = useState(initial?.operator ?? '')
+  const [cost, setCost]         = useState(initial?.cost?.toString() ?? '')
+  const [status, setStatus]     = useState<Status>(initial?.status ?? 'to_book')
+
+  useEffect(() => {
+    if (initial) {
+      setType(initial.transport_type ?? 'train')
+      setOrigin(initial.origin ?? '')
+      setDest(initial.destination ?? '')
+      setDep(initial.departure_time ?? '')
+      setArr(initial.arrival_time ?? '')
+      setOperator(initial.operator ?? '')
+      setCost(initial.cost?.toString() ?? '')
+      setStatus(initial.status ?? 'to_book')
+    }
+  }, [initial])
 
   return (
     <div className="form-stack">
@@ -332,7 +346,7 @@ export function TransportForm({ onSubmit, loading, minDateTime, maxDateTime }: T
       <button className="btn-primary" style={{ width: '100%', justifyContent: 'center' }}
         onClick={() => origin && dest && onSubmit({ transport_type: type, origin, destination: dest, departure_time: dep || null, arrival_time: arr || null, operator: operator || null, cost: cost ? parseFloat(cost) : null, status, pay_method: null, link: null, booking_reference: null, extra_details: null, notes: null })}
         disabled={loading || !origin || !dest}>
-        {loading ? 'Saving...' : 'Add Transport'}
+        {loading ? 'Saving...' : initial?.id ? 'Update Transport' : 'Add Transport'}
       </button>
     </div>
   )

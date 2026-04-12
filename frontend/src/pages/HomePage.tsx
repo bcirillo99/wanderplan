@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Navbar from '../components/Navbar'
 import Modal from '../components/Modal'
-import TripForm from '../components/forms/TripForm'
+import { TripForm } from '../components/forms/Forms'
 import { getTrips, createTrip, updateTrip, deleteTrip } from '../api/trips'
 import type { Trip, TripCreate } from '../types'
 

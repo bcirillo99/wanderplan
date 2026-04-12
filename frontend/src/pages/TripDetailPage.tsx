@@ -3,51 +3,25 @@ import { useState, useEffect } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import Navbar from '../components/Navbar'
 import Modal from '../components/Modal'
-import FormField from '../components/FormField'
 import StatusBadge from '../components/StatusBadge'
 import { getTrip } from '../api/trips'
-import { getFlights, createFlight, deleteFlight } from '../api/flights'
-import { getAccommodations, createAccommodation, deleteAccommodation } from '../api/accommodations'
-import { getTransports, createTransport, deleteTransport } from '../api/transports'
+import { getFlights, createFlight, updateFlight, deleteFlight } from '../api/flights'
+import { getAccommodations, createAccommodation, updateAccommodation, deleteAccommodation } from '../api/accommodations'
+import { getTransports, createTransport, updateTransport, deleteTransport } from '../api/transports'
 import { getExpenses, createExpense, deleteExpense } from '../api/expenses'
 import { getPackingItems, createPackingItem, deletePackingItem, togglePackingItem } from '../api/packing_items'
 import { getTripStats } from '../api/stats'
-import { getActivities, createActivity, deleteActivity } from '../api/activities'
+import { getActivities, createActivity, updateActivity, deleteActivity } from '../api/activities'
 import type {
   Trip, Activity, Flight, Accommodation, Transport, Expense, PackingItem, TripStats,
-  Status, TransportType, ExpenseCategory, PackingCategory,
-  ActivityCreate, FlightCreate, TransportCreate, ExpenseCreate, PackingItemCreate,
+  ActivityCreate, FlightCreate, AccommodationCreate, TransportCreate, ExpenseCreate, PackingItemCreate,
 } from '../types'
-import ActivityForm from '../components/forms/ActivityForm'
-import AccommodationForm from '../components/forms/AccommodationForm'
+import {
+  ActivityForm, FlightForm, AccommodationForm, TransportForm, ExpenseForm, PackingForm,
+} from '../components/forms/Forms'
+import { PACKING_CATS } from '../components/forms/tripOptions'
 
-const STATUS_OPTIONS: { value: Status; label: string }[] = [
-  { value: 'draft', label: 'Draft' }, { value: 'to_book', label: 'To Book' },
-  { value: 'booked', label: 'Booked' }, { value: 'cancelled', label: 'Cancelled' },
-  { value: 'completed', label: 'Completed' },
-]
-const TRANSPORT_TYPES: { value: TransportType; label: string }[] = [
-  { value: 'train', label: 'Train' }, { value: 'bus', label: 'Bus' },
-  { value: 'car', label: 'Car' }, { value: 'shuttle', label: 'Shuttle' },
-  { value: 'ferry', label: 'Ferry' }, { value: 'taxi', label: 'Taxi' }, { value: 'other', label: 'Other' },
-]
-const EXPENSE_CATS: { value: ExpenseCategory; label: string }[] = [
-  { value: 'accommodation', label: 'Accommodation' }, { value: 'transport', label: 'Transport' },
-  { value: 'activity', label: 'Activity' }, { value: 'food', label: 'Food' },
-  { value: 'shopping', label: 'Shopping' }, { value: 'other', label: 'Other' },
-]
-const PACKING_CATS: { value: PackingCategory; label: string }[] = [
-  { value: 'documents', label: 'Documents' },
-  { value: 'clothing', label: 'Clothing' },
-  { value: 'medicine', label: 'Medicine' },
-  { value: 'technology', label: 'Technology' },
-  { value: 'toiletries', label: 'Toiletries' },
-  { value: 'accessories', label: 'Accessories' },
-  { value: 'food', label: 'Food' },
-  { value: 'comfort', label: 'Comfort' },
-  { value: 'extras', label: 'Extras' },
-]
-
+// ── Utility ───────────────────────────────────────────────────────────────────
 function fmt(d?: string | null) {
   if (!d) return '—'
   return new Date(d).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })
@@ -57,6 +31,7 @@ function fmtTime(d?: string | null) {
   return new Date(d).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
 }
 
+// ── Tab types ─────────────────────────────────────────────────────────────────
 type Tab = 'days' | 'activities' | 'flights' | 'accommodations' | 'transports' | 'expenses' | 'packing' | 'stats'
 const TABS: { id: Tab; label: string; icon: string }[] = [
   { id: 'days',           label: 'Days',           icon: '📅' },
@@ -69,6 +44,7 @@ const TABS: { id: Tab; label: string; icon: string }[] = [
   { id: 'stats',          label: 'Budget',         icon: '📊' },
 ]
 
+// ── Shared small components ───────────────────────────────────────────────────
 function SectionHeader({ title, onAdd }: { title: string; onAdd: () => void }) {
   return (
     <div className="section-header">
@@ -83,14 +59,18 @@ function SectionHeader({ title, onAdd }: { title: string; onAdd: () => void }) {
   )
 }
 
-function ItemCard({ children, onDelete, onEdit }: { children: React.ReactNode; onDelete: () => void; onEdit?: () => void }) {
+function ItemCard({ children, onDelete, onEdit }: {
+  children: React.ReactNode
+  onDelete: () => void
+  onEdit?: () => void
+}) {
   return (
     <div className="item-card">
       <div style={{ display: 'flex', gap: 6 }}>
         {onEdit && (
           <button className="item-card__delete" onClick={onEdit} title="Edit" style={{ color: '#6b7280' }}>
             <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-              <path d="M0.5 11.5l1-3.5L8.5 1.5l3 3L1.5 10.5l-3.5 1Z" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
+              <path d="M8 1.5l2.5 2.5-7 7H1v-2.5l7-7Z" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
           </button>
         )}
@@ -109,26 +89,40 @@ function TabEmpty({ msg }: { msg: string }) {
   return <div className="tab-empty">{msg}</div>
 }
 
-// ── DAYS — derived from activities ────────────────────────────────────────────
+// ── DAYS ──────────────────────────────────────────────────────────────────────
 function DaysTab({ tripId, dates }: { tripId: string; dates: string[] }) {
   const navigate = useNavigate()
   return (
     <>
       <div className="section-header">
         <h3 className="section-title">Trip Days</h3>
-        <p style={{ fontSize: '0.78rem', color: 'var(--sage)' }}>Days are created automatically when you add activities</p>
+        <p style={{ fontSize: '0.78rem', color: 'var(--sage)' }}>
+          Days are created automatically from your trip dates
+        </p>
       </div>
       {dates.length === 0 ? (
-        <TabEmpty msg="No days yet — add an activity to create your first day" />
+        <TabEmpty msg="No days yet — set start/end dates for your trip to see days here" />
       ) : (
         <div className="trips-grid">
           {dates.map((date) => (
-            <div key={date} className="item-card" style={{ cursor: 'pointer' }} onClick={() => navigate(`/trips/${tripId}/days/${date}`)}>
+            <div
+              key={date}
+              className="item-card"
+              style={{ cursor: 'pointer' }}
+              onClick={() => navigate(`/trips/${tripId}/days/${date}`)}
+            >
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
-                <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'var(--mist)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '0.82rem', color: 'var(--forest)', flexShrink: 0 }}>
+                <div style={{
+                  width: 36, height: 36, borderRadius: '50%',
+                  background: 'var(--mist)', display: 'flex', alignItems: 'center',
+                  justifyContent: 'center', fontWeight: 700, fontSize: '0.82rem',
+                  color: 'var(--forest)', flexShrink: 0,
+                }}>
                   {new Date(date).getDate()}
                 </div>
-                <span style={{ fontSize: '0.82rem', color: 'var(--forest-mid)', fontWeight: 500 }}>{fmt(date)}</span>
+                <span style={{ fontSize: '0.82rem', color: 'var(--forest-mid)', fontWeight: 500 }}>
+                  {fmt(date)}
+                </span>
               </div>
               <p style={{ fontSize: '0.75rem', color: 'var(--sage)', marginTop: 10 }}>Tap to see full day →</p>
             </div>
@@ -140,8 +134,11 @@ function DaysTab({ tripId, dates }: { tripId: string; dates: string[] }) {
 }
 
 // ── ACTIVITIES ────────────────────────────────────────────────────────────────
-function ActivitiesTab({ activities, onDelete, onAdd }: {
-  activities: Activity[]; onDelete: (id: string) => void; onAdd: () => void
+function ActivitiesTab({ activities, onAdd, onEdit, onDelete }: {
+  activities: Activity[]
+  onAdd: () => void
+  onEdit: (a: Activity) => void
+  onDelete: (id: string) => void
 }) {
   const grouped = activities.reduce<Record<string, Activity[]>>((acc, a) => {
     const key = a.activity_date ?? 'Unscheduled'
@@ -162,21 +159,34 @@ function ActivitiesTab({ activities, onDelete, onAdd }: {
       {activities.length === 0 ? <TabEmpty msg="No activities added" /> : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
           {dates.map((date) => (
-            <div key={date} style={{ background: '#fff', borderRadius: 20, border: '1px solid var(--cream-dark)', padding: 20, boxShadow: '0 6px 18px rgba(15, 23, 42, 0.04)' }}>
+            <div key={date} style={{
+              background: '#fff', borderRadius: 20,
+              border: '1px solid var(--cream-dark)',
+              padding: 20, boxShadow: '0 6px 18px rgba(15, 23, 42, 0.04)',
+            }}>
               <p style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--forest)', marginBottom: 16 }}>
                 {date === 'Unscheduled' ? 'Unscheduled' : fmt(date)}
               </p>
               <div style={{ display: 'grid', gap: 14 }}>
                 {grouped[date].map((activity) => (
-                  <ItemCard key={activity.id} onDelete={() => onDelete(activity.id)}>
+                  <ItemCard
+                    key={activity.id}
+                    onDelete={() => onDelete(activity.id)}
+                    onEdit={() => onEdit(activity)}
+                  >
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-                        <h4 style={{ margin: 0, fontSize: '1rem', fontWeight: 700, color: 'var(--forest)' }}>{activity.title || 'Untitled activity'}</h4>
+                        <h4 style={{ margin: 0, fontSize: '1rem', fontWeight: 700, color: 'var(--forest)' }}>
+                          {activity.title || 'Untitled activity'}
+                        </h4>
+                        <StatusBadge status={activity.status} />
                         {activity.start_time && <span style={{ fontSize: '0.8rem', color: '#6b7280' }}>{fmtTime(activity.start_time)}</span>}
                         {activity.location && <span style={{ fontSize: '0.8rem', color: '#6b7280' }}>· {activity.location}</span>}
                         {activity.cost != null && <span style={{ fontSize: '0.8rem', color: '#6b7280' }}>· €{activity.cost.toFixed(2)}</span>}
                       </div>
-                      {activity.description && <p style={{ margin: 0, color: '#4b5563', fontSize: '0.9rem' }}>{activity.description}</p>}
+                      {activity.description && (
+                        <p style={{ margin: 0, color: '#4b5563', fontSize: '0.9rem' }}>{activity.description}</p>
+                      )}
                     </div>
                   </ItemCard>
                 ))}
@@ -190,14 +200,19 @@ function ActivitiesTab({ activities, onDelete, onAdd }: {
 }
 
 // ── FLIGHTS ───────────────────────────────────────────────────────────────────
-function FlightsTab({ flights, onDelete, onAdd }: { flights: Flight[]; onDelete: (id: string) => void; onAdd: () => void }) {
+function FlightsTab({ flights, onAdd, onEdit, onDelete }: {
+  flights: Flight[]
+  onAdd: () => void
+  onEdit: (f: Flight) => void
+  onDelete: (id: string) => void
+}) {
   return (
     <>
       <SectionHeader title="Flights" onAdd={onAdd} />
       {flights.length === 0 ? <TabEmpty msg="No flights added" /> : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           {flights.map((f) => (
-            <ItemCard key={f.id} onDelete={() => onDelete(f.id)}>
+            <ItemCard key={f.id} onDelete={() => onDelete(f.id)} onEdit={() => onEdit(f)}>
               <div className="flight-route">
                 <div className="flight-airport">
                   <p className="flight-airport__code">{f.origin}</p>
@@ -231,19 +246,28 @@ function FlightsTab({ flights, onDelete, onAdd }: { flights: Flight[]; onDelete:
 }
 
 // ── ACCOMMODATIONS ────────────────────────────────────────────────────────────
-function AccommodationsTab({ accommodations, onDelete, onAdd }: { accommodations: Accommodation[]; onDelete: (id: string) => void; onAdd: () => void }) {
+function AccommodationsTab({ accommodations, onAdd, onEdit, onDelete }: {
+  accommodations: Accommodation[]
+  onAdd: () => void
+  onEdit: (a: Accommodation) => void
+  onDelete: (id: string) => void
+}) {
   return (
     <>
       <SectionHeader title="Accommodations" onAdd={onAdd} />
       {accommodations.length === 0 ? <TabEmpty msg="No accommodations added" /> : (
         <div className="accom-grid">
           {accommodations.map((a) => (
-            <ItemCard key={a.id} onDelete={() => onDelete(a.id)}>
+            <ItemCard key={a.id} onDelete={() => onDelete(a.id)} onEdit={() => onEdit(a)}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
                 <div>
                   <p style={{ fontWeight: 600, color: 'var(--forest)', marginBottom: 4 }}>{a.name}</p>
                   {a.accommodation_type && (
-                    <span style={{ fontSize: '0.72rem', background: 'var(--mist)', color: 'var(--forest-mid)', padding: '2px 8px', borderRadius: 20, textTransform: 'capitalize' }}>{a.accommodation_type}</span>
+                    <span style={{
+                      fontSize: '0.72rem', background: 'var(--mist)',
+                      color: 'var(--forest-mid)', padding: '2px 8px',
+                      borderRadius: 20, textTransform: 'capitalize',
+                    }}>{a.accommodation_type}</span>
                   )}
                 </div>
                 <StatusBadge status={a.status} />
@@ -251,7 +275,9 @@ function AccommodationsTab({ accommodations, onDelete, onAdd }: { accommodations
               <div style={{ fontSize: '0.78rem', color: '#6b7280', lineHeight: 1.8 }}>
                 {a.address && <p>📍 {a.address}</p>}
                 <p>Check-in: <strong>{fmt(a.check_in)}</strong> · Check-out: <strong>{fmt(a.check_out)}</strong></p>
-                {a.cost_per_night != null && <p>€ {a.cost_per_night}/night{a.total_cost != null ? ` · Total: € ${a.total_cost}` : ''}</p>}
+                {a.cost_per_night != null && (
+                  <p>€ {a.cost_per_night}/night{a.total_cost != null ? ` · Total: € ${a.total_cost}` : ''}</p>
+                )}
               </div>
             </ItemCard>
           ))}
@@ -262,26 +288,37 @@ function AccommodationsTab({ accommodations, onDelete, onAdd }: { accommodations
 }
 
 // ── TRANSPORTS ────────────────────────────────────────────────────────────────
-function TransportsTab({ transports, onDelete, onAdd }: { transports: Transport[]; onDelete: (id: string) => void; onAdd: () => void }) {
-  const icons: Record<string, string> = { train: '🚂', bus: '🚌', car: '🚗', shuttle: '🚐', ferry: '⛴', taxi: '🚕', other: '🚀' }
+function TransportsTab({ transports, onAdd, onEdit, onDelete }: {
+  transports: Transport[]
+  onAdd: () => void
+  onEdit: (t: Transport) => void
+  onDelete: (id: string) => void
+}) {
+  const icons: Record<string, string> = {
+    train: '🚂', bus: '🚌', car: '🚗', shuttle: '🚐', ferry: '⛴', taxi: '🚕', other: '🚀',
+  }
   return (
     <>
       <SectionHeader title="Transports" onAdd={onAdd} />
       {transports.length === 0 ? <TabEmpty msg="No transports added" /> : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           {transports.map((t) => (
-            <ItemCard key={t.id} onDelete={() => onDelete(t.id)}>
+            <ItemCard key={t.id} onDelete={() => onDelete(t.id)} onEdit={() => onEdit(t)}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
                 <span style={{ fontSize: '1.6rem' }}>{icons[t.transport_type] ?? '🚀'}</span>
                 <div style={{ flex: 1 }}>
                   <p style={{ fontWeight: 600, color: 'var(--forest)' }}>{t.origin} → {t.destination}</p>
                   <p style={{ fontSize: '0.75rem', color: '#9ca3af', marginTop: 2 }}>
-                    {fmtTime(t.departure_time)} {t.operator ? `· ${t.operator}` : ''}
+                    {fmtTime(t.departure_time)}{t.operator ? ` · ${t.operator}` : ''}
                   </p>
                 </div>
                 <div style={{ textAlign: 'right' }}>
                   <StatusBadge status={t.status} />
-                  {t.cost != null && <p style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--forest)', marginTop: 4 }}>€ {t.cost.toFixed(2)}</p>}
+                  {t.cost != null && (
+                    <p style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--forest)', marginTop: 4 }}>
+                      € {t.cost.toFixed(2)}
+                    </p>
+                  )}
                 </div>
               </div>
             </ItemCard>
@@ -293,15 +330,24 @@ function TransportsTab({ transports, onDelete, onAdd }: { transports: Transport[
 }
 
 // ── EXPENSES ──────────────────────────────────────────────────────────────────
-function ExpensesTab({ expenses, onDelete, onAdd }: { expenses: Expense[]; onDelete: (id: string) => void; onAdd: () => void }) {
+function ExpensesTab({ expenses, onAdd, onDelete }: {
+  expenses: Expense[]
+  onAdd: () => void
+  onDelete: (id: string) => void
+}) {
   const total = expenses.reduce((s, e) => s + (e.amount ?? 0), 0)
   return (
     <>
       <SectionHeader title="Expenses" onAdd={onAdd} />
       {expenses.length > 0 && (
-        <div style={{ background: 'var(--forest)', borderRadius: 16, padding: '16px 20px', marginBottom: 16, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{
+          background: 'var(--forest)', borderRadius: 16, padding: '16px 20px',
+          marginBottom: 16, display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        }}>
           <span style={{ fontSize: '0.82rem', color: 'var(--mint)' }}>Total Expenses</span>
-          <span style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.6rem', fontWeight: 700, color: '#fff' }}>€ {total.toFixed(2)}</span>
+          <span style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.6rem', fontWeight: 700, color: '#fff' }}>
+            € {total.toFixed(2)}
+          </span>
         </div>
       )}
       {expenses.length === 0 ? <TabEmpty msg="No expenses recorded" /> : (
@@ -311,10 +357,16 @@ function ExpensesTab({ expenses, onDelete, onAdd }: { expenses: Expense[]; onDel
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <div>
                   <p style={{ fontSize: '0.875rem', fontWeight: 500, color: 'var(--charcoal)' }}>{e.description ?? '—'}</p>
-                  {e.category && <p style={{ fontSize: '0.72rem', color: 'var(--sage)', textTransform: 'capitalize', marginTop: 2 }}>{e.category}</p>}
+                  {e.category && (
+                    <p style={{ fontSize: '0.72rem', color: 'var(--sage)', textTransform: 'capitalize', marginTop: 2 }}>
+                      {e.category}
+                    </p>
+                  )}
                 </div>
                 <div style={{ textAlign: 'right' }}>
-                  <p style={{ fontWeight: 600, color: 'var(--forest)' }}>{e.currency ?? '€'} {e.amount?.toFixed(2) ?? '—'}</p>
+                  <p style={{ fontWeight: 600, color: 'var(--forest)' }}>
+                    {e.currency ?? '€'} {e.amount?.toFixed(2) ?? '—'}
+                  </p>
                   {e.is_estimated && <p style={{ fontSize: '0.7rem', color: '#9ca3af' }}>estimated</p>}
                 </div>
               </div>
@@ -327,7 +379,12 @@ function ExpensesTab({ expenses, onDelete, onAdd }: { expenses: Expense[]; onDel
 }
 
 // ── PACKING ───────────────────────────────────────────────────────────────────
-function PackingTab({ items, onDelete, onAdd, onToggle }: { items: PackingItem[]; onDelete: (id: string) => void; onAdd: () => void; onToggle: (id: string) => void }) {
+function PackingTab({ items, onAdd, onDelete, onToggle }: {
+  items: PackingItem[]
+  onAdd: () => void
+  onDelete: (id: string) => void
+  onToggle: (id: string) => void
+}) {
   const total = items.length
   const checked = items.filter((i) => i.checked).length
   const grouped = PACKING_CATS.reduce<Record<string, PackingItem[]>>((acc, c) => {
@@ -354,7 +411,11 @@ function PackingTab({ items, onDelete, onAdd, onToggle }: { items: PackingItem[]
           <div key={cat}>
             <p className="packing-cat-label">{cat}</p>
             {catItems.map((item) => (
-              <div key={item.id} className={`packing-item ${item.checked ? 'packing-item--checked' : ''}`} onClick={() => onToggle(item.id)}>
+              <div
+                key={item.id}
+                className={`packing-item ${item.checked ? 'packing-item--checked' : ''}`}
+                onClick={() => onToggle(item.id)}
+              >
                 <div className="packing-item__check">
                   {item.checked && (
                     <svg width="9" height="7" viewBox="0 0 9 7" fill="none">
@@ -401,144 +462,55 @@ function StatsTab({ stats }: { stats: TripStats | null }) {
   )
 }
 
-// ── ADD FORMS ─────────────────────────────────────────────────────────────────
-
-function AddFlightForm({ onSubmit, loading, minDateTime, maxDateTime }: { onSubmit: (f: FlightCreate) => void; loading: boolean; minDateTime?: string; maxDateTime?: string }) {
-  const [origin, setOrigin] = useState(''); const [dest, setDest] = useState('')
-  const [dep, setDep] = useState(''); const [arr, setArr] = useState('')
-  const [airline, setAirline] = useState(''); const [flightNo, setFlightNo] = useState('')
-  const [cost, setCost] = useState(''); const [status, setStatus] = useState<Status>('to_book')
-  const [ref, setRef] = useState('')
-  return (
-    <div className="form-stack">
-      <div className="form-grid-2">
-        <FormField label="Origin" type="input" value={origin} onChange={setOrigin} placeholder="MXP" required />
-        <FormField label="Destination" type="input" value={dest} onChange={setDest} placeholder="NRT" required />
-      </div>
-      <div className="form-grid-2">
-        <FormField label="Departure" type="input" inputType="datetime-local" value={dep} onChange={setDep} min={minDateTime} max={maxDateTime} />
-        <FormField label="Arrival" type="input" inputType="datetime-local" value={arr} onChange={setArr} min={dep || minDateTime} max={maxDateTime} />
-      </div>
-      <div className="form-grid-2">
-        <FormField label="Airline" type="input" value={airline} onChange={setAirline} placeholder="Ryanair" />
-        <FormField label="Flight No." type="input" value={flightNo} onChange={setFlightNo} placeholder="FR1234" />
-      </div>
-      <div className="form-grid-2">
-        <FormField label="Cost (€)" type="input" inputType="number" value={cost} onChange={setCost} />
-        <FormField label="Status" type="select" value={status} onChange={(v) => setStatus(v as Status)} options={STATUS_OPTIONS} />
-      </div>
-      <FormField label="Booking Ref" type="input" value={ref} onChange={setRef} placeholder="ABC123" />
-      <button className="btn-primary" style={{ width: '100%', justifyContent: 'center' }}
-        onClick={() => origin && dest && onSubmit({ origin, destination: dest, departure_time: dep || null, arrival_time: arr || null, airline: airline || null, flight_number: flightNo || null, cost: cost ? parseFloat(cost) : null, status, booking_reference: ref || null, baggage_included: null, pay_method: null, link: null, notes: null })}
-        disabled={loading || !origin || !dest}>
-        {loading ? 'Saving...' : 'Add Flight'}
-      </button>
-    </div>
-  )
-}
-
-function AddTransportForm({ onSubmit, loading, minDateTime, maxDateTime }: { onSubmit: (t: TransportCreate) => void; loading: boolean; minDateTime?: string; maxDateTime?: string }) {
-  const [type, setType] = useState<TransportType>('train')
-  const [origin, setOrigin] = useState(''); const [dest, setDest] = useState('')
-  const [dep, setDep] = useState(''); const [arr, setArr] = useState('')
-  const [operator, setOperator] = useState(''); const [cost, setCost] = useState('')
-  const [status, setStatus] = useState<Status>('to_book')
-  return (
-    <div className="form-stack">
-      <FormField label="Type" type="select" value={type} onChange={(v) => setType(v as TransportType)} options={TRANSPORT_TYPES} />
-      <div className="form-grid-2">
-        <FormField label="From" type="input" value={origin} onChange={setOrigin} placeholder="Rome" required />
-        <FormField label="To" type="input" value={dest} onChange={setDest} placeholder="Naples" required />
-      </div>
-      <div className="form-grid-2">
-        <FormField label="Departure" type="input" inputType="datetime-local" value={dep} onChange={setDep} min={minDateTime} max={maxDateTime} />
-        <FormField label="Arrival" type="input" inputType="datetime-local" value={arr} onChange={setArr} min={dep || minDateTime} max={maxDateTime} />
-      </div>
-      <div className="form-grid-2">
-        <FormField label="Operator" type="input" value={operator} onChange={setOperator} placeholder="Trenitalia" />
-        <FormField label="Cost (€)" type="input" inputType="number" value={cost} onChange={setCost} />
-      </div>
-      <FormField label="Status" type="select" value={status} onChange={(v) => setStatus(v as Status)} options={STATUS_OPTIONS} />
-      <button className="btn-primary" style={{ width: '100%', justifyContent: 'center' }}
-        onClick={() => origin && dest && onSubmit({ transport_type: type, origin, destination: dest, departure_time: dep || null, arrival_time: arr || null, operator: operator || null, cost: cost ? parseFloat(cost) : null, status, pay_method: null, link: null, booking_reference: null, extra_details: null, notes: null })}
-        disabled={loading || !origin || !dest}>
-        {loading ? 'Saving...' : 'Add Transport'}
-      </button>
-    </div>
-  )
-}
-
-function AddExpenseForm({ onSubmit, loading }: { onSubmit: (e: ExpenseCreate) => void; loading: boolean }) {
-  const [desc, setDesc] = useState(''); const [amount, setAmount] = useState('')
-  const [category, setCategory] = useState<ExpenseCategory | ''>('')
-  const [currency, setCurrency] = useState('EUR'); const [isEstimated, setIsEstimated] = useState(false)
-  return (
-    <div className="form-stack">
-      <FormField label="Description" type="input" value={desc} onChange={setDesc} placeholder="Restaurant dinner" required/>
-      <div className="form-grid-2">
-        <FormField label="Amount" type="input" inputType="number" value={amount} onChange={setAmount} required />
-        <FormField label="Currency" type="input" value={currency} onChange={setCurrency} placeholder="EUR" />
-      </div>
-      <FormField label="Category" type="select" value={category} onChange={(v) => setCategory(v as ExpenseCategory)} options={EXPENSE_CATS} />
-      <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.875rem', color: 'var(--forest-mid)', cursor: 'pointer' }}>
-        <input type="checkbox" checked={isEstimated} onChange={(e) => setIsEstimated(e.target.checked)} />
-        Estimated Amount
-      </label>
-      <button className="btn-primary" style={{ width: '100%', justifyContent: 'center' }}
-        onClick={() => amount && onSubmit({ description: desc.trim() , amount: parseFloat(amount), category: category as ExpenseCategory || null, currency: currency || null, is_estimated: isEstimated, actual_amount: null, notes: null })}
-        disabled={loading || !amount || !desc.trim()}>
-        {loading ? 'Saving...' : 'Add Expense'}
-      </button>
-    </div>
-  )
-}
-
-function AddPackingForm({ onSubmit, loading }: { onSubmit: (p: PackingItemCreate) => void; loading: boolean }) {
-  const [name, setName] = useState(''); const [category, setCategory] = useState<PackingCategory | ''>('')
-  return (
-    <div className="form-stack">
-      <FormField label="Item" type="input" value={name} onChange={setName} placeholder="Passport" required />
-      <FormField label="Category" type="select" value={category} onChange={(v) => setCategory(v as PackingCategory)} options={PACKING_CATS} />
-      <button className="btn-primary" style={{ width: '100%', justifyContent: 'center' }}
-        onClick={() => name && onSubmit({ name, category: category as PackingCategory || null, notes: null })}
-        disabled={loading || !name}>
-        {loading ? 'Saving...' : 'Add Item'}
-      </button>
-    </div>
-  )
-}
-
 // ── MAIN PAGE ─────────────────────────────────────────────────────────────────
+type ModalType =
+  | 'add-activity' | 'add-flight' | 'add-accommodation' | 'add-transport' | 'add-expense' | 'add-packing'
+  | 'edit-activity' | 'edit-flight' | 'edit-accommodation' | 'edit-transport'
+  | null
+
 export default function TripDetailPage() {
   const { tripId } = useParams<{ tripId: string }>()
+
+  // ── Data state ──
   const [tab, setTab] = useState<Tab>('days')
   const [trip, setTrip] = useState<Trip | null>(null)
+  const [activities, setActivities] = useState<Activity[]>([])
   const [flights, setFlights] = useState<Flight[]>([])
   const [accommodations, setAccommodations] = useState<Accommodation[]>([])
   const [transports, setTransports] = useState<Transport[]>([])
   const [expenses, setExpenses] = useState<Expense[]>([])
-  const [activities, setActivities] = useState<Activity[]>([])
   const [packingItems, setPackingItems] = useState<PackingItem[]>([])
   const [stats, setStats] = useState<TripStats | null>(null)
-  const [modal, setModal] = useState<Tab | null>(null)
+
+  // ── UI state ──
+  const [modal, setModal] = useState<ModalType>(null)
   const [saving, setSaving] = useState(false)
   const [loading, setLoading] = useState(true)
 
+  // ── Edit targets ──
+  const [editActivity, setEditActivity] = useState<Activity | null>(null)
+  const [editFlight, setEditFlight] = useState<Flight | null>(null)
+  const [editAccommodation, setEditAccommodation] = useState<Accommodation | null>(null)
+  const [editTransport, setEditTransport] = useState<Transport | null>(null)
+
+  // ── Initial load ──
   useEffect(() => {
     if (!tripId) return
     Promise.all([
-      getTrip(tripId), getFlights(tripId),
+      getTrip(tripId), getActivities(tripId), getFlights(tripId),
       getAccommodations(tripId), getTransports(tripId),
-      getExpenses(tripId), getActivities(tripId), getPackingItems(tripId), getTripStats(tripId),
-    ]).then(([t, f, a, tr, e, act, p, s]) => {
-      setTrip(t); setFlights(f); setAccommodations(a)
-      setTransports(tr); setExpenses(e); setActivities(act); setPackingItems(p); setStats(s)
+      getExpenses(tripId), getPackingItems(tripId), getTripStats(tripId),
+    ]).then(([t, act, f, a, tr, e, p, s]) => {
+      setTrip(t); setActivities(act); setFlights(f)
+      setAccommodations(a); setTransports(tr); setExpenses(e)
+      setPackingItems(p); setStats(s)
       setLoading(false)
     }).catch(() => setLoading(false))
   }, [tripId])
 
-  // derive unique dates from activities
-  //const uniqueDates = // Generate all dates from trip.start_date to trip.end_date
+  if (!tripId) return null
+
+  // ── Derived data ──
   const uniqueDates = trip?.start_date && trip?.end_date ? (() => {
     const dates: string[] = []
     const current = new Date(trip.start_date)
@@ -550,20 +522,142 @@ export default function TripDetailPage() {
     return dates
   })() : []
 
-  const handleAddActivity = async (activity: ActivityCreate) => {
-    if (!tripId) return
+  const tripMin = trip?.start_date ? `${trip.start_date}T00:00` : undefined
+  const tripMax = trip?.end_date ? `${trip.end_date}T23:59` : undefined
+
+  // ── Add handlers ──
+  const handleAddActivity = async (data: ActivityCreate) => {
     setSaving(true)
     try {
-      const created = await createActivity(tripId, activity)
-      setActivities((prev) => [...prev, created])
+      const r = await createActivity(tripId, data)
+      setActivities((p) => [...p, r])
       setModal(null)
-    } finally {
-      setSaving(false)
-    }
+    } finally { setSaving(false) }
   }
 
-  if (!tripId) return null
+  const handleAddFlight = async (data: FlightCreate) => {
+    setSaving(true)
+    try {
+      const r = await createFlight(tripId, data)
+      setFlights((p) => [...p, r])
+      setModal(null)
+    } finally { setSaving(false) }
+  }
 
+  const handleAddAccommodation = async (data: AccommodationCreate) => {
+    setSaving(true)
+    try {
+      const r = await createAccommodation(tripId, data)
+      setAccommodations((p) => [...p, r])
+      setModal(null)
+    } finally { setSaving(false) }
+  }
+
+  const handleAddTransport = async (data: TransportCreate) => {
+    setSaving(true)
+    try {
+      const r = await createTransport(tripId, data)
+      setTransports((p) => [...p, r])
+      setModal(null)
+    } finally { setSaving(false) }
+  }
+
+  const handleAddExpense = async (data: ExpenseCreate) => {
+    setSaving(true)
+    try {
+      const r = await createExpense(tripId, data)
+      setExpenses((p) => [...p, r])
+      setModal(null)
+    } finally { setSaving(false) }
+  }
+
+  const handleAddPacking = async (data: PackingItemCreate) => {
+    setSaving(true)
+    try {
+      const r = await createPackingItem(tripId, data)
+      setPackingItems((p) => [...p, r])
+      setModal(null)
+    } finally { setSaving(false) }
+  }
+
+  // ── Edit handlers ──
+  const handleEditActivity = async (data: ActivityCreate) => {
+    if (!editActivity) return
+    setSaving(true)
+    try {
+      const r = await updateActivity(tripId, editActivity.id, data)
+      setActivities((p) => p.map((a) => a.id === editActivity.id ? r : a))
+      setModal(null); setEditActivity(null)
+    } finally { setSaving(false) }
+  }
+
+  const handleEditFlight = async (data: FlightCreate) => {
+    if (!editFlight) return
+    setSaving(true)
+    try {
+      const r = await updateFlight(tripId, editFlight.id, data)
+      setFlights((p) => p.map((f) => f.id === editFlight.id ? r : f))
+      setModal(null); setEditFlight(null)
+    } finally { setSaving(false) }
+  }
+
+  const handleEditAccommodation = async (data: AccommodationCreate) => {
+    if (!editAccommodation) return
+    setSaving(true)
+    try {
+      const r = await updateAccommodation(tripId, editAccommodation.id, data)
+      setAccommodations((p) => p.map((a) => a.id === editAccommodation.id ? r : a))
+      setModal(null); setEditAccommodation(null)
+    } finally { setSaving(false) }
+  }
+
+  const handleEditTransport = async (data: TransportCreate) => {
+    if (!editTransport) return
+    setSaving(true)
+    try {
+      const r = await updateTransport(tripId, editTransport.id, data)
+      setTransports((p) => p.map((t) => t.id === editTransport.id ? r : t))
+      setModal(null); setEditTransport(null)
+    } finally { setSaving(false) }
+  }
+
+  // ── Delete handlers ──
+  const handleDeleteActivity = async (id: string) => {
+    await deleteActivity(tripId, id)
+    setActivities((p) => p.filter((a) => a.id !== id))
+  }
+
+  const handleDeleteFlight = async (id: string) => {
+    await deleteFlight(tripId, id)
+    setFlights((p) => p.filter((f) => f.id !== id))
+  }
+
+  const handleDeleteAccommodation = async (id: string) => {
+    await deleteAccommodation(tripId, id)
+    setAccommodations((p) => p.filter((a) => a.id !== id))
+  }
+
+  const handleDeleteTransport = async (id: string) => {
+    await deleteTransport(tripId, id)
+    setTransports((p) => p.filter((t) => t.id !== id))
+  }
+
+  const handleDeleteExpense = async (id: string) => {
+    await deleteExpense(tripId, id)
+    setExpenses((p) => p.filter((e) => e.id !== id))
+  }
+
+  const handleDeletePacking = async (id: string) => {
+    await deletePackingItem(tripId, id)
+    setPackingItems((p) => p.filter((i) => i.id !== id))
+  }
+
+  const handleTogglePacking = async (id: string) => {
+    const updated = await togglePackingItem(tripId, id)
+    setPackingItems((p) => p.map((i) => i.id === id ? updated : i))
+  }
+
+  // ── Header helpers ──
   const fmtLong = (d?: string | null) => {
     if (!d) return ''
     return new Date(d).toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' })
@@ -573,10 +667,18 @@ export default function TripDetailPage() {
     ? { backgroundImage: `url(${trip.cover_image})`, backgroundSize: 'cover', backgroundPosition: 'center' }
     : { background: 'linear-gradient(135deg, var(--forest) 0%, var(--forest-light) 100%)' }
 
+  const closeModal = () => {
+    setModal(null)
+    setEditActivity(null); setEditFlight(null)
+    setEditAccommodation(null); setEditTransport(null)
+  }
+
+  // ── Render ──
   return (
     <div style={{ minHeight: '100vh', background: 'var(--ivory)' }}>
       <Navbar />
 
+      {/* Trip header */}
       <div className="trip-header" style={bgStyle}>
         <div className="trip-header__overlay" />
         <div className="trip-header__content">
@@ -601,57 +703,84 @@ export default function TripDetailPage() {
         </div>
       </div>
 
+      {/* Tabs */}
       <div className="tabs-bar">
         <div className="tabs-bar__inner">
           {TABS.map((t) => (
-            <button key={t.id} className={`tab-btn ${tab === t.id ? 'tab-btn--active' : ''}`} onClick={() => setTab(t.id)}>
+            <button
+              key={t.id}
+              className={`tab-btn ${tab === t.id ? 'tab-btn--active' : ''}`}
+              onClick={() => setTab(t.id)}
+            >
               <span>{t.icon}</span>{t.label}
             </button>
           ))}
         </div>
       </div>
 
+      {/* Tab content */}
       <main className="container" style={{ paddingTop: 32, paddingBottom: 64 }}>
         {tab === 'days' && <DaysTab tripId={tripId} dates={uniqueDates} />}
+
         {tab === 'activities' && (
-          <ActivitiesTab activities={activities}
-            onDelete={async (id) => { await deleteActivity(tripId, id); setActivities((p) => p.filter((a) => a.id !== id)) }}
-            onAdd={() => setModal('activities')} />
+          <ActivitiesTab
+            activities={activities}
+            onAdd={() => setModal('add-activity')}
+            onEdit={(a) => { setEditActivity(a); setModal('edit-activity') }}
+            onDelete={handleDeleteActivity}
+          />
         )}
+
         {tab === 'flights' && (
-          <FlightsTab flights={flights}
-            onDelete={async (id) => { await deleteFlight(tripId, id); setFlights((p) => p.filter((f) => f.id !== id)) }}
-            onAdd={() => setModal('flights')} />
+          <FlightsTab
+            flights={flights}
+            onAdd={() => setModal('add-flight')}
+            onEdit={(f) => { setEditFlight(f); setModal('edit-flight') }}
+            onDelete={handleDeleteFlight}
+          />
         )}
+
         {tab === 'accommodations' && (
-          <AccommodationsTab accommodations={accommodations}
-            onDelete={async (id) => { await deleteAccommodation(tripId, id); setAccommodations((p) => p.filter((a) => a.id !== id)) }}
-            onAdd={() => setModal('accommodations')} />
+          <AccommodationsTab
+            accommodations={accommodations}
+            onAdd={() => setModal('add-accommodation')}
+            onEdit={(a) => { setEditAccommodation(a); setModal('edit-accommodation') }}
+            onDelete={handleDeleteAccommodation}
+          />
         )}
+
         {tab === 'transports' && (
-          <TransportsTab transports={transports}
-            onDelete={async (id) => { await deleteTransport(tripId, id); setTransports((p) => p.filter((t) => t.id !== id)) }}
-            onAdd={() => setModal('transports')} />
+          <TransportsTab
+            transports={transports}
+            onAdd={() => setModal('add-transport')}
+            onEdit={(t) => { setEditTransport(t); setModal('edit-transport') }}
+            onDelete={handleDeleteTransport}
+          />
         )}
+
         {tab === 'expenses' && (
-          <ExpensesTab expenses={expenses}
-            onDelete={async (id) => { await deleteExpense(tripId, id); setExpenses((p) => p.filter((e) => e.id !== id)) }}
-            onAdd={() => setModal('expenses')} />
+          <ExpensesTab
+            expenses={expenses}
+            onAdd={() => setModal('add-expense')}
+            onDelete={handleDeleteExpense}
+          />
         )}
+
         {tab === 'packing' && (
-          <PackingTab items={packingItems}
-            onDelete={async (id) => { await deletePackingItem(tripId, id); setPackingItems((p) => p.filter((i) => i.id !== id)) }}
-            onAdd={() => setModal('packing')}
-            onToggle={async (id) => {
-              const updated = await togglePackingItem(tripId, id)
-              setPackingItems((p) => p.map((i) => i.id === id ? updated : i))
-            }} />
+          <PackingTab
+            items={packingItems}
+            onAdd={() => setModal('add-packing')}
+            onDelete={handleDeletePacking}
+            onToggle={handleTogglePacking}
+          />
         )}
+
         {tab === 'stats' && <StatsTab stats={stats} />}
       </main>
 
-      {modal === 'activities' && (
-        <Modal title="Add Activity" onClose={() => setModal(null)} size="lg">
+      {/* ── ADD MODALS ── */}
+      {modal === 'add-activity' && (
+        <Modal title="Add Activity" onClose={closeModal} size="lg">
           <ActivityForm
             loading={saving}
             onSubmit={handleAddActivity}
@@ -661,32 +790,99 @@ export default function TripDetailPage() {
           />
         </Modal>
       )}
-      {modal === 'flights' && (
-        <Modal title="Add Flight" onClose={() => setModal(null)} size="lg">
-          <AddFlightForm loading={saving} minDateTime={trip?.start_date ? `${trip.start_date}T00:00` : undefined} maxDateTime={trip?.end_date ? `${trip.end_date}T23:59` : undefined}
-            onSubmit={async (f) => { setSaving(true); try { const r = await createFlight(tripId, f); setFlights((p) => [...p, r]); setModal(null) } finally { setSaving(false) } }} />
+
+      {modal === 'add-flight' && (
+        <Modal title="Add Flight" onClose={closeModal} size="lg">
+          <FlightForm
+            loading={saving}
+            onSubmit={handleAddFlight}
+            minDateTime={tripMin}
+            maxDateTime={tripMax}
+          />
         </Modal>
       )}
-      {modal === 'accommodations' && (
-        <Modal title="Add Accommodation" onClose={() => setModal(null)} size="lg">
-          <AccommodationForm loading={saving} minDate={trip?.start_date ?? undefined} maxDate={trip?.end_date ?? undefined}
-            onSubmit={async (a) => { setSaving(true); try { const r = await createAccommodation(tripId, a); setAccommodations((p) => [...p, r]); setModal(null) } finally { setSaving(false) } }} />
+
+      {modal === 'add-accommodation' && (
+        <Modal title="Add Accommodation" onClose={closeModal} size="lg">
+          <AccommodationForm
+            loading={saving}
+            onSubmit={handleAddAccommodation}
+            minDate={trip?.start_date ?? undefined}
+            maxDate={trip?.end_date ?? undefined}
+          />
         </Modal>
       )}
-      {modal === 'transports' && (
-        <Modal title="Add Transport" onClose={() => setModal(null)}>
-          <AddTransportForm loading={saving} minDateTime={trip?.start_date ? `${trip.start_date}T00:00` : undefined} maxDateTime={trip?.end_date ? `${trip.end_date}T23:59` : undefined}
-            onSubmit={async (t) => { setSaving(true); try { const r = await createTransport(tripId, t); setTransports((p) => [...p, r]); setModal(null) } finally { setSaving(false) } }} />
+
+      {modal === 'add-transport' && (
+        <Modal title="Add Transport" onClose={closeModal} size="lg">
+          <TransportForm
+            loading={saving}
+            onSubmit={handleAddTransport}
+            minDateTime={tripMin}
+            maxDateTime={tripMax}
+          />
         </Modal>
       )}
-      {modal === 'expenses' && (
-        <Modal title="Add Expense" onClose={() => setModal(null)}>
-          <AddExpenseForm loading={saving} onSubmit={async (e) => { setSaving(true); try { const r = await createExpense(tripId, e); setExpenses((p) => [...p, r]); setModal(null) } finally { setSaving(false) } }} />
+
+      {modal === 'add-expense' && (
+        <Modal title="Add Expense" onClose={closeModal}>
+          <ExpenseForm loading={saving} onSubmit={handleAddExpense} />
         </Modal>
       )}
-      {modal === 'packing' && (
-        <Modal title="Add Item" onClose={() => setModal(null)}>
-          <AddPackingForm loading={saving} onSubmit={async (p) => { setSaving(true); try { const r = await createPackingItem(tripId, p); setPackingItems((p2) => [...p2, r]); setModal(null) } finally { setSaving(false) } }} />
+
+      {modal === 'add-packing' && (
+        <Modal title="Add Item" onClose={closeModal}>
+          <PackingForm loading={saving} onSubmit={handleAddPacking} />
+        </Modal>
+      )}
+
+      {/* ── EDIT MODALS ── */}
+      {modal === 'edit-activity' && editActivity && (
+        <Modal title="Edit Activity" onClose={closeModal} size="lg">
+          <ActivityForm
+            initial={editActivity}
+            loading={saving}
+            onSubmit={handleEditActivity}
+            showDayPicker
+            tripStartDate={trip?.start_date}
+            tripEndDate={trip?.end_date}
+          />
+        </Modal>
+      )}
+
+      {modal === 'edit-flight' && editFlight && (
+        <Modal title="Edit Flight" onClose={closeModal} size="lg">
+          <FlightForm
+            initial={editFlight}
+            loading={saving}
+            onSubmit={handleEditFlight}
+            minDateTime={tripMin}
+            maxDateTime={tripMax}
+          />
+        </Modal>
+      )}
+
+      {modal === 'edit-accommodation' && editAccommodation && (
+        <Modal title="Edit Accommodation" onClose={closeModal} size="lg">
+          <AccommodationForm
+            initial={editAccommodation}
+            loading={saving}
+            onSubmit={handleEditAccommodation}
+            minDate={trip?.start_date ?? undefined}
+            maxDate={trip?.end_date ?? undefined}
+          />
+        </Modal>
+      )}
+
+      {modal === 'edit-transport' && editTransport && (
+        <Modal title="Edit Transport" onClose={closeModal} size="lg">
+          <TransportForm
+            initial={editTransport}
+            loading={saving}
+            onSubmit={handleEditTransport}
+            minDateTime={tripMin}
+            maxDateTime={tripMax}
+          />
         </Modal>
       )}
     </div>
