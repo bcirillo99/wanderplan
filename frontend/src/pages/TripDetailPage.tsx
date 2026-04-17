@@ -8,18 +8,18 @@ import { getTrip, updateTrip, deleteTrip } from '../api/trips'
 import { getFlights, createFlight, updateFlight, deleteFlight } from '../api/flights'
 import { getAccommodations, createAccommodation, updateAccommodation, deleteAccommodation } from '../api/accommodations'
 import { getTransports, createTransport, updateTransport, deleteTransport } from '../api/transports'
-import { getExpenses, createExpense, deleteExpense } from '../api/expenses'
+import { getExtras, createExtra, deleteExtra } from '../api/extras'
 import { getPackingItems, createPackingItem, deletePackingItem, togglePackingItem } from '../api/packing_items'
 import { getTripStats } from '../api/stats'
 import { getActivities, createActivity, updateActivity, deleteActivity } from '../api/activities'
 import { getNotes, createNote, updateNote, deleteNote } from '../api/notes'
 import type {
-  Trip, Activity, Flight, Accommodation, Transport, Expense, PackingItem, TripStats, Note,
-  ActivityCreate, FlightCreate, AccommodationCreate, TransportCreate, ExpenseCreate, PackingItemCreate,
+  Trip, Activity, Flight, Accommodation, Transport, Extra, PackingItem, TripStats, Note,
+  ActivityCreate, FlightCreate, AccommodationCreate, TransportCreate, ExtraCreate, PackingItemCreate,
   TripCreate, NoteCreate,
 } from '../types'
 import {
-  ActivityForm, FlightForm, AccommodationForm, TransportForm, ExpenseForm, PackingForm, TripForm, NoteForm,
+  ActivityForm, FlightForm, AccommodationForm, TransportForm, ExtraForm, PackingForm, TripForm, NoteForm,
 } from '../components/forms/Forms'
 import { PACKING_CATS } from '../components/forms/tripOptions'
 
@@ -44,7 +44,7 @@ function fmtDateTime(d?: string): string | null {
 }
 
 // ── Tab types ─────────────────────────────────────────────────────────────────
-type Tab = 'summary' | 'days' | 'activities' | 'flights' | 'accommodations' | 'transports' | 'expenses' | 'packing' | 'stats' | 'notes'
+type Tab = 'summary' | 'days' | 'activities' | 'flights' | 'accommodations' | 'transports' | 'extras' | 'packing' | 'stats' | 'notes'
 const TABS: { id: Tab; label: string; icon: string }[] = [
   { id: 'summary',        label: 'Overview',       icon: '🗺️' },
   { id: 'days',           label: 'Days',           icon: '📅' },
@@ -52,7 +52,7 @@ const TABS: { id: Tab; label: string; icon: string }[] = [
   { id: 'flights',        label: 'Flights',        icon: '✈️' },
   { id: 'accommodations', label: 'Accommodations', icon: '🏨' },
   { id: 'transports',     label: 'Transports',     icon: '🚌' },
-  { id: 'expenses',       label: 'Expenses',       icon: '💰' },
+  { id: 'extras',         label: 'Extras',         icon: '💰' },
   { id: 'packing',        label: 'Packing',        icon: '🎒' },
   { id: 'stats',          label: 'Budget',         icon: '📊' },
   { id: 'notes',          label: 'Notes',          icon: '📝' },
@@ -243,7 +243,7 @@ function SummaryTab({
                   { icon: '🏨', label: 'Accommodations', value: stats.accommodation },
                   { icon: '🚌', label: 'Transports',     value: stats.transport },
                   { icon: '🗓️', label: 'Activities',     value: stats.activities },
-                  { icon: '💰', label: 'Expenses',       value: stats.expenses },
+                  { icon: '💰', label: 'Extras',         value: stats.extras },
                 ].map((row) => (
                   <div key={row.label} style={{
                     display: 'flex', alignItems: 'center', justifyContent: 'space-between',
@@ -609,30 +609,30 @@ function TransportsTab({ transports, onAdd, onEdit, onDelete }: {
   )
 }
 
-// ── EXPENSES ──────────────────────────────────────────────────────────────────
-function ExpensesTab({ expenses, onAdd, onDelete }: {
-  expenses: Expense[]
+// ── EXTRAS ────────────────────────────────────────────────────────────────────
+function ExtrasTab({ extras, onAdd, onDelete }: {
+  extras: Extra[]
   onAdd: () => void
   onDelete: (id: string) => void
 }) {
-  const total = expenses.reduce((s, e) => s + (e.amount ?? 0), 0)
+  const total = extras.reduce((s, e) => s + (e.amount ?? 0), 0)
   return (
     <>
-      <SectionHeader title="Expenses" onAdd={onAdd} />
-      {expenses.length > 0 && (
+      <SectionHeader title="Extras" onAdd={onAdd} />
+      {extras.length > 0 && (
         <div style={{
           background: 'var(--forest)', borderRadius: 16, padding: '16px 20px',
           marginBottom: 16, display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         }}>
-          <span style={{ fontSize: '0.82rem', color: 'var(--mint)' }}>Total Expenses</span>
+          <span style={{ fontSize: '0.82rem', color: 'var(--mint)' }}>Total Extras</span>
           <span style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.6rem', fontWeight: 700, color: '#fff' }}>
             € {total.toFixed(2)}
           </span>
         </div>
       )}
-      {expenses.length === 0 ? <TabEmpty msg="No expenses recorded" /> : (
+      {extras.length === 0 ? <TabEmpty msg="No extras recorded" /> : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          {expenses.map((e) => (
+          {extras.map((e) => (
             <ItemCard key={e.id} onDelete={() => onDelete(e.id)}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <div>
@@ -755,7 +755,7 @@ function StatsTab({ stats }: { stats: TripStats | null }) {
     { label: 'Transports',     value: stats.transport,     bg: '#fefce8', color: '#a16207' },
     { label: 'Accommodations', value: stats.accommodation, bg: '#faf5ff', color: '#7e22ce' },
     { label: 'Activities',     value: stats.activities,    bg: '#fff7ed', color: '#c2410c' },
-    { label: 'Extra Expenses', value: stats.expenses,      bg: '#fdf2f8', color: '#be185d' },
+    { label: 'Extras',         value: stats.extras,        bg: '#fdf2f8', color: '#be185d' },
   ]
   return (
     <>
@@ -777,7 +777,7 @@ function StatsTab({ stats }: { stats: TripStats | null }) {
 
 // ── MAIN PAGE ─────────────────────────────────────────────────────────────────
 type ModalType =
-  | 'add-activity' | 'add-flight' | 'add-accommodation' | 'add-transport' | 'add-expense' | 'add-packing' | 'add-note'
+  | 'add-activity' | 'add-flight' | 'add-accommodation' | 'add-transport' | 'add-extra' | 'add-packing' | 'add-note'
   | 'edit-activity' | 'edit-flight' | 'edit-accommodation' | 'edit-transport' | 'edit-note'
   | 'edit-trip' | 'confirm-delete'
   | null
@@ -793,7 +793,7 @@ export default function TripDetailPage() {
   const [flights, setFlights] = useState<Flight[]>([])
   const [accommodations, setAccommodations] = useState<Accommodation[]>([])
   const [transports, setTransports] = useState<Transport[]>([])
-  const [expenses, setExpenses] = useState<Expense[]>([])
+  const [extras, setExtras] = useState<Extra[]>([])
   const [packingItems, setPackingItems] = useState<PackingItem[]>([])
   const [stats, setStats] = useState<TripStats | null>(null)
   const [notes, setNotes] = useState<Note[]>([])
@@ -816,11 +816,11 @@ export default function TripDetailPage() {
     Promise.all([
       getTrip(tripId), getActivities(tripId), getFlights(tripId),
       getAccommodations(tripId), getTransports(tripId),
-      getExpenses(tripId), getPackingItems(tripId), getTripStats(tripId),
+      getExtras(tripId), getPackingItems(tripId), getTripStats(tripId),
       getNotes(tripId),
     ]).then(([t, act, f, a, tr, e, p, s, n]) => {
       setTrip(t); setActivities(act); setFlights(f)
-      setAccommodations(a); setTransports(tr); setExpenses(e)
+      setAccommodations(a); setTransports(tr); setExtras(e)
       setPackingItems(p); setStats(s); setNotes(n)
       setLoading(false)
     }).catch(() => setLoading(false))
@@ -880,11 +880,11 @@ export default function TripDetailPage() {
     } finally { setSaving(false) }
   }
 
-  const handleAddExpense = async (data: ExpenseCreate) => {
+  const handleAddExtra = async (data: ExtraCreate) => {
     setSaving(true)
     try {
-      const r = await createExpense(tripId, data)
-      setExpenses((p) => [...p, r])
+      const r = await createExtra(tripId, data)
+      setExtras((p) => [...p, r])
       setModal(null)
     } finally { setSaving(false) }
   }
@@ -960,9 +960,9 @@ export default function TripDetailPage() {
     setTransports((p) => p.filter((t) => t.id !== id))
   }
 
-  const handleDeleteExpense = async (id: string) => {
-    await deleteExpense(tripId, id)
-    setExpenses((p) => p.filter((e) => e.id !== id))
+  const handleDeleteExtra = async (id: string) => {
+    await deleteExtra(tripId, id)
+    setExtras((p) => p.filter((e) => e.id !== id))
   }
 
   const handleDeletePacking = async (id: string) => {
@@ -1152,11 +1152,11 @@ export default function TripDetailPage() {
           />
         )}
 
-        {tab === 'expenses' && (
-          <ExpensesTab
-            expenses={expenses}
-            onAdd={() => setModal('add-expense')}
-            onDelete={handleDeleteExpense}
+        {tab === 'extras' && (
+          <ExtrasTab
+            extras={extras}
+            onAdd={() => setModal('add-extra')}
+            onDelete={handleDeleteExtra}
           />
         )}
 
@@ -1227,9 +1227,9 @@ export default function TripDetailPage() {
         </Modal>
       )}
 
-      {modal === 'add-expense' && (
-        <Modal title="Add Expense" onClose={closeModal}>
-          <ExpenseForm loading={saving} onSubmit={handleAddExpense} />
+      {modal === 'add-extra' && (
+        <Modal title="Add Extra" onClose={closeModal}>
+          <ExtraForm loading={saving} onSubmit={handleAddExtra} />
         </Modal>
       )}
 

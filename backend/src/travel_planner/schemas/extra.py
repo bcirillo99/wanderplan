@@ -1,11 +1,11 @@
-# backend/src/travel_planner/schemas/expense.py
+# backend/src/travel_planner/schemas/extra.py
 from uuid import UUID
 from pydantic import BaseModel, field_validator
-from travel_planner.db.enums import ExpenseCategory
+from travel_planner.db.enums import ExtraCategory
 
 
-class ExpenseBase(BaseModel):
-    category: ExpenseCategory
+class ExtraBase(BaseModel):
+    category: ExtraCategory
     description: str | None = None
     amount: float | None = None
     is_estimated: bool = False
@@ -20,11 +20,11 @@ class ExpenseBase(BaseModel):
             raise ValueError("amount must be greater than zero")
         return amount
 
-class ExpenseCreate(ExpenseBase):
+class ExtraCreate(ExtraBase):
     pass
 
-class ExpenseUpdate(BaseModel):
-    category: ExpenseCategory | None = None
+class ExtraUpdate(BaseModel):
+    category: ExtraCategory | None = None
     description: str | None = None
     amount: float | None = None
     is_estimated: bool | None = None
@@ -39,9 +39,8 @@ class ExpenseUpdate(BaseModel):
             raise ValueError("amount must be greater than zero")
         return amount
 
-class ExpenseResponse(ExpenseBase):
+class ExtraResponse(ExtraBase):
     id: UUID
     trip_id: UUID
 
     model_config = {"from_attributes": True}
-

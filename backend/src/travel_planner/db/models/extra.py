@@ -1,14 +1,14 @@
-# backend/src/travel_planner/db/models/expense.py
+# backend/src/travel_planner/db/models/extra.py
 import uuid
 from sqlalchemy import ForeignKey, String, Text, Boolean, Enum as SAEnum
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from travel_planner.db.base import Base
-from travel_planner.db import ExpenseCategory
+from travel_planner.db import ExtraCategory
 
 
-class Expense(Base):
-    __tablename__ = "expenses"
+class Extra(Base):
+    __tablename__ = "extras"
 
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
@@ -16,7 +16,7 @@ class Expense(Base):
     trip_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("trips.id", ondelete="CASCADE"), nullable=False
     )
-    category: Mapped[ExpenseCategory | None] = mapped_column(SAEnum(ExpenseCategory, values_callable=lambda x: [e.value for e in x]), nullable=True)
+    category: Mapped[ExtraCategory | None] = mapped_column(SAEnum(ExtraCategory, values_callable=lambda x: [e.value for e in x]), nullable=True)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     amount: Mapped[float | None] = mapped_column(nullable=True)
     is_estimated: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
@@ -24,6 +24,5 @@ class Expense(Base):
     currency: Mapped[str | None] = mapped_column(String(3), nullable=True, default="EUR")
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
 
-
     # relationships
-    trip: Mapped["Trip"] = relationship(back_populates="expenses")
+    trip: Mapped["Trip"] = relationship(back_populates="extras")

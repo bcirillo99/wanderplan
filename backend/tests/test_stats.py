@@ -69,9 +69,9 @@ def _create_transport(client: TestClient, trip_id: str, cost: float) -> dict:
     return r.json()
 
 
-def _create_expense(client: TestClient, trip_id: str, amount: float) -> dict:
-    r = client.post(f"/trips/{trip_id}/expenses/", json={
-        "description": "Test Expense",
+def _create_extra(client: TestClient, trip_id: str, amount: float) -> dict:
+    r = client.post(f"/trips/{trip_id}/extras/", json={
+        "description": "Test Extra",
         "amount": amount,
         "category": "other",
     })
@@ -93,7 +93,7 @@ def test_trip_stats_empty(client):
     assert data["transport"] == 0
     assert data["accommodation"] == 0
     assert data["activities"] == 0
-    assert data["expenses"] == 0
+    assert data["extras"] == 0
 
 
 def test_trip_stats_with_flight(client):
@@ -122,7 +122,7 @@ def test_trip_stats_with_all_categories(client):
     _create_transport(client, trip["id"], cost=50.0)
     _create_accommodation(client, trip["id"], cost_per_night=100.0)
     _create_activity(client, trip["id"], cost=30.0)
-    _create_expense(client, trip["id"], amount=20.0)
+    _create_extra(client, trip["id"], amount=20.0)
 
     r = client.get(f"/trips/{trip['id']}/stats")
     assert r.status_code == 200
@@ -131,7 +131,7 @@ def test_trip_stats_with_all_categories(client):
     assert data["transport"] == 50.0
     assert data["accommodation"] == 200.0
     assert data["activities"] == 30.0
-    assert data["expenses"] == 20.0
+    assert data["extras"] == 20.0
     assert data["total"] == 800.0
 
 

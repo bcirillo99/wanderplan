@@ -5,5 +5,5 @@ from .accommodation import Accommodation
 from .flight import Flight
 from .transport import Transport
 from .packing_item import PackingItem
-from .expense import Expense
+from .extra import Extra
 from .note import Note

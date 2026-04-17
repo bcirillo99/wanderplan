@@ -87,7 +87,7 @@ DEFAULT_PACKING_ITEMS = [
 ]
 
 
-class ExpenseCategory(enum.Enum):
+class ExtraCategory(enum.Enum):
     ACCOMMODATION = "accommodation"
     TRANSPORT = "transport"
     ACTIVITIES = "activities"

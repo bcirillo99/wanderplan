@@ -17,7 +17,7 @@ export type PackingCategory =
   | 'comfort'
   | 'extras'
 
-export type ExpenseCategory = 'accommodation' | 'transport' | 'activity' | 'food' | 'shopping' | 'other'
+export type ExtraCategory = 'accommodation' | 'transport' | 'activities' | 'food' | 'shopping' | 'other'
 
 export interface Trip {
   id: string
@@ -120,10 +120,10 @@ export interface PackingItem {
   notes?: string | null
 }
 
-export interface Expense {
+export interface Extra {
   id: string
   trip_id: string
-  category?: ExpenseCategory | null
+  category?: ExtraCategory | null
   description?: string | null
   amount?: number | null
   is_estimated: boolean
@@ -144,7 +144,7 @@ export interface TripStats {
   transport: number
   accommodation: number
   activities: number
-  expenses: number
+  extras: number
   total: number
 }
 
@@ -167,7 +167,7 @@ export type TransportCreate = Omit<Transport, 'id' | 'trip_id'>
 export type PackingItemCreate = Omit<PackingItem, 'id' | 'trip_id' | 'checked'>
 export type NoteCreate = { text: string }
 export type NoteUpdate = { text?: string }
-export type ExpenseCreate = Omit<Expense, 'id' | 'trip_id'>
+export type ExtraCreate = Omit<Extra, 'id' | 'trip_id'>
 
 // ---- Update types ----
 
@@ -178,4 +178,4 @@ export type FlightUpdate = Partial<Omit<Flight, 'id' | 'trip_id'>>
 export type AccommodationUpdate = Partial<Omit<Accommodation, 'id' | 'trip_id' | 'total_cost'>>
 export type TransportUpdate = Partial<Omit<Transport, 'id' | 'trip_id'>>
 export type PackingItemUpdate = Partial<Omit<PackingItem, 'id' | 'trip_id'>>
-export type ExpenseUpdate = Partial<Omit<Expense, 'id' | 'trip_id'>>
+export type ExtraUpdate = Partial<Omit<Extra, 'id' | 'trip_id'>>
