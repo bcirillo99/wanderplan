@@ -110,45 +110,16 @@ type TodoItem = { icon: string; label: string; category: string }
 
 function SummaryTab({
   trip, tripId, activities, flights, accommodations, transports, stats, dates,
-  onEditTrip, onDeleteTrip, onSaveNotes, savingNotes,
+  onEditTrip, onDeleteTrip, notes, onAddNote, onEditNote, onDeleteNote,
 }: {
   trip: Trip | null; tripId: string
   activities: Activity[]; flights: Flight[]
   accommodations: Accommodation[]; transports: Transport[]
   stats: TripStats | null; dates: string[]
   onEditTrip: () => void; onDeleteTrip: () => void
-  onSaveNotes: (notes: string) => Promise<void>; savingNotes: boolean
+  notes: Note[]; onAddNote: () => void; onEditNote: (n: Note) => void; onDeleteNote: (id: string) => void
 }) {
   const navigate = useNavigate()
-  const [notes, setNotes] = useState(trip?.notes ?? '')
-  const [notesEditing, setNotesEditing] = useState(false)
-  const savedNotesRef = React.useRef(trip?.notes ?? '')
-
-  // Keep local state in sync with the trip object when it loads / changes externally
-  useEffect(() => {
-    if (!notesEditing) {
-      setNotes(trip?.notes ?? '')
-      savedNotesRef.current = trip?.notes ?? ''
-    }
-  }, [trip?.notes, notesEditing])
-
-  const handleStartEdit = () => {
-    setNotes(savedNotesRef.current)
-    setNotesEditing(true)
-  }
-
-  const handleSaveNotes = async () => {
-    if (notes !== savedNotesRef.current) {
-      await onSaveNotes(notes)
-      savedNotesRef.current = notes
-    }
-    setNotesEditing(false)
-  }
-
-  const handleCancelEdit = () => {
-    setNotes(savedNotesRef.current)
-    setNotesEditing(false)
-  }
 
   // Activities grouped by date for the day strip
   const byDate = activities.reduce<Record<string, Activity[]>>((acc, a) => {
@@ -183,72 +154,36 @@ function SummaryTab({
 
           {/* Notes */}
           <div className="summary-section">
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 12 }}>
               <p className="summary-section__title" style={{ margin: 0 }}>📝 Trip Notes</p>
-              {!notesEditing ? (
-                <button
-                  className="btn-add"
-                  onClick={handleStartEdit}
-                  title="Edit notes"
-                  type="button"
-                >
-                  <svg width="11" height="11" viewBox="0 0 12 12" fill="none">
-                    <path d="M8 1.5l2.5 2.5-7 7H1v-2.5l7-7Z" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                  Edit
-                </button>
-              ) : (
-                <div style={{ display: 'flex', gap: 6 }}>
-                  <button
-                    className="btn-add"
-                    onClick={handleSaveNotes}
-                    disabled={savingNotes}
-                    type="button"
-                    style={{ background: 'var(--forest)', color: '#fff', borderColor: 'var(--forest)' }}
-                  >
-                    {savingNotes ? 'Saving…' : 'Save'}
-                  </button>
-                  <button
-                    className="btn-add"
-                    onClick={handleCancelEdit}
-                    disabled={savingNotes}
-                    type="button"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              )}
+              <button className="btn-add" onClick={onAddNote} type="button">
+                <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
+                  <path d="M5.5 1v9M1 5.5h9" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/>
+                </svg>
+                Add
+              </button>
             </div>
-
-            {notesEditing ? (
-              <textarea
-                className="form-control notes-textarea"
-                value={notes}
-                autoFocus
-                onChange={(e) => setNotes(e.target.value)}
-                rows={7}
-                placeholder="Aggiungi note, promemoria, info importanti..."
-                style={{ resize: 'vertical', fontFamily: 'inherit', fontSize: '0.875rem', width: '100%' }}
-              />
+            {notes.length === 0 ? (
+              <p style={{ fontSize: '0.85rem', color: '#9ca3af', fontStyle: 'italic', margin: 0 }}>
+                No notes yet — add reminders, booking refs, tips…
+              </p>
             ) : (
-              <div
-                className="notes-preview"
-                onClick={handleStartEdit}
-                title="Click to edit"
-              >
-                {(trip?.notes ?? '').trim() ? (
-                  (trip?.notes ?? '').split('\n').map((line, i) => (
-                    line.trim() === ''
-                      ? <br key={i} />
-                      : <p key={i} style={{ margin: '0 0 4px', fontSize: '0.875rem', color: 'var(--charcoal)', lineHeight: 1.6 }}>
-                          {line}
-                        </p>
-                  ))
-                ) : (
-                  <p style={{ fontSize: '0.85rem', color: '#9ca3af', fontStyle: 'italic', margin: 0 }}>
-                    No notes yet — click Edit to add reminders, booking refs, tips…
-                  </p>
-                )}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {notes.map((note) => (
+                  <ItemCard key={note.id} onDelete={() => onDeleteNote(note.id)} onEdit={() => onEditNote(note)}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                      <p style={{ margin: 0, fontSize: '0.72rem', color: '#9ca3af' }}>
+                        {new Date(note.created_at).toLocaleString('en-US', {
+                          weekday: 'short', month: 'short', day: 'numeric',
+                          hour: '2-digit', minute: '2-digit',
+                        })}
+                      </p>
+                      <p style={{ margin: 0, fontSize: '0.875rem', color: 'var(--charcoal)', whiteSpace: 'pre-wrap' }}>
+                        {note.text}
+                      </p>
+                    </div>
+                  </ItemCard>
+                ))}
               </div>
             )}
           </div>
@@ -866,7 +801,6 @@ export default function TripDetailPage() {
   // ── UI state ──
   const [modal, setModal] = useState<ModalType>(null)
   const [saving, setSaving] = useState(false)
-  const [savingNotes, setSavingNotes] = useState(false)
   const [loading, setLoading] = useState(true)
 
   // ── Edit targets ──
@@ -1066,15 +1000,6 @@ export default function TripDetailPage() {
   }
 
   // ── Trip-level handlers ──
-  const handleSaveNotes = async (notes: string) => {
-    if (!tripId) return
-    setSavingNotes(true)
-    try {
-      const r = await updateTrip(tripId, { notes })
-      setTrip(r)
-    } finally { setSavingNotes(false) }
-  }
-
   const handleUpdateTrip = async (data: TripCreate) => {
     if (!tripId) return
     setSaving(true)
@@ -1182,8 +1107,10 @@ export default function TripDetailPage() {
             dates={uniqueDates}
             onEditTrip={() => setModal('edit-trip')}
             onDeleteTrip={() => setModal('confirm-delete')}
-            onSaveNotes={handleSaveNotes}
-            savingNotes={savingNotes}
+            notes={notes}
+            onAddNote={() => setModal('add-note')}
+            onEditNote={(n) => { setEditNote(n); setModal('edit-note') }}
+            onDeleteNote={handleDeleteNote}
           />
         )}
 
