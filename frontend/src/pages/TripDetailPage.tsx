@@ -1,9 +1,8 @@
 // frontend/src/pages/TripDetailPage.tsx
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import Navbar from '../components/Navbar'
 import Modal from '../components/Modal'
-import StatusBadge from '../components/StatusBadge'
 import { getTrip, updateTrip, deleteTrip } from '../api/trips'
 import { getFlights, createFlight, updateFlight, deleteFlight } from '../api/flights'
 import { getAccommodations, createAccommodation, updateAccommodation, deleteAccommodation } from '../api/accommodations'
@@ -21,27 +20,16 @@ import type {
 import {
   ActivityForm, FlightForm, AccommodationForm, TransportForm, ExtraForm, PackingForm, TripForm, NoteForm,
 } from '../components/forms/Forms'
-import { PACKING_CATS } from '../components/forms/tripOptions'
-
-// ── Utility ───────────────────────────────────────────────────────────────────
-function fmt(d?: string | null) {
-  if (!d) return '—'
-  return new Date(d).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })
-}
-function fmtTime(d?: string | null) {
-  if (!d) return '—'
-  return new Date(d).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
-}
-function fmtDateTime(d?: string): string | null {
-  if (!d) return null;
-  return new Date(d).toLocaleString('en-US', { 
-    weekday: 'short',      // Lun
-    month: 'short',        // Apr
-    day: 'numeric',        // 12
-    hour: '2-digit',       // 14
-    minute: '2-digit'      // 30
-  });
-}
+import { SummaryTab } from '../components/tabs/SummaryTab'
+import { DaysTab } from '../components/tabs/DaysTab'
+import { ActivitiesTab } from '../components/tabs/ActivitiesTab'
+import { FlightsTab } from '../components/tabs/FlightsTab'
+import { AccommodationsTab } from '../components/tabs/AccommodationsTab'
+import { TransportsTab } from '../components/tabs/TransportsTab'
+import { ExtrasTab } from '../components/tabs/ExtrasTab'
+import { PackingTab } from '../components/tabs/PackingTab'
+import { StatsTab } from '../components/tabs/StatsTab'
+import { NotesTab } from '../components/tabs/NotesTab'
 
 // ── Tab types ─────────────────────────────────────────────────────────────────
 type Tab = 'summary' | 'days' | 'activities' | 'flights' | 'accommodations' | 'transports' | 'extras' | 'packing' | 'stats' | 'notes'
@@ -58,724 +46,7 @@ const TABS: { id: Tab; label: string; icon: string }[] = [
   { id: 'notes',          label: 'Notes',          icon: '📝' },
 ]
 
-// ── Shared small components ───────────────────────────────────────────────────
-function SectionHeader({ title, onAdd }: { title: string; onAdd: () => void }) {
-  return (
-    <div className="section-header">
-      <h3 className="section-title">{title}</h3>
-      <button className="btn-add" onClick={onAdd}>
-        <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
-          <path d="M5.5 1v9M1 5.5h9" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/>
-        </svg>
-        Add
-      </button>
-    </div>
-  )
-}
-
-function ItemCard({ children, onDelete, onEdit }: {
-  children: React.ReactNode
-  onDelete: () => void
-  onEdit?: () => void
-}) {
-  return (
-    <div className="item-card">
-      <div className="item-card__actions">
-        {onEdit && (
-          <button className="item-card__action item-card__action--edit" onClick={onEdit} title="Edit">
-            <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-              <path d="M8 1.5l2.5 2.5-7 7H1v-2.5l7-7Z" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-          </button>
-        )}
-        <button className="item-card__action item-card__action--delete" onClick={onDelete} title="Delete">
-          <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
-            <path d="M1 1l9 9M10 1L1 10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-          </svg>
-        </button>
-      </div>
-      {children}
-    </div>
-  )
-}
-
-function TabEmpty({ msg }: { msg: string }) {
-  return <div className="tab-empty">{msg}</div>
-}
-
-// ── SUMMARY ───────────────────────────────────────────────────────────────────
-const PREVIEW_LIMIT = 3
-
-type TodoItem = { icon: string; label: string; category: string }
-
-function SummaryTab({
-  trip, tripId, activities, flights, accommodations, transports, stats, dates,
-  onEditTrip, onDeleteTrip, notes, onAddNote, onEditNote, onDeleteNote,
-}: {
-  trip: Trip | null; tripId: string
-  activities: Activity[]; flights: Flight[]
-  accommodations: Accommodation[]; transports: Transport[]
-  stats: TripStats | null; dates: string[]
-  onEditTrip: () => void; onDeleteTrip: () => void
-  notes: Note[]; onAddNote: () => void; onEditNote: (n: Note) => void; onDeleteNote: (id: string) => void
-}) {
-  const navigate = useNavigate()
-
-  // Activities grouped by date for the day strip
-  const byDate = activities.reduce<Record<string, Activity[]>>((acc, a) => {
-    if (!a.activity_date) return acc
-    if (!acc[a.activity_date]) acc[a.activity_date] = []
-    acc[a.activity_date].push(a)
-    return acc
-  }, {})
-  Object.values(byDate).forEach((list) =>
-    list.sort((a, b) => (!a.start_time ? 1 : !b.start_time ? -1 : a.start_time.localeCompare(b.start_time)))
-  )
-
-  // Things still to book
-  const todoItems: TodoItem[] = [
-    ...flights.filter((f) => f.status === 'to_book' || f.status === 'draft')
-      .map((f) => ({ icon: '✈️', label: `${f.origin} → ${f.destination}`, category: 'Flight' })),
-    ...accommodations.filter((a) => a.status === 'to_book' || a.status === 'draft')
-      .map((a) => ({ icon: '🏨', label: a.name, category: 'Accommodation' })),
-    ...activities.filter((a) => a.status === 'to_book' || a.status === 'draft')
-      .map((a) => ({ icon: '🗓️', label: a.title ?? 'Activity', category: 'Activity' })),
-    ...transports.filter((t) => t.status === 'to_book' || t.status === 'draft')
-      .map((t) => ({ icon: '🚌', label: `${t.origin} → ${t.destination}`, category: 'Transport' })),
-  ]
-
-  return (
-    <div>
-      {/* ── Main grid ── */}
-      <div className="summary-grid">
-
-        {/* Left column: Notes + To-do */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-
-          {/* Notes */}
-          <div className="summary-section">
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 12 }}>
-              <p className="summary-section__title" style={{ margin: 0 }}>📝 Trip Notes</p>
-              <button className="btn-add" onClick={onAddNote} type="button">
-                <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
-                  <path d="M5.5 1v9M1 5.5h9" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/>
-                </svg>
-                Add
-              </button>
-            </div>
-            {notes.length === 0 ? (
-              <p style={{ fontSize: '0.85rem', color: '#9ca3af', fontStyle: 'italic', margin: 0 }}>
-                No notes yet — add reminders, booking refs, tips…
-              </p>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                {notes.map((note) => (
-                  <ItemCard key={note.id} onDelete={() => onDeleteNote(note.id)} onEdit={() => onEditNote(note)}>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                      <p style={{ margin: 0, fontSize: '0.72rem', color: '#9ca3af' }}>
-                        {new Date(note.created_at).toLocaleString('en-US', {
-                          weekday: 'short', month: 'short', day: 'numeric',
-                          hour: '2-digit', minute: '2-digit',
-                        })}
-                      </p>
-                      <p style={{ margin: 0, fontSize: '0.875rem', color: 'var(--charcoal)', whiteSpace: 'pre-wrap' }}>
-                        {note.text}
-                      </p>
-                    </div>
-                  </ItemCard>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* To-do */}
-          <div className="summary-section">
-            <p className="summary-section__title">
-              {todoItems.length === 0 ? '✅ All confirmed!' : `🔖 Still to book (${todoItems.length})`}
-            </p>
-            {todoItems.length === 0 ? (
-              <p style={{ fontSize: '0.85rem', color: 'var(--sage)', margin: 0 }}>
-                Everything is confirmed — you're good to go!
-              </p>
-            ) : (
-              <div style={{
-                display: 'flex', flexDirection: 'column', gap: 8,
-                maxHeight: 220, overflowY: 'auto',
-                paddingRight: 4,
-              }}>
-                {todoItems.map((item, i) => (
-                  <div key={i} style={{
-                    display: 'flex', alignItems: 'center', gap: 10,
-                    padding: '8px 12px', background: 'var(--ivory)', borderRadius: 10,
-                    flexShrink: 0,
-                  }}>
-                    <span style={{ fontSize: '1rem' }}>{item.icon}</span>
-                    <div>
-                      <p style={{ fontSize: '0.82rem', fontWeight: 500, color: 'var(--forest)', margin: 0 }}>{item.label}</p>
-                      <p style={{ fontSize: '0.7rem', color: 'var(--sage)', margin: 0 }}>{item.category}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Right column: Budget */}
-        <div className="summary-section">
-          <p className="summary-section__title">💰 Budget Summary</p>
-          {!stats ? (
-            <p style={{ fontSize: '0.85rem', color: 'var(--sage)' }}>Loading...</p>
-          ) : (
-            <>
-              <div style={{
-                background: 'var(--forest)', borderRadius: 14,
-                padding: '16px 18px', marginBottom: 16,
-              }}>
-                <p style={{ fontSize: '0.72rem', color: 'var(--mint)', margin: '0 0 4px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Total Estimated</p>
-                <p style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.9rem', fontWeight: 700, color: '#fff', margin: 0 }}>
-                  € {stats.total.toFixed(2)}
-                </p>
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column' }}>
-                {[
-                  { icon: '✈️', label: 'Flights',        value: stats.flights },
-                  { icon: '🏨', label: 'Accommodations', value: stats.accommodation },
-                  { icon: '🚌', label: 'Transports',     value: stats.transport },
-                  { icon: '🗓️', label: 'Activities',     value: stats.activities },
-                  { icon: '💰', label: 'Extras',         value: stats.extras },
-                ].map((row) => (
-                  <div key={row.label} style={{
-                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                    padding: '10px 0', borderBottom: '1px solid var(--cream-dark)',
-                  }}>
-                    <span style={{ fontSize: '0.82rem', color: 'var(--forest-mid)' }}>{row.icon} {row.label}</span>
-                    <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--forest)' }}>€ {row.value.toFixed(2)}</span>
-                  </div>
-                ))}
-              </div>
-            </>
-          )}
-        </div>
-      </div>
-
-      {/* ── Day strip ── */}
-      <div style={{ marginTop: 12 }}>
-        <p className="summary-section__title" style={{ marginBottom: 14 }}>📅 Days</p>
-        {dates.length === 0 ? (
-          <p style={{ fontSize: '0.85rem', color: 'var(--sage)' }}>Set trip start/end dates to see days here</p>
-        ) : (
-          <div className="day-strip">
-            {dates.map((date) => {
-              const dayActs = byDate[date] ?? []
-              const preview = dayActs.slice(0, PREVIEW_LIMIT)
-              const extra = dayActs.length - PREVIEW_LIMIT
-              return (
-                <div key={date} className="day-strip__card" onClick={() => navigate(`/trips/${tripId}/days/${date}`)}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-                    <div style={{
-                      width: 30, height: 30, borderRadius: '50%', background: 'var(--mist)',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontWeight: 700, fontSize: '0.78rem', color: 'var(--forest)', flexShrink: 0,
-                    }}>
-                      {new Date(date).getDate()}
-                    </div>
-                    <span style={{ fontSize: '0.75rem', color: 'var(--forest-mid)', fontWeight: 600 }}>{fmt(date)}</span>
-                  </div>
-                  {preview.length === 0 ? (
-                    <p style={{ fontSize: '0.7rem', color: '#d1d5db', fontStyle: 'italic', margin: 0 }}>No activities</p>
-                  ) : (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                      {preview.map((a) => (
-                        <div key={a.id} style={{ display: 'flex', alignItems: 'baseline', gap: 5 }}>
-                          <span style={{ width: 4, height: 4, borderRadius: '50%', background: 'var(--forest-light)', flexShrink: 0, marginTop: 2, display: 'inline-block' }} />
-                          <span style={{ fontSize: '0.7rem', color: 'var(--forest-mid)', lineHeight: 1.4 }}>
-                            {a.start_time && <span style={{ color: '#9ca3af', marginRight: 3 }}>{a.start_time.slice(0, 5)}</span>}
-                            {a.title ?? 'Untitled'}
-                          </span>
-                        </div>
-                      ))}
-                      {extra > 0 && <p style={{ fontSize: '0.68rem', color: '#9ca3af', margin: '1px 0 0 9px' }}>+{extra} more</p>}
-                    </div>
-                  )}
-                </div>
-              )
-            })}
-          </div>
-        )}
-      </div>
-    </div>
-  )
-}
-
-// ── DAYS ──────────────────────────────────────────────────────────────────────
-
-function DaysTab({ tripId, dates, activities }: {
-  tripId: string
-  dates: string[]
-  activities: Activity[]
-}) {
-  const navigate = useNavigate()
-
-  // Group and sort activities by date for the preview
-  const byDate = activities.reduce<Record<string, Activity[]>>((acc, a) => {
-    if (!a.activity_date) return acc
-    if (!acc[a.activity_date]) acc[a.activity_date] = []
-    acc[a.activity_date].push(a)
-    return acc
-  }, {})
-
-  // Sort activities within a day chronologically (no time → end of list)
-  Object.values(byDate).forEach((list) =>
-    list.sort((a, b) => {
-      if (!a.start_time) return 1
-      if (!b.start_time) return -1
-      return a.start_time.localeCompare(b.start_time)
-    })
-  )
-
-  return (
-    <>
-      <div className="section-header">
-        <h3 className="section-title">Trip Days</h3>
-        <p style={{ fontSize: '0.78rem', color: 'var(--sage)' }}>
-          Days are created automatically from your trip dates
-        </p>
-      </div>
-      {dates.length === 0 ? (
-        <TabEmpty msg="No days yet — set start/end dates for your trip to see days here" />
-      ) : (
-        <div className="trips-grid">
-          {dates.map((date) => {
-            const dayActivities = byDate[date] ?? []
-            const preview = dayActivities.slice(0, PREVIEW_LIMIT)
-            const extra = dayActivities.length - PREVIEW_LIMIT
-
-            return (
-              <div
-                key={date}
-                className="item-card"
-                style={{ cursor: 'pointer' }}
-                onClick={() => navigate(`/trips/${tripId}/days/${date}`)}
-              >
-                {/* Date header */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
-                  <div style={{
-                    width: 36, height: 36, borderRadius: '50%',
-                    background: 'var(--mist)', display: 'flex', alignItems: 'center',
-                    justifyContent: 'center', fontWeight: 700, fontSize: '0.82rem',
-                    color: 'var(--forest)', flexShrink: 0,
-                  }}>
-                    {new Date(date).getDate()}
-                  </div>
-                  <span style={{ fontSize: '0.82rem', color: 'var(--forest-mid)', fontWeight: 500 }}>
-                    {fmt(date)}
-                  </span>
-                </div>
-
-                {/* Activity preview */}
-                {preview.length === 0 ? (
-                  <p style={{ fontSize: '0.75rem', color: '#d1d5db', fontStyle: 'italic' }}>
-                    No activities for this day
-                  </p>
-                ) : (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
-                    {preview.map((a) => (
-                      <div key={a.id} style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
-                        <span style={{
-                          width: 5, height: 5, borderRadius: '50%',
-                          background: 'var(--forest-light)', flexShrink: 0,
-                          marginTop: 2, display: 'inline-block',
-                        }} />
-                        <span style={{ fontSize: '0.75rem', color: 'var(--forest-mid)', lineHeight: 1.4 }}>
-                          {a.start_time && (
-                            <span style={{ color: '#9ca3af', marginRight: 4 }}>
-                              {a.start_time.slice(0, 5)}
-                            </span>
-                          )}
-                          {a.title ?? 'Untitled'}
-                        </span>
-                      </div>
-                    ))}
-                    {extra > 0 && (
-                      <p style={{ fontSize: '0.72rem', color: '#9ca3af', margin: '2px 0 0 11px' }}>
-                        +{extra} more
-                      </p>
-                    )}
-                  </div>
-                )}
-              </div>
-            )
-          })}
-        </div>
-      )}
-    </>
-  )
-}
-
-// ── ACTIVITIES ────────────────────────────────────────────────────────────────
-function ActivitiesTab({ activities, onAdd, onEdit, onDelete }: {
-  activities: Activity[]
-  onAdd: () => void
-  onEdit: (a: Activity) => void
-  onDelete: (id: string) => void
-}) {
-  const grouped = activities.reduce<Record<string, Activity[]>>((acc, a) => {
-    const key = a.activity_date ?? 'Unscheduled'
-    if (!acc[key]) acc[key] = []
-    acc[key].push(a)
-    return acc
-  }, {})
-
-  const dates = Object.keys(grouped).sort((a, b) => {
-    if (a === 'Unscheduled') return 1
-    if (b === 'Unscheduled') return -1
-    return a.localeCompare(b)
-  })
-
-  return (
-    <>
-      <SectionHeader title="Trip Activities" onAdd={onAdd} />
-      {activities.length === 0 ? <TabEmpty msg="No activities added" /> : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
-          {dates.map((date) => (
-            <div key={date} style={{
-              background: '#fff', borderRadius: 20,
-              border: '1px solid var(--cream-dark)',
-              padding: 20, boxShadow: '0 6px 18px rgba(15, 23, 42, 0.04)',
-            }}>
-              <p style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--forest)', marginBottom: 16 }}>
-                {date === 'Unscheduled' ? 'Unscheduled' : fmt(date)}
-              </p>
-              <div style={{ display: 'grid', gap: 14 }}>
-                {grouped[date].map((activity) => (
-                  <ItemCard
-                    key={activity.id}
-                    onDelete={() => onDelete(activity.id)}
-                    onEdit={() => onEdit(activity)}
-                  >
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-                        <h4 style={{ margin: 0, fontSize: '1rem', fontWeight: 700, color: 'var(--forest)' }}>
-                          {activity.title || 'Untitled activity'}
-                        </h4>
-                        <StatusBadge status={activity.status} />
-                        {activity.start_time && <span style={{ fontSize: '0.8rem', color: '#6b7280' }}>{fmtDateTime(activity.start_time)}</span>}
-                        {activity.location && <span style={{ fontSize: '0.8rem', color: '#6b7280' }}>· {activity.location}</span>}
-                        {activity.cost != null && <span style={{ fontSize: '0.8rem', color: '#6b7280' }}>· €{activity.cost.toFixed(2)}</span>}
-                      </div>
-                      {activity.description && (
-                        <p style={{ margin: 0, color: '#4b5563', fontSize: '0.9rem' }}>{activity.description}</p>
-                      )}
-                    </div>
-                  </ItemCard>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-    </>
-  )
-}
-
-// ── FLIGHTS ───────────────────────────────────────────────────────────────────
-function FlightsTab({ flights, onAdd, onEdit, onDelete }: {
-  flights: Flight[]
-  onAdd: () => void
-  onEdit: (f: Flight) => void
-  onDelete: (id: string) => void
-}) {
-  return (
-    <>
-      <SectionHeader title="Flights" onAdd={onAdd} />
-      {flights.length === 0 ? <TabEmpty msg="No flights added" /> : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          {flights.map((f) => (
-            <ItemCard key={f.id} onDelete={() => onDelete(f.id)} onEdit={() => onEdit(f)}>
-              <div className="flight-route">
-                <div className="flight-airport">
-                  <p className="flight-airport__code">{f.origin}</p>
-                  <p className="flight-airport__time">{fmtDateTime(f.departure_time)}</p>
-                </div>
-                <div className="flight-line">
-                  <div className="flight-line__track">
-                    <div className="flight-line__bar" />
-                    <span style={{ fontSize: '0.9rem' }}>✈</span>
-                    <div className="flight-line__bar" />
-                  </div>
-                  <span className="flight-line__airline">{f.airline ?? ''}</span>
-                </div>
-                <div className="flight-airport">
-                  <p className="flight-airport__code">{f.destination}</p>
-                  <p className="flight-airport__time">{fmtDateTime(f.arrival_time)}</p>
-                </div>
-              </div>
-              <div className="flight-footer">
-                <StatusBadge status={f.status} />
-                {f.flight_number && <span>Flight: <strong>{f.flight_number}</strong></span>}
-                {f.booking_reference && <span>Ref: <strong>{f.booking_reference}</strong></span>}
-                {f.cost != null && <span className="flight-footer__cost">€ {f.cost.toFixed(2)}</span>}
-              </div>
-            </ItemCard>
-          ))}
-        </div>
-      )}
-    </>
-  )
-}
-
-// ── ACCOMMODATIONS ────────────────────────────────────────────────────────────
-function AccommodationsTab({ accommodations, onAdd, onEdit, onDelete }: {
-  accommodations: Accommodation[]
-  onAdd: () => void
-  onEdit: (a: Accommodation) => void
-  onDelete: (id: string) => void
-}) {
-  return (
-    <>
-      <SectionHeader title="Accommodations" onAdd={onAdd} />
-      {accommodations.length === 0 ? <TabEmpty msg="No accommodations added" /> : (
-        <div className="accom-grid">
-          {accommodations.map((a) => (
-            <ItemCard key={a.id} onDelete={() => onDelete(a.id)} onEdit={() => onEdit(a)}>
-              <div style={{ marginBottom: 10 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 4 }}>
-                  <p style={{ fontWeight: 600, color: 'var(--forest)', margin: 0 }}>{a.name}</p>
-                  <StatusBadge status={a.status} />
-                </div>
-                {a.accommodation_type && (
-                  <span style={{
-                    fontSize: '0.72rem', background: 'var(--mist)',
-                    color: 'var(--forest-mid)', padding: '2px 8px',
-                    borderRadius: 20, textTransform: 'capitalize',
-                  }}>{a.accommodation_type}</span>
-                )}
-              </div>
-              <div style={{ fontSize: '0.78rem', color: '#6b7280', lineHeight: 1.8 }}>
-                {a.address && <p>📍 {a.address}</p>}
-                <p>Check-in: <strong>{fmt(a.check_in)}</strong> · Check-out: <strong>{fmt(a.check_out)}</strong></p>
-                {a.cost_per_night != null && (
-                  <p>€ {a.cost_per_night}/night{a.total_cost != null ? ` · Total: € ${a.total_cost}` : ''}</p>
-                )}
-              </div>
-            </ItemCard>
-          ))}
-        </div>
-      )}
-    </>
-  )
-}
-
-// ── TRANSPORTS ────────────────────────────────────────────────────────────────
-function TransportsTab({ transports, onAdd, onEdit, onDelete }: {
-  transports: Transport[]
-  onAdd: () => void
-  onEdit: (t: Transport) => void
-  onDelete: (id: string) => void
-}) {
-  const icons: Record<string, string> = {
-    train: '🚂', bus: '🚌', car: '🚗', shuttle: '🚐', ferry: '⛴', taxi: '🚕', other: '🚀',
-  }
-  return (
-    <>
-      <SectionHeader title="Transports" onAdd={onAdd} />
-      {transports.length === 0 ? <TabEmpty msg="No transports added" /> : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          {transports.map((t) => (
-            <ItemCard key={t.id} onDelete={() => onDelete(t.id)} onEdit={() => onEdit(t)}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-                <span style={{ fontSize: '1.6rem' }}>{icons[t.transport_type] ?? '🚀'}</span>
-                <div style={{ flex: 1 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                    <p style={{ fontWeight: 600, color: 'var(--forest)', margin: 0 }}>{t.origin} → {t.destination}</p>
-                    <StatusBadge status={t.status} />
-                  </div>
-                  <p style={{ fontSize: '0.75rem', color: '#9ca3af', marginTop: 2 }}>
-                    {fmtDateTime(t.departure_time)}{t.operator ? ` · ${t.operator}` : ''}
-                  </p>
-                </div>
-                {t.cost != null && (
-                  <p style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--forest)' }}>
-                    € {t.cost.toFixed(2)}
-                  </p>
-                )}
-              </div>
-            </ItemCard>
-          ))}
-        </div>
-      )}
-    </>
-  )
-}
-
-// ── EXTRAS ────────────────────────────────────────────────────────────────────
-function ExtrasTab({ extras, onAdd, onDelete }: {
-  extras: Extra[]
-  onAdd: () => void
-  onDelete: (id: string) => void
-}) {
-  const total = extras.reduce((s, e) => s + (e.amount ?? 0), 0)
-  return (
-    <>
-      <SectionHeader title="Extras" onAdd={onAdd} />
-      {extras.length > 0 && (
-        <div style={{
-          background: 'var(--forest)', borderRadius: 16, padding: '16px 20px',
-          marginBottom: 16, display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        }}>
-          <span style={{ fontSize: '0.82rem', color: 'var(--mint)' }}>Total Extras</span>
-          <span style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.6rem', fontWeight: 700, color: '#fff' }}>
-            € {total.toFixed(2)}
-          </span>
-        </div>
-      )}
-      {extras.length === 0 ? <TabEmpty msg="No extras recorded" /> : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          {extras.map((e) => (
-            <ItemCard key={e.id} onDelete={() => onDelete(e.id)}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <div>
-                  <p style={{ fontSize: '0.875rem', fontWeight: 500, color: 'var(--charcoal)' }}>{e.description ?? '—'}</p>
-                  {e.category && (
-                    <p style={{ fontSize: '0.72rem', color: 'var(--sage)', textTransform: 'capitalize', marginTop: 2 }}>
-                      {e.category}
-                    </p>
-                  )}
-                </div>
-                <div style={{ textAlign: 'right' }}>
-                  <p style={{ fontWeight: 600, color: 'var(--forest)' }}>
-                    {e.currency ?? '€'} {e.amount?.toFixed(2) ?? '—'}
-                  </p>
-                  {e.is_estimated && <p style={{ fontSize: '0.7rem', color: '#9ca3af' }}>estimated</p>}
-                </div>
-              </div>
-            </ItemCard>
-          ))}
-        </div>
-      )}
-    </>
-  )
-}
-
-// ── PACKING ───────────────────────────────────────────────────────────────────
-function PackingTab({ items, onAdd, onDelete, onToggle }: {
-  items: PackingItem[]
-  onAdd: () => void
-  onDelete: (id: string) => void
-  onToggle: (id: string) => void
-}) {
-  const total = items.length
-  const checked = items.filter((i) => i.checked).length
-  const grouped = PACKING_CATS.reduce<Record<string, PackingItem[]>>((acc, c) => {
-    const list = items.filter((i) => i.category === c.value)
-    if (list.length) acc[c.label] = list
-    return acc
-  }, {})
-  const uncategorized = items.filter((i) => !i.category)
-  if (uncategorized.length) grouped['Other'] = uncategorized
-
-  return (
-    <>
-      <SectionHeader title="Packing List" onAdd={onAdd} />
-      {total > 0 && (
-        <div className="packing-progress">
-          <span style={{ fontSize: '0.82rem', color: 'var(--forest-mid)' }}>{checked}/{total} items packed</span>
-          <div className="packing-bar">
-            <div className="packing-bar__fill" style={{ width: `${total ? (checked / total) * 100 : 0}%` }} />
-          </div>
-        </div>
-      )}
-      {items.length === 0 ? <TabEmpty msg="Packing list is empty" /> : (
-        Object.entries(grouped).map(([cat, catItems]) => (
-          <div key={cat}>
-            <p className="packing-cat-label">{cat}</p>
-            {catItems.map((item) => (
-              <div
-                key={item.id}
-                className={`packing-item ${item.checked ? 'packing-item--checked' : ''}`}
-                onClick={() => onToggle(item.id)}
-              >
-                <div className="packing-item__check">
-                  {item.checked && (
-                    <svg width="9" height="7" viewBox="0 0 9 7" fill="none">
-                      <path d="M1 3.5l2.5 2.5 4.5-5" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
-                  )}
-                </div>
-                <span className="packing-item__name">{item.name}</span>
-                <button className="packing-item__del" onClick={(e) => { e.stopPropagation(); onDelete(item.id) }}>×</button>
-              </div>
-            ))}
-          </div>
-        ))
-      )}
-    </>
-  )
-}
-
-// ── NOTES ─────────────────────────────────────────────────────────────────────
-function NotesTab({ notes, onAdd, onEdit, onDelete }: {
-  notes: Note[]
-  onAdd: () => void
-  onEdit: (n: Note) => void
-  onDelete: (id: string) => void
-}) {
-  return (
-    <>
-      <SectionHeader title="Trip Notes" onAdd={onAdd} />
-      {notes.length === 0 ? <TabEmpty msg="No notes added" /> : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          {notes.map((note) => (
-            <ItemCard key={note.id} onDelete={() => onDelete(note.id)} onEdit={() => onEdit(note)}>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                <p style={{ margin: 0, fontSize: '0.75rem', color: '#9ca3af' }}>
-                  {new Date(note.created_at).toLocaleString('en-US', {
-                    weekday: 'short', month: 'short', day: 'numeric',
-                    hour: '2-digit', minute: '2-digit',
-                  })}
-                </p>
-                <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--charcoal)', whiteSpace: 'pre-wrap' }}>
-                  {note.text}
-                </p>
-              </div>
-            </ItemCard>
-          ))}
-        </div>
-      )}
-    </>
-  )
-}
-
-// ── STATS ─────────────────────────────────────────────────────────────────────
-function StatsTab({ stats }: { stats: TripStats | null }) {
-  if (!stats) return <TabEmpty msg="Loading budget..." />
-  const items = [
-    { label: 'Flights',        value: stats.flights,       bg: '#eff6ff', color: '#1d4ed8' },
-    { label: 'Transports',     value: stats.transport,     bg: '#fefce8', color: '#a16207' },
-    { label: 'Accommodations', value: stats.accommodation, bg: '#faf5ff', color: '#7e22ce' },
-    { label: 'Activities',     value: stats.activities,    bg: '#fff7ed', color: '#c2410c' },
-    { label: 'Extras',         value: stats.extras,        bg: '#fdf2f8', color: '#be185d' },
-  ]
-  return (
-    <>
-      <div className="budget-total noise">
-        <p className="budget-total__label">Total Estimated Budget</p>
-        <p className="budget-total__amount">€ {stats.total.toFixed(2)}</p>
-      </div>
-      <div className="budget-grid">
-        {items.map((item) => (
-          <div key={item.label} className="budget-item" style={{ background: item.bg }}>
-            <p className="budget-item__amount" style={{ color: item.color }}>€ {item.value.toFixed(2)}</p>
-            <p className="budget-item__label" style={{ color: item.color }}>{item.label}</p>
-          </div>
-        ))}
-      </div>
-    </>
-  )
-}
-
-// ── MAIN PAGE ─────────────────────────────────────────────────────────────────
+// ── Modal types ───────────────────────────────────────────────────────────────
 type ModalType =
   | 'add-activity' | 'add-flight' | 'add-accommodation' | 'add-transport' | 'add-extra' | 'add-packing' | 'add-note'
   | 'edit-activity' | 'edit-flight' | 'edit-accommodation' | 'edit-transport' | 'edit-note'
@@ -898,6 +169,15 @@ export default function TripDetailPage() {
     } finally { setSaving(false) }
   }
 
+  const handleAddNote = async (data: NoteCreate) => {
+    setSaving(true)
+    try {
+      const r = await createNote(tripId, data)
+      setNotes((p) => [r, ...p])
+      setModal(null)
+    } finally { setSaving(false) }
+  }
+
   // ── Edit handlers ──
   const handleEditActivity = async (data: ActivityCreate) => {
     if (!editActivity) return
@@ -939,6 +219,16 @@ export default function TripDetailPage() {
     } finally { setSaving(false) }
   }
 
+  const handleEditNote = async (data: NoteCreate) => {
+    if (!editNote) return
+    setSaving(true)
+    try {
+      const r = await updateNote(tripId, editNote.id, data)
+      setNotes((p) => p.map((n) => n.id === editNote.id ? r : n))
+      setModal(null); setEditNote(null)
+    } finally { setSaving(false) }
+  }
+
   // ── Delete handlers ──
   const handleDeleteActivity = async (id: string) => {
     await deleteActivity(tripId, id)
@@ -975,25 +265,6 @@ export default function TripDetailPage() {
     setPackingItems((p) => p.map((i) => i.id === id ? updated : i))
   }
 
-  const handleAddNote = async (data: NoteCreate) => {
-    setSaving(true)
-    try {
-      const r = await createNote(tripId, data)
-      setNotes((p) => [r, ...p])
-      setModal(null)
-    } finally { setSaving(false) }
-  }
-
-  const handleEditNote = async (data: NoteCreate) => {
-    if (!editNote) return
-    setSaving(true)
-    try {
-      const r = await updateNote(tripId, editNote.id, data)
-      setNotes((p) => p.map((n) => n.id === editNote.id ? r : n))
-      setModal(null); setEditNote(null)
-    } finally { setSaving(false) }
-  }
-
   const handleDeleteNote = async (id: string) => {
     await deleteNote(tripId, id)
     setNotes((p) => p.filter((n) => n.id !== id))
@@ -1001,7 +272,6 @@ export default function TripDetailPage() {
 
   // ── Trip-level handlers ──
   const handleUpdateTrip = async (data: TripCreate) => {
-    if (!tripId) return
     setSaving(true)
     try {
       const r = await updateTrip(tripId, data)
@@ -1010,7 +280,6 @@ export default function TripDetailPage() {
   }
 
   const handleDeleteTrip = async () => {
-    if (!tripId) return
     await deleteTrip(tripId)
     navigate('/')
   }
@@ -1196,12 +465,7 @@ export default function TripDetailPage() {
 
       {modal === 'add-flight' && (
         <Modal title="Add Flight" onClose={closeModal} size="lg">
-          <FlightForm
-            loading={saving}
-            onSubmit={handleAddFlight}
-            minDateTime={tripMin}
-            maxDateTime={tripMax}
-          />
+          <FlightForm loading={saving} onSubmit={handleAddFlight} minDateTime={tripMin} maxDateTime={tripMax} />
         </Modal>
       )}
 
@@ -1218,12 +482,7 @@ export default function TripDetailPage() {
 
       {modal === 'add-transport' && (
         <Modal title="Add Transport" onClose={closeModal} size="lg">
-          <TransportForm
-            loading={saving}
-            onSubmit={handleAddTransport}
-            minDateTime={tripMin}
-            maxDateTime={tripMax}
-          />
+          <TransportForm loading={saving} onSubmit={handleAddTransport} minDateTime={tripMin} maxDateTime={tripMax} />
         </Modal>
       )}
 
@@ -1236,6 +495,12 @@ export default function TripDetailPage() {
       {modal === 'add-packing' && (
         <Modal title="Add Item" onClose={closeModal}>
           <PackingForm loading={saving} onSubmit={handleAddPacking} />
+        </Modal>
+      )}
+
+      {modal === 'add-note' && (
+        <Modal title="Add Note" onClose={closeModal}>
+          <NoteForm loading={saving} onSubmit={handleAddNote} />
         </Modal>
       )}
 
@@ -1255,13 +520,7 @@ export default function TripDetailPage() {
 
       {modal === 'edit-flight' && editFlight && (
         <Modal title="Edit Flight" onClose={closeModal} size="lg">
-          <FlightForm
-            initial={editFlight}
-            loading={saving}
-            onSubmit={handleEditFlight}
-            minDateTime={tripMin}
-            maxDateTime={tripMax}
-          />
+          <FlightForm initial={editFlight} loading={saving} onSubmit={handleEditFlight} minDateTime={tripMin} maxDateTime={tripMax} />
         </Modal>
       )}
 
@@ -1279,25 +538,13 @@ export default function TripDetailPage() {
 
       {modal === 'edit-transport' && editTransport && (
         <Modal title="Edit Transport" onClose={closeModal} size="lg">
-          <TransportForm
-            initial={editTransport}
-            loading={saving}
-            onSubmit={handleEditTransport}
-            minDateTime={tripMin}
-            maxDateTime={tripMax}
-          />
+          <TransportForm initial={editTransport} loading={saving} onSubmit={handleEditTransport} minDateTime={tripMin} maxDateTime={tripMax} />
         </Modal>
       )}
 
       {modal === 'edit-trip' && (
         <Modal title="Edit Trip" onClose={closeModal}>
           <TripForm initial={trip ?? undefined} onSubmit={handleUpdateTrip} loading={saving} />
-        </Modal>
-      )}
-
-      {modal === 'add-note' && (
-        <Modal title="Add Note" onClose={closeModal}>
-          <NoteForm loading={saving} onSubmit={handleAddNote} />
         </Modal>
       )}
 
@@ -1323,17 +570,12 @@ export default function TripDetailPage() {
               <strong>{trip?.title}</strong> and all associated data will be permanently removed.
             </p>
             <div style={{ display: 'flex', gap: 12 }}>
-              <button
-                className="btn-secondary"
-                style={{ flex: 1, justifyContent: 'center' }}
-                onClick={closeModal}
-              >Cancel</button>
-              <button
-                className="btn-danger"
-                style={{ flex: 1 }}
-                onClick={handleDeleteTrip}
-                disabled={saving}
-              >Delete</button>
+              <button className="btn-secondary" style={{ flex: 1, justifyContent: 'center' }} onClick={closeModal}>
+                Cancel
+              </button>
+              <button className="btn-danger" style={{ flex: 1 }} onClick={handleDeleteTrip} disabled={saving}>
+                Delete
+              </button>
             </div>
           </div>
         </Modal>
