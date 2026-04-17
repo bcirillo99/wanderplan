@@ -6,3 +6,4 @@ from . import flight_service
 from . import transport_service
 from . import packing_item_service
 from . import expense_service
+from . import note_service

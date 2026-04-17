@@ -132,6 +132,13 @@ export interface Expense {
   notes?: string | null
 }
 
+export interface Note {
+  id: string
+  trip_id: string
+  created_at: string
+  text: string
+}
+
 export interface TripStats {
   flights: number
   transport: number
@@ -158,6 +165,8 @@ export type FlightCreate = Omit<Flight, 'id' | 'trip_id'>
 export type AccommodationCreate = Omit<Accommodation, 'id' | 'trip_id' | 'total_cost'>
 export type TransportCreate = Omit<Transport, 'id' | 'trip_id'>
 export type PackingItemCreate = Omit<PackingItem, 'id' | 'trip_id' | 'checked'>
+export type NoteCreate = { text: string }
+export type NoteUpdate = { text?: string }
 export type ExpenseCreate = Omit<Expense, 'id' | 'trip_id'>
 
 // ---- Update types ----

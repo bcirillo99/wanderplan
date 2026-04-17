@@ -29,3 +29,4 @@ class Trip(Base):
     transports: Mapped[list["Transport"]] = relationship(back_populates="trip", cascade="all, delete-orphan")
     packing_items: Mapped[list["PackingItem"]] = relationship(back_populates="trip", cascade="all, delete-orphan")
     expenses: Mapped[list["Expense"]] = relationship(back_populates="trip", cascade="all, delete-orphan")
+    trip_notes: Mapped[list["Note"]] = relationship(back_populates="trip", cascade="all, delete-orphan")

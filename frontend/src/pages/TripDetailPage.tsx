@@ -12,13 +12,14 @@ import { getExpenses, createExpense, deleteExpense } from '../api/expenses'
 import { getPackingItems, createPackingItem, deletePackingItem, togglePackingItem } from '../api/packing_items'
 import { getTripStats } from '../api/stats'
 import { getActivities, createActivity, updateActivity, deleteActivity } from '../api/activities'
+import { getNotes, createNote, updateNote, deleteNote } from '../api/notes'
 import type {
-  Trip, Activity, Flight, Accommodation, Transport, Expense, PackingItem, TripStats,
+  Trip, Activity, Flight, Accommodation, Transport, Expense, PackingItem, TripStats, Note,
   ActivityCreate, FlightCreate, AccommodationCreate, TransportCreate, ExpenseCreate, PackingItemCreate,
-  TripCreate,
+  TripCreate, NoteCreate,
 } from '../types'
 import {
-  ActivityForm, FlightForm, AccommodationForm, TransportForm, ExpenseForm, PackingForm, TripForm,
+  ActivityForm, FlightForm, AccommodationForm, TransportForm, ExpenseForm, PackingForm, TripForm, NoteForm,
 } from '../components/forms/Forms'
 import { PACKING_CATS } from '../components/forms/tripOptions'
 
@@ -43,7 +44,7 @@ function fmtDateTime(d?: string): string | null {
 }
 
 // ── Tab types ─────────────────────────────────────────────────────────────────
-type Tab = 'summary' | 'days' | 'activities' | 'flights' | 'accommodations' | 'transports' | 'expenses' | 'packing' | 'stats'
+type Tab = 'summary' | 'days' | 'activities' | 'flights' | 'accommodations' | 'transports' | 'expenses' | 'packing' | 'stats' | 'notes'
 const TABS: { id: Tab; label: string; icon: string }[] = [
   { id: 'summary',        label: 'Overview',       icon: '🗺️' },
   { id: 'days',           label: 'Days',           icon: '📅' },
@@ -54,6 +55,7 @@ const TABS: { id: Tab; label: string; icon: string }[] = [
   { id: 'expenses',       label: 'Expenses',       icon: '💰' },
   { id: 'packing',        label: 'Packing',        icon: '🎒' },
   { id: 'stats',          label: 'Budget',         icon: '📊' },
+  { id: 'notes',          label: 'Notes',          icon: '📝' },
 ]
 
 // ── Shared small components ───────────────────────────────────────────────────
@@ -777,6 +779,39 @@ function PackingTab({ items, onAdd, onDelete, onToggle }: {
   )
 }
 
+// ── NOTES ─────────────────────────────────────────────────────────────────────
+function NotesTab({ notes, onAdd, onEdit, onDelete }: {
+  notes: Note[]
+  onAdd: () => void
+  onEdit: (n: Note) => void
+  onDelete: (id: string) => void
+}) {
+  return (
+    <>
+      <SectionHeader title="Trip Notes" onAdd={onAdd} />
+      {notes.length === 0 ? <TabEmpty msg="No notes added" /> : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          {notes.map((note) => (
+            <ItemCard key={note.id} onDelete={() => onDelete(note.id)} onEdit={() => onEdit(note)}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                <p style={{ margin: 0, fontSize: '0.75rem', color: '#9ca3af' }}>
+                  {new Date(note.created_at).toLocaleString('en-US', {
+                    weekday: 'short', month: 'short', day: 'numeric',
+                    hour: '2-digit', minute: '2-digit',
+                  })}
+                </p>
+                <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--charcoal)', whiteSpace: 'pre-wrap' }}>
+                  {note.text}
+                </p>
+              </div>
+            </ItemCard>
+          ))}
+        </div>
+      )}
+    </>
+  )
+}
+
 // ── STATS ─────────────────────────────────────────────────────────────────────
 function StatsTab({ stats }: { stats: TripStats | null }) {
   if (!stats) return <TabEmpty msg="Loading budget..." />
@@ -807,8 +842,8 @@ function StatsTab({ stats }: { stats: TripStats | null }) {
 
 // ── MAIN PAGE ─────────────────────────────────────────────────────────────────
 type ModalType =
-  | 'add-activity' | 'add-flight' | 'add-accommodation' | 'add-transport' | 'add-expense' | 'add-packing'
-  | 'edit-activity' | 'edit-flight' | 'edit-accommodation' | 'edit-transport'
+  | 'add-activity' | 'add-flight' | 'add-accommodation' | 'add-transport' | 'add-expense' | 'add-packing' | 'add-note'
+  | 'edit-activity' | 'edit-flight' | 'edit-accommodation' | 'edit-transport' | 'edit-note'
   | 'edit-trip' | 'confirm-delete'
   | null
 
@@ -826,6 +861,7 @@ export default function TripDetailPage() {
   const [expenses, setExpenses] = useState<Expense[]>([])
   const [packingItems, setPackingItems] = useState<PackingItem[]>([])
   const [stats, setStats] = useState<TripStats | null>(null)
+  const [notes, setNotes] = useState<Note[]>([])
 
   // ── UI state ──
   const [modal, setModal] = useState<ModalType>(null)
@@ -838,6 +874,7 @@ export default function TripDetailPage() {
   const [editFlight, setEditFlight] = useState<Flight | null>(null)
   const [editAccommodation, setEditAccommodation] = useState<Accommodation | null>(null)
   const [editTransport, setEditTransport] = useState<Transport | null>(null)
+  const [editNote, setEditNote] = useState<Note | null>(null)
 
   // ── Initial load ──
   useEffect(() => {
@@ -846,10 +883,11 @@ export default function TripDetailPage() {
       getTrip(tripId), getActivities(tripId), getFlights(tripId),
       getAccommodations(tripId), getTransports(tripId),
       getExpenses(tripId), getPackingItems(tripId), getTripStats(tripId),
-    ]).then(([t, act, f, a, tr, e, p, s]) => {
+      getNotes(tripId),
+    ]).then(([t, act, f, a, tr, e, p, s, n]) => {
       setTrip(t); setActivities(act); setFlights(f)
       setAccommodations(a); setTransports(tr); setExpenses(e)
-      setPackingItems(p); setStats(s)
+      setPackingItems(p); setStats(s); setNotes(n)
       setLoading(false)
     }).catch(() => setLoading(false))
   }, [tripId])
@@ -1003,6 +1041,30 @@ export default function TripDetailPage() {
     setPackingItems((p) => p.map((i) => i.id === id ? updated : i))
   }
 
+  const handleAddNote = async (data: NoteCreate) => {
+    setSaving(true)
+    try {
+      const r = await createNote(tripId, data)
+      setNotes((p) => [r, ...p])
+      setModal(null)
+    } finally { setSaving(false) }
+  }
+
+  const handleEditNote = async (data: NoteCreate) => {
+    if (!editNote) return
+    setSaving(true)
+    try {
+      const r = await updateNote(tripId, editNote.id, data)
+      setNotes((p) => p.map((n) => n.id === editNote.id ? r : n))
+      setModal(null); setEditNote(null)
+    } finally { setSaving(false) }
+  }
+
+  const handleDeleteNote = async (id: string) => {
+    await deleteNote(tripId, id)
+    setNotes((p) => p.filter((n) => n.id !== id))
+  }
+
   // ── Trip-level handlers ──
   const handleSaveNotes = async (notes: string) => {
     if (!tripId) return
@@ -1042,6 +1104,7 @@ export default function TripDetailPage() {
     setModal(null)
     setEditActivity(null); setEditFlight(null)
     setEditAccommodation(null); setEditTransport(null)
+    setEditNote(null)
   }
 
   // ── Render ──
@@ -1180,6 +1243,15 @@ export default function TripDetailPage() {
         )}
 
         {tab === 'stats' && <StatsTab stats={stats} />}
+
+        {tab === 'notes' && (
+          <NotesTab
+            notes={notes}
+            onAdd={() => setModal('add-note')}
+            onEdit={(n) => { setEditNote(n); setModal('edit-note') }}
+            onDelete={handleDeleteNote}
+          />
+        )}
       </main>
 
       {/* ── ADD MODALS ── */}
@@ -1293,6 +1365,18 @@ export default function TripDetailPage() {
       {modal === 'edit-trip' && (
         <Modal title="Edit Trip" onClose={closeModal}>
           <TripForm initial={trip ?? undefined} onSubmit={handleUpdateTrip} loading={saving} />
+        </Modal>
+      )}
+
+      {modal === 'add-note' && (
+        <Modal title="Add Note" onClose={closeModal}>
+          <NoteForm loading={saving} onSubmit={handleAddNote} />
+        </Modal>
+      )}
+
+      {modal === 'edit-note' && editNote && (
+        <Modal title="Edit Note" onClose={closeModal}>
+          <NoteForm initial={editNote} loading={saving} onSubmit={handleEditNote} />
         </Modal>
       )}
 

@@ -6,3 +6,4 @@ from .flight import Flight
 from .transport import Transport
 from .packing_item import PackingItem
 from .expense import Expense
+from .note import Note
