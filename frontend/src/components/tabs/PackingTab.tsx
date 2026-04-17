@@ -1,6 +1,6 @@
 // frontend/src/components/tabs/PackingTab.tsx
 import type { PackingItem } from '../../types'
-import { PACKING_CATS } from '../forms/tripOptions'
+import { PACKING_CATS } from '../forms/formOptions'
 import { SectionHeader, TabEmpty } from './TabShared'
 
 export function PackingTab({ items, onAdd, onDelete, onToggle }: {
