@@ -122,17 +122,30 @@ function SummaryTab({
   const [notesEditing, setNotesEditing] = useState(false)
   const savedNotesRef = React.useRef(trip?.notes ?? '')
 
+  // Keep local state in sync with the trip object when it loads / changes externally
   useEffect(() => {
-    setNotes(trip?.notes ?? '')
-    savedNotesRef.current = trip?.notes ?? ''
-  }, [trip?.notes])
-
-  const handleNotesBlur = async () => {
-    setNotesEditing(false)
-    if (notes !== savedNotesRef.current) {
-      savedNotesRef.current = notes
-      await onSaveNotes(notes)
+    if (!notesEditing) {
+      setNotes(trip?.notes ?? '')
+      savedNotesRef.current = trip?.notes ?? ''
     }
+  }, [trip?.notes, notesEditing])
+
+  const handleStartEdit = () => {
+    setNotes(savedNotesRef.current)
+    setNotesEditing(true)
+  }
+
+  const handleSaveNotes = async () => {
+    if (notes !== savedNotesRef.current) {
+      await onSaveNotes(notes)
+      savedNotesRef.current = notes
+    }
+    setNotesEditing(false)
+  }
+
+  const handleCancelEdit = () => {
+    setNotes(savedNotesRef.current)
+    setNotesEditing(false)
   }
 
   // Activities grouped by date for the day strip
@@ -160,32 +173,6 @@ function SummaryTab({
 
   return (
     <div>
-      {/* ── Trip actions ── */}
-      <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginBottom: 28 }}>
-        <button onClick={onEditTrip} style={{
-          display: 'flex', alignItems: 'center', gap: 6,
-          padding: '8px 16px', borderRadius: 10, border: '1.5px solid var(--forest)',
-          background: 'transparent', color: 'var(--forest)', cursor: 'pointer',
-          fontSize: '0.82rem', fontWeight: 600,
-        }}>
-          <svg width="13" height="13" viewBox="0 0 12 12" fill="none">
-            <path d="M8 1.5l2.5 2.5-7 7H1v-2.5l7-7Z" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
-          </svg>
-          Edit Trip
-        </button>
-        <button onClick={onDeleteTrip} style={{
-          display: 'flex', alignItems: 'center', gap: 6,
-          padding: '8px 16px', borderRadius: 10, border: '1.5px solid #fca5a5',
-          background: 'transparent', color: '#dc2626', cursor: 'pointer',
-          fontSize: '0.82rem', fontWeight: 600,
-        }}>
-          <svg width="13" height="13" viewBox="0 0 11 11" fill="none">
-            <path d="M1 1l9 9M10 1L1 10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-          </svg>
-          Delete Trip
-        </button>
-      </div>
-
       {/* ── Main grid ── */}
       <div className="summary-grid">
 
@@ -194,18 +181,41 @@ function SummaryTab({
 
           {/* Notes */}
           <div className="summary-section">
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <p className="summary-section__title">📝 Trip Notes</p>
-              <button
-                onClick={() => setNotesEditing((v) => !v)}
-                style={{
-                  fontSize: '0.72rem', fontWeight: 600, color: 'var(--forest-mid)',
-                  background: 'var(--mist)', border: 'none', borderRadius: 8,
-                  padding: '3px 10px', cursor: 'pointer',
-                }}
-              >
-                {notesEditing ? 'Preview' : 'Edit'}
-              </button>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+              <p className="summary-section__title" style={{ margin: 0 }}>📝 Trip Notes</p>
+              {!notesEditing ? (
+                <button
+                  className="btn-add"
+                  onClick={handleStartEdit}
+                  title="Edit notes"
+                  type="button"
+                >
+                  <svg width="11" height="11" viewBox="0 0 12 12" fill="none">
+                    <path d="M8 1.5l2.5 2.5-7 7H1v-2.5l7-7Z" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                  Edit
+                </button>
+              ) : (
+                <div style={{ display: 'flex', gap: 6 }}>
+                  <button
+                    className="btn-add"
+                    onClick={handleSaveNotes}
+                    disabled={savingNotes}
+                    type="button"
+                    style={{ background: 'var(--forest)', color: '#fff', borderColor: 'var(--forest)' }}
+                  >
+                    {savingNotes ? 'Saving…' : 'Save'}
+                  </button>
+                  <button
+                    className="btn-add"
+                    onClick={handleCancelEdit}
+                    disabled={savingNotes}
+                    type="button"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              )}
             </div>
 
             {notesEditing ? (
@@ -214,19 +224,18 @@ function SummaryTab({
                 value={notes}
                 autoFocus
                 onChange={(e) => setNotes(e.target.value)}
-                onBlur={handleNotesBlur}
                 rows={7}
                 placeholder="Aggiungi note, promemoria, info importanti..."
-                style={{ resize: 'vertical', fontFamily: 'inherit', fontSize: '0.875rem' }}
+                style={{ resize: 'vertical', fontFamily: 'inherit', fontSize: '0.875rem', width: '100%' }}
               />
             ) : (
               <div
                 className="notes-preview"
-                onClick={() => setNotesEditing(true)}
+                onClick={handleStartEdit}
                 title="Click to edit"
               >
-                {notes ? (
-                  notes.split('\n').map((line, i) => (
+                {(trip?.notes ?? '').trim() ? (
+                  (trip?.notes ?? '').split('\n').map((line, i) => (
                     line.trim() === ''
                       ? <br key={i} />
                       : <p key={i} style={{ margin: '0 0 4px', fontSize: '0.875rem', color: 'var(--charcoal)', lineHeight: 1.6 }}>
@@ -234,17 +243,11 @@ function SummaryTab({
                         </p>
                   ))
                 ) : (
-                  <p style={{ fontSize: '0.85rem', color: '#d1d5db', fontStyle: 'italic', margin: 0 }}>
-                    Click to add notes, reminders, important info...
+                  <p style={{ fontSize: '0.85rem', color: '#9ca3af', fontStyle: 'italic', margin: 0 }}>
+                    No notes yet — click Edit to add reminders, booking refs, tips…
                   </p>
                 )}
               </div>
-            )}
-
-            {savingNotes && (
-              <p style={{ fontSize: '0.7rem', color: 'var(--sage)', margin: 0, alignSelf: 'flex-end' }}>
-                Saving...
-              </p>
             )}
           </div>
 
@@ -1058,15 +1061,31 @@ export default function TripDetailPage() {
           {loading ? (
             <div style={{ height: 32, width: 200, background: 'rgba(255,255,255,0.2)', borderRadius: 8 }} />
           ) : (
-            <>
-              <h1 className="trip-header__title">{trip?.title}</h1>
-              {trip?.destination && <p className="trip-header__meta">{trip.destination}</p>}
-              {(trip?.start_date || trip?.end_date) && (
-                <p className="trip-header__dates">
-                  {fmtLong(trip?.start_date)}{trip?.end_date ? ` → ${fmtLong(trip?.end_date)}` : ''}
-                </p>
-              )}
-            </>
+            <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 16 }}>
+              <div>
+                <h1 className="trip-header__title">{trip?.title}</h1>
+                {trip?.destination && <p className="trip-header__meta">{trip.destination}</p>}
+                {(trip?.start_date || trip?.end_date) && (
+                  <p className="trip-header__dates">
+                    {fmtLong(trip?.start_date)}{trip?.end_date ? ` → ${fmtLong(trip?.end_date)}` : ''}
+                  </p>
+                )}
+              </div>
+              <div style={{ display: 'flex', gap: 8, flexShrink: 0, paddingBottom: 4 }}>
+                <button onClick={() => setModal('edit-trip')} className="trip-header__action-btn">
+                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                    <path d="M8 1.5l2.5 2.5-7 7H1v-2.5l7-7Z" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                  Edit
+                </button>
+                <button onClick={() => setModal('confirm-delete')} className="trip-header__action-btn trip-header__action-btn--danger">
+                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                    <path d="M1.5 3h9M5 3V2h2v1M4.5 9.5l-.5-5M7.5 9.5l.5-5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                  Delete
+                </button>
+              </div>
+            </div>
           )}
         </div>
       </div>

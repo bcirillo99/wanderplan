@@ -1,14 +1,23 @@
 // frontend/src/pages/TripDayPage.tsx
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import { useParams, Link } from 'react-router-dom'
 import Navbar from '../components/Navbar'
 import Modal from '../components/Modal'
 import StatusBadge from '../components/StatusBadge'
 import { getTrip } from '../api/trips'
 import { createActivity, updateActivity } from '../api/activities'
+import { createFlight } from '../api/flights'
+import { createAccommodation } from '../api/accommodations'
+import { createTransport } from '../api/transports'
 import { getDailySummary } from '../api/daily_summary'
-import type { Trip, Activity, ActivityCreate, DailySummaryItem } from '../types'
-import { ActivityForm } from '../components/forms/Forms'
+import type {
+  Trip, Activity, ActivityCreate, DailySummaryItem,
+  FlightCreate, AccommodationCreate, TransportCreate,
+} from '../types'
+import {
+  ActivityForm, FlightForm, AccommodationForm, TransportForm,
+} from '../components/forms/Forms'
 
 
 function fmtDay(d?: string | null) {
@@ -119,15 +128,60 @@ function ActivityDetailView({ activity, onEdit, onClose }: {
 }
 
 // ── Main Page ─────────────────────────────────────────────────────────────────
+type AddKind = 'activity' | 'flight' | 'accommodation' | 'transport'
+type ModalKind = 'add-activity' | 'add-flight' | 'add-accommodation' | 'add-transport' | 'edit' | 'view' | null
+
 export default function TripDayPage() {
   const { tripId, date } = useParams<{ tripId: string; date: string }>()
   const [trip, setTrip]             = useState<Trip | null>(null)
   const [summaryItems, setSummaryItems] = useState<DailySummaryItem[]>([])
-  const [modal, setModal]           = useState<'add' | 'edit' | 'view' | null>(null)
+  const [modal, setModal]           = useState<ModalKind>(null)
+  const [addMenuOpen, setAddMenuOpen] = useState(false)
   const [editTarget, setEditTarget] = useState<Activity | null>(null)
   const [viewTarget, setViewTarget] = useState<Activity | null>(null)
   const [saving, setSaving]         = useState(false)
   const [loading, setLoading]       = useState(true)
+  const addBtnRef = useRef<HTMLButtonElement | null>(null)
+  const addMenuRef = useRef<HTMLDivElement | null>(null)
+  const [addMenuPos, setAddMenuPos] = useState<{ top: number; right: number } | null>(null)
+
+  // Compute menu position and close on outside click / scroll / resize
+  useEffect(() => {
+    if (!addMenuOpen) return
+
+    const updatePos = () => {
+      const r = addBtnRef.current?.getBoundingClientRect()
+      if (!r) return
+      setAddMenuPos({
+        top: r.bottom + 6,
+        right: window.innerWidth - r.right,
+      })
+    }
+    updatePos()
+
+    const onDocClick = (e: MouseEvent) => {
+      const t = e.target as Node
+      if (
+        addMenuRef.current && !addMenuRef.current.contains(t) &&
+        addBtnRef.current && !addBtnRef.current.contains(t)
+      ) {
+        setAddMenuOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', onDocClick)
+    window.addEventListener('resize', updatePos)
+    window.addEventListener('scroll', updatePos, true)
+    return () => {
+      document.removeEventListener('mousedown', onDocClick)
+      window.removeEventListener('resize', updatePos)
+      window.removeEventListener('scroll', updatePos, true)
+    }
+  }, [addMenuOpen])
+
+  const openAdd = (kind: AddKind) => {
+    setAddMenuOpen(false)
+    setModal(`add-${kind}` as ModalKind)
+  }
 
   const loadDaySummary = async () => {
     if (!tripId || !date) return
@@ -158,6 +212,39 @@ export default function TripDayPage() {
     setSaving(true)
     try {
       await createActivity(tripId, { ...data, activity_date: date })
+      await loadDaySummary()
+      setModal(null)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleAddFlight = async (data: FlightCreate) => {
+    setSaving(true)
+    try {
+      await createFlight(tripId, data)
+      await loadDaySummary()
+      setModal(null)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleAddAccommodation = async (data: AccommodationCreate) => {
+    setSaving(true)
+    try {
+      await createAccommodation(tripId, data)
+      await loadDaySummary()
+      setModal(null)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleAddTransport = async (data: TransportCreate) => {
+    setSaving(true)
+    try {
+      await createTransport(tripId, data)
       await loadDaySummary()
       setModal(null)
     } finally {
@@ -211,12 +298,77 @@ export default function TripDayPage() {
                     <strong>€ {totalCost.toFixed(2)}</strong>
                   </div>
                 )}
-                <button className="btn-primary" style={{ background: '#fff', color: 'var(--forest)' }} onClick={() => setModal('add')}>
-                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                    <path d="M6 1v10M1 6h10" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                <button
+                  ref={addBtnRef}
+                  className="btn-primary"
+                  style={{ background: '#fff', color: 'var(--forest)' }}
+                  onClick={() => setAddMenuOpen((v) => !v)}
+                  aria-haspopup="menu"
+                  aria-expanded={addMenuOpen}
+                >
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 16 16"
+                    fill="none"
+                    style={{ flexShrink: 0, overflow: 'visible', display: 'block' }}
+                    aria-hidden="true"
+                  >
+                    <path d="M8 3v10M3 8h10" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
                   </svg>
-                  Activity
+                  Add
                 </button>
+                {addMenuOpen && addMenuPos && createPortal(
+                  <div
+                    ref={addMenuRef}
+                    role="menu"
+                    style={{
+                      position: 'fixed',
+                      top: addMenuPos.top,
+                      right: addMenuPos.right,
+                      background: '#fff',
+                      border: '1px solid var(--cream-dark)',
+                      borderRadius: 12,
+                      boxShadow: '0 8px 24px rgba(15,23,42,0.18)',
+                      padding: 6,
+                      minWidth: 200,
+                      zIndex: 1000,
+                    }}
+                  >
+                    {[
+                      { kind: 'activity' as AddKind,      icon: '🗓️', label: 'Activity' },
+                      { kind: 'flight' as AddKind,        icon: '✈️', label: 'Flight' },
+                      { kind: 'accommodation' as AddKind, icon: '🏨', label: 'Accommodation' },
+                      { kind: 'transport' as AddKind,     icon: '🚌', label: 'Transportation' },
+                    ].map((opt) => (
+                      <button
+                        key={opt.kind}
+                        role="menuitem"
+                        onClick={() => openAdd(opt.kind)}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 10,
+                          width: '100%',
+                          padding: '9px 12px',
+                          border: 'none',
+                          background: 'transparent',
+                          borderRadius: 8,
+                          cursor: 'pointer',
+                          textAlign: 'left',
+                          fontSize: '0.875rem',
+                          color: 'var(--forest)',
+                        }}
+                        onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--ivory)')}
+                        onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+                      >
+                        <span style={{ fontSize: '1rem' }}>{opt.icon}</span>
+                        <span>{opt.label}</span>
+                      </button>
+                    ))}
+                  </div>,
+                  document.body
+                )}
               </div>
             </div>
           )}
@@ -233,7 +385,7 @@ export default function TripDayPage() {
             <div style={{ fontSize: '2.5rem', marginBottom: 16 }}>🗺️</div>
             <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.4rem', fontWeight: 600, color: 'var(--forest)', marginBottom: 8 }}>No Activities</h3>
             <p style={{ color: 'var(--sage)', fontSize: '0.875rem', marginBottom: 24 }}>Start adding activities for this day.</p>
-            <button className="btn-primary" onClick={() => setModal('add')}>Add First Activity</button>
+            <button className="btn-primary" onClick={() => setModal('add-activity')}>Add First Activity</button>
           </div>
         ) : (
           <div className="timeline">
@@ -244,18 +396,54 @@ export default function TripDayPage() {
         )}
       </main>
 
-      {modal === 'add' && (
-      <Modal title="New Activity" onClose={() => setModal(null)} size="lg">
-        <ActivityForm
-          initial={{ activity_date: date }}
-          loading={saving}
-          onSubmit={handleAdd}
-          showDayPicker={false}
-          tripStartDate={trip?.start_date}
-          tripEndDate={trip?.end_date}
-        />
-      </Modal>
-    )}
+      {modal === 'add-activity' && (
+        <Modal title="New Activity" onClose={() => setModal(null)} size="lg">
+          <ActivityForm
+            initial={{ activity_date: date }}
+            loading={saving}
+            onSubmit={handleAdd}
+            showDayPicker={false}
+            tripStartDate={trip?.start_date}
+            tripEndDate={trip?.end_date}
+          />
+        </Modal>
+      )}
+
+      {modal === 'add-flight' && (
+        <Modal title="New Flight" onClose={() => setModal(null)} size="lg">
+          <FlightForm
+            initial={{ departure_time: `${date}T00:00` }}
+            loading={saving}
+            onSubmit={handleAddFlight}
+            minDateTime={trip?.start_date ? `${trip.start_date}T00:00` : undefined}
+            maxDateTime={trip?.end_date ? `${trip.end_date}T23:59` : undefined}
+          />
+        </Modal>
+      )}
+
+      {modal === 'add-accommodation' && (
+        <Modal title="New Accommodation" onClose={() => setModal(null)} size="lg">
+          <AccommodationForm
+            initial={{ check_in: date }}
+            loading={saving}
+            onSubmit={handleAddAccommodation}
+            minDate={trip?.start_date ?? undefined}
+            maxDate={trip?.end_date ?? undefined}
+          />
+        </Modal>
+      )}
+
+      {modal === 'add-transport' && (
+        <Modal title="New Transportation" onClose={() => setModal(null)} size="lg">
+          <TransportForm
+            initial={{ departure_time: `${date}T00:00` }}
+            loading={saving}
+            onSubmit={handleAddTransport}
+            minDateTime={trip?.start_date ? `${trip.start_date}T00:00` : undefined}
+            maxDateTime={trip?.end_date ? `${trip.end_date}T23:59` : undefined}
+          />
+        </Modal>
+      )}
       {modal === 'view' && viewTarget && (
         <Modal title="Activity Details" onClose={() => { setModal(null); setViewTarget(null) }} size="lg">
           <ActivityDetailView
