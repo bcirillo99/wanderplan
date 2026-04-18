@@ -13,8 +13,10 @@ React 19 + TypeScript + Vite client for the WanderPlan trip planning app.
 | Vite | 8 | Dev server + bundler |
 | React Router | 7 | Client-side routing |
 | Axios | 1.x | HTTP client |
+| TanStack Query | 5 | Server state — caching, background refetch, invalidation |
 | Vitest | 4 | Unit testing |
 | Testing Library | 16 | Component testing |
+| sonner | 2 | Toast notifications |
 | Tailwind CSS | 4 | Utility styles |
 
 ---
@@ -137,6 +139,12 @@ Tests live in `src/test/`. Stack: Vitest + @testing-library/react + jsdom.
 | `tripSearch.test.ts` | Trip search filter predicate (title + destination) |
 | `ActivitiesTab.test.tsx` | Search by title/location, status filter, combined filter |
 | `ExtraForm.test.tsx` | Add mode (empty fields), edit mode (initial values pre-populated) |
+
+---
+
+## Architecture
+
+See [ARCHITECTURE.md](./ARCHITECTURE.md) for rationale behind TanStack Query, error boundary, toast setup, and testing strategy.
 
 ---
 

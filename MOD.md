@@ -27,7 +27,7 @@
 
 ### Nice to have
 
-- No search/filter on any list
+- ~~No search/filter on any list~~ ✅ Fixed — trip search (title/destination) on HomePage; activity search (title/location) + status filter on ActivitiesTab
 - No drag-and-drop reorder for day activities
 - No PWA / offline support
 - No shared trip links

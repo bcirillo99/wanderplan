@@ -1,5 +1,5 @@
 // frontend/src/hooks/useTripData.ts
-import { useState, useEffect } from 'react'
+import { useQuery, useMutation, useQueryClient, useIsMutating } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { getTrip, updateTrip as apiUpdateTrip, deleteTrip as apiDeleteTrip } from '../api/trips'
 import { getFlights, createFlight, updateFlight as apiUpdateFlight, deleteFlight as apiDeleteFlight } from '../api/flights'
@@ -16,37 +16,58 @@ import type {
   PackingItemCreate, TripCreate, NoteCreate,
 } from '../types'
 
-export function useTripData(tripId: string) {
-  // ── Data state ──
-  const [trip, setTrip]                     = useState<Trip | null>(null)
-  const [activities, setActivities]         = useState<Activity[]>([])
-  const [flights, setFlights]               = useState<Flight[]>([])
-  const [accommodations, setAccommodations] = useState<Accommodation[]>([])
-  const [transports, setTransports]         = useState<Transport[]>([])
-  const [extras, setExtras]                 = useState<Extra[]>([])
-  const [packingItems, setPackingItems]     = useState<PackingItem[]>([])
-  const [stats, setStats]                   = useState<TripStats | null>(null)
-  const [notes, setNotes]                   = useState<Note[]>([])
-  const [loading, setLoading]               = useState(true)
-  const [saving, setSaving]                 = useState(false)
+// ── Query keys ─────────────────────────────────────────────────────────────────
+export const QUERY_KEYS = {
+  trip:           (id: string) => ['trip', id] as const,
+  activities:     (id: string) => ['activities', id] as const,
+  flights:        (id: string) => ['flights', id] as const,
+  accommodations: (id: string) => ['accommodations', id] as const,
+  transports:     (id: string) => ['transports', id] as const,
+  extras:         (id: string) => ['extras', id] as const,
+  packingItems:   (id: string) => ['packingItems', id] as const,
+  stats:          (id: string) => ['stats', id] as const,
+  notes:          (id: string) => ['notes', id] as const,
+}
 
-  // ── Initial load ──
-  useEffect(() => {
-    Promise.all([
-      getTrip(tripId), getActivities(tripId), getFlights(tripId),
-      getAccommodations(tripId), getTransports(tripId),
-      getExtras(tripId), getPackingItems(tripId), getTripStats(tripId),
-      getNotes(tripId),
-    ]).then(([t, act, f, a, tr, e, p, s, n]) => {
-      setTrip(t); setActivities(act); setFlights(f)
-      setAccommodations(a); setTransports(tr); setExtras(e)
-      setPackingItems(p); setStats(s); setNotes(n)
-      setLoading(false)
-    }).catch(() => {
-      setLoading(false)
-      toast.error('Failed to load trip data')
-    })
-  }, [tripId])
+// ── Hook ───────────────────────────────────────────────────────────────────────
+export function useTripData(tripId: string) {
+  const qc = useQueryClient()
+
+  // Fire-and-forget helper: swallows errors (toast shown via onError)
+  const mut = async <T>(fn: () => Promise<T>): Promise<void> => {
+    try { await fn() } catch { /* onError handles toast */ }
+  }
+
+  const inv  = (key: readonly unknown[]) => qc.invalidateQueries({ queryKey: key })
+  const invStats = () => inv(QUERY_KEYS.stats(tripId))
+
+  // ── Queries ──
+  const tripQ           = useQuery({ queryKey: QUERY_KEYS.trip(tripId),           queryFn: () => getTrip(tripId),           enabled: !!tripId })
+  const activitiesQ     = useQuery({ queryKey: QUERY_KEYS.activities(tripId),     queryFn: () => getActivities(tripId),     enabled: !!tripId })
+  const flightsQ        = useQuery({ queryKey: QUERY_KEYS.flights(tripId),        queryFn: () => getFlights(tripId),        enabled: !!tripId })
+  const accommodationsQ = useQuery({ queryKey: QUERY_KEYS.accommodations(tripId), queryFn: () => getAccommodations(tripId), enabled: !!tripId })
+  const transportsQ     = useQuery({ queryKey: QUERY_KEYS.transports(tripId),     queryFn: () => getTransports(tripId),     enabled: !!tripId })
+  const extrasQ         = useQuery({ queryKey: QUERY_KEYS.extras(tripId),         queryFn: () => getExtras(tripId),         enabled: !!tripId })
+  const packingQ        = useQuery({ queryKey: QUERY_KEYS.packingItems(tripId),   queryFn: () => getPackingItems(tripId),   enabled: !!tripId })
+  const statsQ          = useQuery({ queryKey: QUERY_KEYS.stats(tripId),          queryFn: () => getTripStats(tripId),      enabled: !!tripId })
+  const notesQ          = useQuery({ queryKey: QUERY_KEYS.notes(tripId),          queryFn: () => getNotes(tripId),          enabled: !!tripId })
+
+  const loading = [tripQ, activitiesQ, flightsQ, accommodationsQ, transportsQ, extrasQ, packingQ, statsQ, notesQ]
+    .some((q) => q.isLoading)
+
+  // Global in-flight mutation count → saving flag
+  const saving = useIsMutating() > 0
+
+  // ── Data ──
+  const trip           = tripQ.data           ?? null
+  const activities     = activitiesQ.data     ?? []
+  const flights        = flightsQ.data        ?? []
+  const accommodations = accommodationsQ.data ?? []
+  const transports     = transportsQ.data     ?? []
+  const extras         = extrasQ.data         ?? []
+  const packingItems   = packingQ.data        ?? []
+  const stats          = statsQ.data          ?? null
+  const notes          = notesQ.data          ?? []
 
   // ── Derived ──
   const uniqueDates: string[] = trip?.start_date && trip?.end_date ? (() => {
@@ -61,144 +82,78 @@ export function useTripData(tripId: string) {
   })() : []
 
   const tripMin = trip?.start_date ? `${trip.start_date}T00:00` : undefined
-  const tripMax = trip?.end_date ? `${trip.end_date}T23:59` : undefined
-
-  // ── Saving wrapper ──
-  const withSaving = async (fn: () => Promise<void>, errorMsg?: string) => {
-    setSaving(true)
-    try {
-      await fn()
-    } catch {
-      toast.error(errorMsg ?? 'Something went wrong')
-    } finally {
-      setSaving(false)
-    }
-  }
+  const tripMax = trip?.end_date   ? `${trip.end_date}T23:59`   : undefined
 
   // ── Activity mutations ──
-  const addActivity = (data: ActivityCreate) => withSaving(async () => {
-    const r = await createActivity(tripId, data)
-    setActivities((p) => [...p, r])
-  }, 'Failed to add activity')
-  const updateActivity = (id: string, data: ActivityCreate) => withSaving(async () => {
-    const r = await apiUpdateActivity(tripId, id, data)
-    setActivities((p) => p.map((a) => a.id === id ? r : a))
-  }, 'Failed to update activity')
-  const deleteActivity = async (id: string) => {
-    try {
-      await apiDeleteActivity(tripId, id)
-      setActivities((p) => p.filter((a) => a.id !== id))
-    } catch { toast.error('Failed to delete activity') }
-  }
+  const addActivityMut    = useMutation({ mutationFn: (d: ActivityCreate)           => createActivity(tripId, d),            onSuccess: () => { inv(QUERY_KEYS.activities(tripId)); invStats() }, onError: () => toast.error('Failed to add activity') })
+  const updateActivityMut = useMutation({ mutationFn: ([id, d]: [string, ActivityCreate]) => apiUpdateActivity(tripId, id, d), onSuccess: () => inv(QUERY_KEYS.activities(tripId)),                  onError: () => toast.error('Failed to update activity') })
+  const deleteActivityMut = useMutation({ mutationFn: (id: string)                  => apiDeleteActivity(tripId, id),        onSuccess: () => { inv(QUERY_KEYS.activities(tripId)); invStats() }, onError: () => toast.error('Failed to delete activity') })
+
+  const addActivity    = (d: ActivityCreate)           => mut(() => addActivityMut.mutateAsync(d))
+  const updateActivity = (id: string, d: ActivityCreate) => mut(() => updateActivityMut.mutateAsync([id, d]))
+  const deleteActivity = (id: string)                  => mut(() => deleteActivityMut.mutateAsync(id))
 
   // ── Flight mutations ──
-  const addFlight = (data: FlightCreate) => withSaving(async () => {
-    const r = await createFlight(tripId, data)
-    setFlights((p) => [...p, r])
-  }, 'Failed to add flight')
-  const updateFlight = (id: string, data: FlightCreate) => withSaving(async () => {
-    const r = await apiUpdateFlight(tripId, id, data)
-    setFlights((p) => p.map((f) => f.id === id ? r : f))
-  }, 'Failed to update flight')
-  const deleteFlight = async (id: string) => {
-    try {
-      await apiDeleteFlight(tripId, id)
-      setFlights((p) => p.filter((f) => f.id !== id))
-    } catch { toast.error('Failed to delete flight') }
-  }
+  const addFlightMut    = useMutation({ mutationFn: (d: FlightCreate)               => createFlight(tripId, d),              onSuccess: () => { inv(QUERY_KEYS.flights(tripId)); invStats() }, onError: () => toast.error('Failed to add flight') })
+  const updateFlightMut = useMutation({ mutationFn: ([id, d]: [string, FlightCreate]) => apiUpdateFlight(tripId, id, d),     onSuccess: () => { inv(QUERY_KEYS.flights(tripId)); invStats() }, onError: () => toast.error('Failed to update flight') })
+  const deleteFlightMut = useMutation({ mutationFn: (id: string)                    => apiDeleteFlight(tripId, id),          onSuccess: () => { inv(QUERY_KEYS.flights(tripId)); invStats() }, onError: () => toast.error('Failed to delete flight') })
+
+  const addFlight    = (d: FlightCreate)             => mut(() => addFlightMut.mutateAsync(d))
+  const updateFlight = (id: string, d: FlightCreate) => mut(() => updateFlightMut.mutateAsync([id, d]))
+  const deleteFlight = (id: string)                  => mut(() => deleteFlightMut.mutateAsync(id))
 
   // ── Accommodation mutations ──
-  const addAccommodation = (data: AccommodationCreate) => withSaving(async () => {
-    const r = await createAccommodation(tripId, data)
-    setAccommodations((p) => [...p, r])
-  }, 'Failed to add accommodation')
-  const updateAccommodation = (id: string, data: AccommodationCreate) => withSaving(async () => {
-    const r = await apiUpdateAccommodation(tripId, id, data)
-    setAccommodations((p) => p.map((a) => a.id === id ? r : a))
-  }, 'Failed to update accommodation')
-  const deleteAccommodation = async (id: string) => {
-    try {
-      await apiDeleteAccommodation(tripId, id)
-      setAccommodations((p) => p.filter((a) => a.id !== id))
-    } catch { toast.error('Failed to delete accommodation') }
-  }
+  const addAccommodationMut    = useMutation({ mutationFn: (d: AccommodationCreate)               => createAccommodation(tripId, d),            onSuccess: () => { inv(QUERY_KEYS.accommodations(tripId)); invStats() }, onError: () => toast.error('Failed to add accommodation') })
+  const updateAccommodationMut = useMutation({ mutationFn: ([id, d]: [string, AccommodationCreate]) => apiUpdateAccommodation(tripId, id, d),    onSuccess: () => { inv(QUERY_KEYS.accommodations(tripId)); invStats() }, onError: () => toast.error('Failed to update accommodation') })
+  const deleteAccommodationMut = useMutation({ mutationFn: (id: string)                            => apiDeleteAccommodation(tripId, id),        onSuccess: () => { inv(QUERY_KEYS.accommodations(tripId)); invStats() }, onError: () => toast.error('Failed to delete accommodation') })
+
+  const addAccommodation    = (d: AccommodationCreate)             => mut(() => addAccommodationMut.mutateAsync(d))
+  const updateAccommodation = (id: string, d: AccommodationCreate) => mut(() => updateAccommodationMut.mutateAsync([id, d]))
+  const deleteAccommodation = (id: string)                         => mut(() => deleteAccommodationMut.mutateAsync(id))
 
   // ── Transport mutations ──
-  const addTransport = (data: TransportCreate) => withSaving(async () => {
-    const r = await createTransport(tripId, data)
-    setTransports((p) => [...p, r])
-  }, 'Failed to add transport')
-  const updateTransport = (id: string, data: TransportCreate) => withSaving(async () => {
-    const r = await apiUpdateTransport(tripId, id, data)
-    setTransports((p) => p.map((t) => t.id === id ? r : t))
-  }, 'Failed to update transport')
-  const deleteTransport = async (id: string) => {
-    try {
-      await apiDeleteTransport(tripId, id)
-      setTransports((p) => p.filter((t) => t.id !== id))
-    } catch { toast.error('Failed to delete transport') }
-  }
+  const addTransportMut    = useMutation({ mutationFn: (d: TransportCreate)               => createTransport(tripId, d),           onSuccess: () => { inv(QUERY_KEYS.transports(tripId)); invStats() }, onError: () => toast.error('Failed to add transport') })
+  const updateTransportMut = useMutation({ mutationFn: ([id, d]: [string, TransportCreate]) => apiUpdateTransport(tripId, id, d),  onSuccess: () => { inv(QUERY_KEYS.transports(tripId)); invStats() }, onError: () => toast.error('Failed to update transport') })
+  const deleteTransportMut = useMutation({ mutationFn: (id: string)                        => apiDeleteTransport(tripId, id),      onSuccess: () => { inv(QUERY_KEYS.transports(tripId)); invStats() }, onError: () => toast.error('Failed to delete transport') })
+
+  const addTransport    = (d: TransportCreate)             => mut(() => addTransportMut.mutateAsync(d))
+  const updateTransport = (id: string, d: TransportCreate) => mut(() => updateTransportMut.mutateAsync([id, d]))
+  const deleteTransport = (id: string)                     => mut(() => deleteTransportMut.mutateAsync(id))
 
   // ── Extra mutations ──
-  const addExtra = (data: ExtraCreate) => withSaving(async () => {
-    const r = await createExtra(tripId, data)
-    setExtras((p) => [...p, r])
-  }, 'Failed to add extra')
-  const updateExtra = (id: string, data: ExtraUpdate) => withSaving(async () => {
-    const r = await apiUpdateExtra(tripId, id, data)
-    setExtras((p) => p.map((e) => e.id === id ? r : e))
-  }, 'Failed to update extra')
-  const deleteExtra = async (id: string) => {
-    try {
-      await apiDeleteExtra(tripId, id)
-      setExtras((p) => p.filter((e) => e.id !== id))
-    } catch { toast.error('Failed to delete extra') }
-  }
+  const addExtraMut    = useMutation({ mutationFn: (d: ExtraCreate)             => createExtra(tripId, d),         onSuccess: () => { inv(QUERY_KEYS.extras(tripId)); invStats() }, onError: () => toast.error('Failed to add extra') })
+  const updateExtraMut = useMutation({ mutationFn: ([id, d]: [string, ExtraUpdate]) => apiUpdateExtra(tripId, id, d), onSuccess: () => { inv(QUERY_KEYS.extras(tripId)); invStats() }, onError: () => toast.error('Failed to update extra') })
+  const deleteExtraMut = useMutation({ mutationFn: (id: string)                 => apiDeleteExtra(tripId, id),     onSuccess: () => { inv(QUERY_KEYS.extras(tripId)); invStats() }, onError: () => toast.error('Failed to delete extra') })
+
+  const addExtra    = (d: ExtraCreate)             => mut(() => addExtraMut.mutateAsync(d))
+  const updateExtra = (id: string, d: ExtraUpdate) => mut(() => updateExtraMut.mutateAsync([id, d]))
+  const deleteExtra = (id: string)                 => mut(() => deleteExtraMut.mutateAsync(id))
 
   // ── Packing mutations ──
-  const addPackingItem = (data: PackingItemCreate) => withSaving(async () => {
-    const r = await createPackingItem(tripId, data)
-    setPackingItems((p) => [...p, r])
-  }, 'Failed to add packing item')
-  const deletePackingItem = async (id: string) => {
-    try {
-      await apiDeletePackingItem(tripId, id)
-      setPackingItems((p) => p.filter((i) => i.id !== id))
-    } catch { toast.error('Failed to delete packing item') }
-  }
-  const togglePacking = async (id: string) => {
-    try {
-      const updated = await togglePackingItem(tripId, id)
-      setPackingItems((p) => p.map((i) => i.id === id ? updated : i))
-    } catch { toast.error('Failed to update packing item') }
-  }
+  const addPackingMut    = useMutation({ mutationFn: (d: PackingItemCreate) => createPackingItem(tripId, d),    onSuccess: () => inv(QUERY_KEYS.packingItems(tripId)), onError: () => toast.error('Failed to add packing item') })
+  const deletePackingMut = useMutation({ mutationFn: (id: string)           => apiDeletePackingItem(tripId, id), onSuccess: () => inv(QUERY_KEYS.packingItems(tripId)), onError: () => toast.error('Failed to delete packing item') })
+  const togglePackingMut = useMutation({ mutationFn: (id: string)           => togglePackingItem(tripId, id),   onSuccess: () => inv(QUERY_KEYS.packingItems(tripId)), onError: () => toast.error('Failed to update packing item') })
+
+  const addPackingItem    = (d: PackingItemCreate) => mut(() => addPackingMut.mutateAsync(d))
+  const deletePackingItem = (id: string)           => mut(() => deletePackingMut.mutateAsync(id))
+  const togglePacking     = (id: string)           => mut(() => togglePackingMut.mutateAsync(id))
 
   // ── Note mutations ──
-  const addNote = (data: NoteCreate) => withSaving(async () => {
-    const r = await createNote(tripId, data)
-    setNotes((p) => [r, ...p])
-  }, 'Failed to add note')
-  const updateNote = (id: string, data: NoteCreate) => withSaving(async () => {
-    const r = await apiUpdateNote(tripId, id, data)
-    setNotes((p) => p.map((n) => n.id === id ? r : n))
-  }, 'Failed to update note')
-  const deleteNote = async (id: string) => {
-    try {
-      await apiDeleteNote(tripId, id)
-      setNotes((p) => p.filter((n) => n.id !== id))
-    } catch { toast.error('Failed to delete note') }
-  }
+  const addNoteMut    = useMutation({ mutationFn: (d: NoteCreate)               => createNote(tripId, d),         onSuccess: () => inv(QUERY_KEYS.notes(tripId)), onError: () => toast.error('Failed to add note') })
+  const updateNoteMut = useMutation({ mutationFn: ([id, d]: [string, NoteCreate]) => apiUpdateNote(tripId, id, d), onSuccess: () => inv(QUERY_KEYS.notes(tripId)), onError: () => toast.error('Failed to update note') })
+  const deleteNoteMut = useMutation({ mutationFn: (id: string)                   => apiDeleteNote(tripId, id),    onSuccess: () => inv(QUERY_KEYS.notes(tripId)), onError: () => toast.error('Failed to delete note') })
+
+  const addNote    = (d: NoteCreate)             => mut(() => addNoteMut.mutateAsync(d))
+  const updateNote = (id: string, d: NoteCreate) => mut(() => updateNoteMut.mutateAsync([id, d]))
+  const deleteNote = (id: string)                => mut(() => deleteNoteMut.mutateAsync(id))
 
   // ── Trip mutations ──
-  const updateTrip = (data: TripCreate) => withSaving(async () => {
-    const r = await apiUpdateTrip(tripId, data)
-    setTrip(r)
-  }, 'Failed to update trip')
-  const deleteTrip = async () => {
-    try {
-      await apiDeleteTrip(tripId)
-    } catch { toast.error('Failed to delete trip'); throw new Error('delete failed') }
-  }
+  const updateTripMut = useMutation({ mutationFn: (d: TripCreate) => apiUpdateTrip(tripId, d), onSuccess: () => inv(QUERY_KEYS.trip(tripId)), onError: () => toast.error('Failed to update trip') })
+  const deleteTripMut = useMutation({ mutationFn: ()              => apiDeleteTrip(tripId),    onError: () => toast.error('Failed to delete trip') })
+
+  const updateTrip = (d: TripCreate) => mut(() => updateTripMut.mutateAsync(d))
+  // deleteTrip propagates — caller (TripDetailPage) navigates only on success
+  const deleteTrip = () => deleteTripMut.mutateAsync()
 
   return {
     // Data
