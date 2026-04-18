@@ -100,6 +100,7 @@ export default function HomePage() {
   const [editTrip, setEditTrip]     = useState<Trip | null>(null)
   const [deleteTarget, setDelete]   = useState<Trip | null>(null)
   const [heroIdx]                   = useState(() => Math.floor(Math.random() * HERO_IMAGES.length))
+  const [search, setSearch]         = useState('')
 
   useEffect(() => {
     getTrips().then((d) => { setTrips(d); setLoading(false) }).catch(() => setLoading(false))
@@ -167,24 +168,54 @@ export default function HomePage() {
             </button>
           </div>
 
+          {!loading && trips.length > 0 && (
+            <div style={{ marginBottom: 24, position: 'relative', maxWidth: 360 }}>
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{
+                position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)',
+                color: 'var(--sage)', pointerEvents: 'none',
+              }}>
+                <circle cx="6.5" cy="6.5" r="5" stroke="currentColor" strokeWidth="1.4"/>
+                <path d="M10.5 10.5l3.5 3.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/>
+              </svg>
+              <input
+                className="form-control"
+                style={{ paddingLeft: 36 }}
+                placeholder="Search trips…"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+            </div>
+          )}
+
           {loading ? (
             <div className="trips-grid">
               {[1,2,3].map((i) => <div key={i} className="skeleton" style={{ height: 280 }} />)}
             </div>
           ) : trips.length === 0 ? (
             <EmptyState onAdd={() => setShowCreate(true)} />
-          ) : (
-            <div className="trips-grid">
-              {trips.map((trip, i) => (
-                <TripCard
-                  key={trip.id} trip={trip} index={i}
-                  onClick={(t) => navigate(`/trips/${t.id}`)}
-                  onEdit={(t) => setEditTrip(t)}
-                  onDelete={(t) => setDelete(t)}
-                />
-              ))}
-            </div>
-          )}
+          ) : (() => {
+            const q = search.trim().toLowerCase()
+            const filtered = q
+              ? trips.filter((t) =>
+                  t.title.toLowerCase().includes(q) ||
+                  (t.destination ?? '').toLowerCase().includes(q)
+                )
+              : trips
+            return filtered.length === 0 ? (
+              <p style={{ color: 'var(--sage)', fontSize: '0.9rem' }}>No trips match "{search}"</p>
+            ) : (
+              <div className="trips-grid">
+                {filtered.map((trip, i) => (
+                  <TripCard
+                    key={trip.id} trip={trip} index={i}
+                    onClick={(t) => navigate(`/trips/${t.id}`)}
+                    onEdit={(t) => setEditTrip(t)}
+                    onDelete={(t) => setDelete(t)}
+                  />
+                ))}
+              </div>
+            )
+          })()}
         </div>
       </section>
 
