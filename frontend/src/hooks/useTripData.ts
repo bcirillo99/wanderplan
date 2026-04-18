@@ -4,14 +4,14 @@ import { getTrip, updateTrip as apiUpdateTrip, deleteTrip as apiDeleteTrip } fro
 import { getFlights, createFlight, updateFlight as apiUpdateFlight, deleteFlight as apiDeleteFlight } from '../api/flights'
 import { getAccommodations, createAccommodation, updateAccommodation as apiUpdateAccommodation, deleteAccommodation as apiDeleteAccommodation } from '../api/accommodations'
 import { getTransports, createTransport, updateTransport as apiUpdateTransport, deleteTransport as apiDeleteTransport } from '../api/transports'
-import { getExtras, createExtra, deleteExtra as apiDeleteExtra } from '../api/extras'
+import { getExtras, createExtra, updateExtra as apiUpdateExtra, deleteExtra as apiDeleteExtra } from '../api/extras'
 import { getPackingItems, createPackingItem, deletePackingItem as apiDeletePackingItem, togglePackingItem } from '../api/packing_items'
 import { getTripStats } from '../api/stats'
 import { getActivities, createActivity, updateActivity as apiUpdateActivity, deleteActivity as apiDeleteActivity } from '../api/activities'
 import { getNotes, createNote, updateNote as apiUpdateNote, deleteNote as apiDeleteNote } from '../api/notes'
 import type {
   Trip, Activity, Flight, Accommodation, Transport, Extra, PackingItem, TripStats, Note,
-  ActivityCreate, FlightCreate, AccommodationCreate, TransportCreate, ExtraCreate,
+  ActivityCreate, FlightCreate, AccommodationCreate, TransportCreate, ExtraCreate, ExtraUpdate,
   PackingItemCreate, TripCreate, NoteCreate,
 } from '../types'
 
@@ -126,6 +126,10 @@ export function useTripData(tripId: string) {
     const r = await createExtra(tripId, data)
     setExtras((p) => [...p, r])
   })
+  const updateExtra = (id: string, data: ExtraUpdate) => withSaving(async () => {
+    const r = await apiUpdateExtra(tripId, id, data)
+    setExtras((p) => p.map((e) => e.id === id ? r : e))
+  })
   const deleteExtra = async (id: string) => {
     await apiDeleteExtra(tripId, id)
     setExtras((p) => p.filter((e) => e.id !== id))
@@ -178,7 +182,7 @@ export function useTripData(tripId: string) {
     addFlight, updateFlight, deleteFlight,
     addAccommodation, updateAccommodation, deleteAccommodation,
     addTransport, updateTransport, deleteTransport,
-    addExtra, deleteExtra,
+    addExtra, updateExtra, deleteExtra,
     addPackingItem, deletePackingItem, togglePacking,
     addNote, updateNote, deleteNote,
     updateTrip, deleteTrip,

@@ -6,8 +6,8 @@ import Navbar from '../components/Navbar'
 import Modal from '../components/Modal'
 import { useTripData } from '../hooks/useTripData'
 import type {
-  Activity, Flight, Accommodation, Transport, Note,
-  ActivityCreate, FlightCreate, AccommodationCreate, TransportCreate, ExtraCreate,
+  Activity, Flight, Accommodation, Transport, Extra, Note,
+  ActivityCreate, FlightCreate, AccommodationCreate, TransportCreate, ExtraCreate, ExtraUpdate,
   PackingItemCreate, TripCreate, NoteCreate,
 } from '../types'
 import {
@@ -42,7 +42,7 @@ const TABS: { id: Tab; label: string; icon: string }[] = [
 
 type ModalType =
   | 'add-activity' | 'add-flight' | 'add-accommodation' | 'add-transport' | 'add-extra' | 'add-packing' | 'add-note'
-  | 'edit-activity' | 'edit-flight' | 'edit-accommodation' | 'edit-transport' | 'edit-note'
+  | 'edit-activity' | 'edit-flight' | 'edit-accommodation' | 'edit-transport' | 'edit-extra' | 'edit-note'
   | 'edit-trip' | 'confirm-delete'
   | null
 
@@ -59,6 +59,7 @@ export default function TripDetailPage() {
   const [editFlight,        setEditFlight]        = useState<Flight | null>(null)
   const [editAccommodation, setEditAccommodation] = useState<Accommodation | null>(null)
   const [editTransport,     setEditTransport]     = useState<Transport | null>(null)
+  const [editExtra,         setEditExtra]         = useState<Extra | null>(null)
   const [editNote,          setEditNote]          = useState<Note | null>(null)
 
   const tripData = useTripData(tripId ?? '')
@@ -115,6 +116,11 @@ export default function TripDetailPage() {
     await tripData.updateTransport(editTransport.id, data)
     setModal(null); setEditTransport(null)
   }
+  const handleEditExtra = async (data: ExtraUpdate) => {
+    if (!editExtra) return
+    await tripData.updateExtra(editExtra.id, data)
+    setModal(null); setEditExtra(null)
+  }
   const handleEditNote = async (data: NoteCreate) => {
     if (!editNote) return
     await tripData.updateNote(editNote.id, data)
@@ -130,7 +136,7 @@ export default function TripDetailPage() {
   const closeModal = () => {
     setModal(null)
     setEditActivity(null); setEditFlight(null)
-    setEditAccommodation(null); setEditTransport(null); setEditNote(null)
+    setEditAccommodation(null); setEditTransport(null); setEditExtra(null); setEditNote(null)
   }
 
   // ── Header helpers ──
@@ -278,6 +284,7 @@ export default function TripDetailPage() {
           <ExtrasTab
             extras={extras}
             onAdd={() => setModal('add-extra')}
+            onEdit={(e) => { setEditExtra(e); setModal('edit-extra') }}
             onDelete={tripData.deleteExtra}
           />
         )}
@@ -356,6 +363,11 @@ export default function TripDetailPage() {
       {modal === 'edit-transport' && editTransport && (
         <Modal title="Edit Transport" onClose={closeModal} size="lg">
           <TransportForm initial={editTransport} loading={saving} onSubmit={handleEditTransport} minDateTime={tripMin} maxDateTime={tripMax} />
+        </Modal>
+      )}
+      {modal === 'edit-extra' && editExtra && (
+        <Modal title="Edit Extra" onClose={closeModal}>
+          <ExtraForm initial={editExtra} loading={saving} onSubmit={handleEditExtra} />
         </Modal>
       )}
       {modal === 'edit-trip' && (

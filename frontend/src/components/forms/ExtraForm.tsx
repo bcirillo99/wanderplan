@@ -1,20 +1,21 @@
 // frontend/src/components/forms/ExtraForm.tsx
 import { useState } from 'react'
 import FormField from '../FormField'
-import type { ExtraCreate, ExtraCategory } from '../../types'
+import type { Extra, ExtraCreate, ExtraCategory } from '../../types'
 import { EXTRA_CATS } from './formOptions'
 
 type ExtraFormProps = {
+  initial?: Partial<Extra>
   onSubmit: (data: ExtraCreate) => void
   loading: boolean
 }
 
-export function ExtraForm({ onSubmit, loading }: ExtraFormProps) {
-  const [desc, setDesc]         = useState('')
-  const [amount, setAmount]     = useState('')
-  const [category, setCategory] = useState<ExtraCategory | ''>('')
-  const [currency, setCurrency] = useState('EUR')
-  const [isEstimated, setIsEst] = useState(false)
+export function ExtraForm({ initial, onSubmit, loading }: ExtraFormProps) {
+  const [desc, setDesc]         = useState(initial?.description ?? '')
+  const [amount, setAmount]     = useState(initial?.amount?.toString() ?? '')
+  const [category, setCategory] = useState<ExtraCategory | ''>(initial?.category ?? '')
+  const [currency, setCurrency] = useState(initial?.currency ?? 'EUR')
+  const [isEstimated, setIsEst] = useState(initial?.is_estimated ?? false)
 
   return (
     <div className="form-stack">
@@ -42,7 +43,7 @@ export function ExtraForm({ onSubmit, loading }: ExtraFormProps) {
         })}
         disabled={loading || !amount || !desc.trim()}
       >
-        {loading ? 'Saving...' : 'Add Extra'}
+        {loading ? 'Saving...' : initial?.id ? 'Update Extra' : 'Add Extra'}
       </button>
     </div>
   )

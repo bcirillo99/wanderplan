@@ -2,9 +2,10 @@
 import type { Extra } from '../../types'
 import { SectionHeader, ItemCard, TabEmpty } from './TabShared'
 
-export function ExtrasTab({ extras, onAdd, onDelete }: {
+export function ExtrasTab({ extras, onAdd, onEdit, onDelete }: {
   extras: Extra[]
   onAdd: () => void
+  onEdit: (e: Extra) => void
   onDelete: (id: string) => void
 }) {
   const total = extras.reduce((s, e) => s + (e.amount ?? 0), 0)
@@ -25,7 +26,7 @@ export function ExtrasTab({ extras, onAdd, onDelete }: {
       {extras.length === 0 ? <TabEmpty msg="No extras recorded" /> : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {extras.map((e) => (
-            <ItemCard key={e.id} onDelete={() => onDelete(e.id)}>
+            <ItemCard key={e.id} onEdit={() => onEdit(e)} onDelete={() => onDelete(e.id)}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <div>
                   <p style={{ fontSize: '0.875rem', fontWeight: 500, color: 'var(--charcoal)' }}>{e.description ?? '—'}</p>
