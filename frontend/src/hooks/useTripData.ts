@@ -29,6 +29,45 @@ export const QUERY_KEYS = {
   notes:          (id: string) => ['notes', id] as const,
 }
 
+// ── Optimistic update helpers ──────────────────────────────────────────────────
+type Rollback = () => void
+
+function optimisticAdd<T extends { id: string }>(
+  qc: ReturnType<typeof useQueryClient>,
+  key: readonly unknown[],
+  item: T,
+): Rollback {
+  qc.cancelQueries({ queryKey: key })
+  const prev = qc.getQueryData<T[]>(key)
+  qc.setQueryData<T[]>(key, (old) => [...(old ?? []), item])
+  return () => qc.setQueryData(key, prev)
+}
+
+function optimisticUpdate<T extends { id: string }>(
+  qc: ReturnType<typeof useQueryClient>,
+  key: readonly unknown[],
+  id: string,
+  patch: Partial<T>,
+): Rollback {
+  qc.cancelQueries({ queryKey: key })
+  const prev = qc.getQueryData<T[]>(key)
+  qc.setQueryData<T[]>(key, (old) =>
+    (old ?? []).map((item) => (item.id === id ? { ...item, ...patch } : item)),
+  )
+  return () => qc.setQueryData(key, prev)
+}
+
+function optimisticDelete<T extends { id: string }>(
+  qc: ReturnType<typeof useQueryClient>,
+  key: readonly unknown[],
+  id: string,
+): Rollback {
+  qc.cancelQueries({ queryKey: key })
+  const prev = qc.getQueryData<T[]>(key)
+  qc.setQueryData<T[]>(key, (old) => (old ?? []).filter((item) => item.id !== id))
+  return () => qc.setQueryData(key, prev)
+}
+
 // ── Hook ───────────────────────────────────────────────────────────────────────
 export function useTripData(tripId: string) {
   const qc = useQueryClient()
@@ -38,7 +77,7 @@ export function useTripData(tripId: string) {
     try { await fn() } catch { /* onError handles toast */ }
   }
 
-  const inv  = (key: readonly unknown[]) => qc.invalidateQueries({ queryKey: key })
+  const inv      = (key: readonly unknown[]) => qc.invalidateQueries({ queryKey: key })
   const invStats = () => inv(QUERY_KEYS.stats(tripId))
 
   // ── Queries ──
@@ -85,71 +124,287 @@ export function useTripData(tripId: string) {
   const tripMax = trip?.end_date   ? `${trip.end_date}T23:59`   : undefined
 
   // ── Activity mutations ──
-  const addActivityMut    = useMutation({ mutationFn: (d: ActivityCreate)           => createActivity(tripId, d),            onSuccess: () => { inv(QUERY_KEYS.activities(tripId)); invStats() }, onError: () => toast.error('Failed to add activity') })
-  const updateActivityMut = useMutation({ mutationFn: ([id, d]: [string, ActivityCreate]) => apiUpdateActivity(tripId, id, d), onSuccess: () => inv(QUERY_KEYS.activities(tripId)),                  onError: () => toast.error('Failed to update activity') })
-  const deleteActivityMut = useMutation({ mutationFn: (id: string)                  => apiDeleteActivity(tripId, id),        onSuccess: () => { inv(QUERY_KEYS.activities(tripId)); invStats() }, onError: () => toast.error('Failed to delete activity') })
+  const addActivityMut = useMutation({
+    mutationFn: (d: ActivityCreate) => createActivity(tripId, d),
+    onMutate: (d) => {
+      const rollback = optimisticAdd<Activity>(qc, QUERY_KEYS.activities(tripId), {
+        id: `temp-${Date.now()}`, trip_id: tripId, ...d,
+      } as Activity)
+      return { rollback }
+    },
+    onError: (_e, _v, ctx) => { ctx?.rollback(); toast.error('Failed to add activity') },
+    onSuccess: () => { inv(QUERY_KEYS.activities(tripId)); invStats() },
+  })
 
-  const addActivity    = (d: ActivityCreate)           => mut(() => addActivityMut.mutateAsync(d))
+  const updateActivityMut = useMutation({
+    mutationFn: ([id, d]: [string, ActivityCreate]) => apiUpdateActivity(tripId, id, d),
+    onMutate: ([id, d]) => {
+      const rollback = optimisticUpdate<Activity>(qc, QUERY_KEYS.activities(tripId), id, d as Partial<Activity>)
+      return { rollback }
+    },
+    onError: (_e, _v, ctx) => { ctx?.rollback(); toast.error('Failed to update activity') },
+    onSuccess: () => inv(QUERY_KEYS.activities(tripId)),
+  })
+
+  const deleteActivityMut = useMutation({
+    mutationFn: (id: string) => apiDeleteActivity(tripId, id),
+    onMutate: (id) => {
+      const rollback = optimisticDelete<Activity>(qc, QUERY_KEYS.activities(tripId), id)
+      return { rollback }
+    },
+    onError: (_e, _v, ctx) => { ctx?.rollback(); toast.error('Failed to delete activity') },
+    onSuccess: () => { inv(QUERY_KEYS.activities(tripId)); invStats() },
+  })
+
+  const addActivity    = (d: ActivityCreate)             => mut(() => addActivityMut.mutateAsync(d))
   const updateActivity = (id: string, d: ActivityCreate) => mut(() => updateActivityMut.mutateAsync([id, d]))
-  const deleteActivity = (id: string)                  => mut(() => deleteActivityMut.mutateAsync(id))
+  const deleteActivity = (id: string)                    => mut(() => deleteActivityMut.mutateAsync(id))
 
   // ── Flight mutations ──
-  const addFlightMut    = useMutation({ mutationFn: (d: FlightCreate)               => createFlight(tripId, d),              onSuccess: () => { inv(QUERY_KEYS.flights(tripId)); invStats() }, onError: () => toast.error('Failed to add flight') })
-  const updateFlightMut = useMutation({ mutationFn: ([id, d]: [string, FlightCreate]) => apiUpdateFlight(tripId, id, d),     onSuccess: () => { inv(QUERY_KEYS.flights(tripId)); invStats() }, onError: () => toast.error('Failed to update flight') })
-  const deleteFlightMut = useMutation({ mutationFn: (id: string)                    => apiDeleteFlight(tripId, id),          onSuccess: () => { inv(QUERY_KEYS.flights(tripId)); invStats() }, onError: () => toast.error('Failed to delete flight') })
+  const addFlightMut = useMutation({
+    mutationFn: (d: FlightCreate) => createFlight(tripId, d),
+    onMutate: (d) => {
+      const rollback = optimisticAdd<Flight>(qc, QUERY_KEYS.flights(tripId), {
+        id: `temp-${Date.now()}`, trip_id: tripId, ...d,
+      } as Flight)
+      return { rollback }
+    },
+    onError: (_e, _v, ctx) => { ctx?.rollback(); toast.error('Failed to add flight') },
+    onSuccess: () => { inv(QUERY_KEYS.flights(tripId)); invStats() },
+  })
+
+  const updateFlightMut = useMutation({
+    mutationFn: ([id, d]: [string, FlightCreate]) => apiUpdateFlight(tripId, id, d),
+    onMutate: ([id, d]) => {
+      const rollback = optimisticUpdate<Flight>(qc, QUERY_KEYS.flights(tripId), id, d as Partial<Flight>)
+      return { rollback }
+    },
+    onError: (_e, _v, ctx) => { ctx?.rollback(); toast.error('Failed to update flight') },
+    onSuccess: () => { inv(QUERY_KEYS.flights(tripId)); invStats() },
+  })
+
+  const deleteFlightMut = useMutation({
+    mutationFn: (id: string) => apiDeleteFlight(tripId, id),
+    onMutate: (id) => {
+      const rollback = optimisticDelete<Flight>(qc, QUERY_KEYS.flights(tripId), id)
+      return { rollback }
+    },
+    onError: (_e, _v, ctx) => { ctx?.rollback(); toast.error('Failed to delete flight') },
+    onSuccess: () => { inv(QUERY_KEYS.flights(tripId)); invStats() },
+  })
 
   const addFlight    = (d: FlightCreate)             => mut(() => addFlightMut.mutateAsync(d))
   const updateFlight = (id: string, d: FlightCreate) => mut(() => updateFlightMut.mutateAsync([id, d]))
   const deleteFlight = (id: string)                  => mut(() => deleteFlightMut.mutateAsync(id))
 
   // ── Accommodation mutations ──
-  const addAccommodationMut    = useMutation({ mutationFn: (d: AccommodationCreate)               => createAccommodation(tripId, d),            onSuccess: () => { inv(QUERY_KEYS.accommodations(tripId)); invStats() }, onError: () => toast.error('Failed to add accommodation') })
-  const updateAccommodationMut = useMutation({ mutationFn: ([id, d]: [string, AccommodationCreate]) => apiUpdateAccommodation(tripId, id, d),    onSuccess: () => { inv(QUERY_KEYS.accommodations(tripId)); invStats() }, onError: () => toast.error('Failed to update accommodation') })
-  const deleteAccommodationMut = useMutation({ mutationFn: (id: string)                            => apiDeleteAccommodation(tripId, id),        onSuccess: () => { inv(QUERY_KEYS.accommodations(tripId)); invStats() }, onError: () => toast.error('Failed to delete accommodation') })
+  const addAccommodationMut = useMutation({
+    mutationFn: (d: AccommodationCreate) => createAccommodation(tripId, d),
+    onMutate: (d) => {
+      const rollback = optimisticAdd<Accommodation>(qc, QUERY_KEYS.accommodations(tripId), {
+        id: `temp-${Date.now()}`, trip_id: tripId, ...d,
+      } as Accommodation)
+      return { rollback }
+    },
+    onError: (_e, _v, ctx) => { ctx?.rollback(); toast.error('Failed to add accommodation') },
+    onSuccess: () => { inv(QUERY_KEYS.accommodations(tripId)); invStats() },
+  })
+
+  const updateAccommodationMut = useMutation({
+    mutationFn: ([id, d]: [string, AccommodationCreate]) => apiUpdateAccommodation(tripId, id, d),
+    onMutate: ([id, d]) => {
+      const rollback = optimisticUpdate<Accommodation>(qc, QUERY_KEYS.accommodations(tripId), id, d as Partial<Accommodation>)
+      return { rollback }
+    },
+    onError: (_e, _v, ctx) => { ctx?.rollback(); toast.error('Failed to update accommodation') },
+    onSuccess: () => { inv(QUERY_KEYS.accommodations(tripId)); invStats() },
+  })
+
+  const deleteAccommodationMut = useMutation({
+    mutationFn: (id: string) => apiDeleteAccommodation(tripId, id),
+    onMutate: (id) => {
+      const rollback = optimisticDelete<Accommodation>(qc, QUERY_KEYS.accommodations(tripId), id)
+      return { rollback }
+    },
+    onError: (_e, _v, ctx) => { ctx?.rollback(); toast.error('Failed to delete accommodation') },
+    onSuccess: () => { inv(QUERY_KEYS.accommodations(tripId)); invStats() },
+  })
 
   const addAccommodation    = (d: AccommodationCreate)             => mut(() => addAccommodationMut.mutateAsync(d))
   const updateAccommodation = (id: string, d: AccommodationCreate) => mut(() => updateAccommodationMut.mutateAsync([id, d]))
   const deleteAccommodation = (id: string)                         => mut(() => deleteAccommodationMut.mutateAsync(id))
 
   // ── Transport mutations ──
-  const addTransportMut    = useMutation({ mutationFn: (d: TransportCreate)               => createTransport(tripId, d),           onSuccess: () => { inv(QUERY_KEYS.transports(tripId)); invStats() }, onError: () => toast.error('Failed to add transport') })
-  const updateTransportMut = useMutation({ mutationFn: ([id, d]: [string, TransportCreate]) => apiUpdateTransport(tripId, id, d),  onSuccess: () => { inv(QUERY_KEYS.transports(tripId)); invStats() }, onError: () => toast.error('Failed to update transport') })
-  const deleteTransportMut = useMutation({ mutationFn: (id: string)                        => apiDeleteTransport(tripId, id),      onSuccess: () => { inv(QUERY_KEYS.transports(tripId)); invStats() }, onError: () => toast.error('Failed to delete transport') })
+  const addTransportMut = useMutation({
+    mutationFn: (d: TransportCreate) => createTransport(tripId, d),
+    onMutate: (d) => {
+      const rollback = optimisticAdd<Transport>(qc, QUERY_KEYS.transports(tripId), {
+        id: `temp-${Date.now()}`, trip_id: tripId, ...d,
+      } as Transport)
+      return { rollback }
+    },
+    onError: (_e, _v, ctx) => { ctx?.rollback(); toast.error('Failed to add transport') },
+    onSuccess: () => { inv(QUERY_KEYS.transports(tripId)); invStats() },
+  })
+
+  const updateTransportMut = useMutation({
+    mutationFn: ([id, d]: [string, TransportCreate]) => apiUpdateTransport(tripId, id, d),
+    onMutate: ([id, d]) => {
+      const rollback = optimisticUpdate<Transport>(qc, QUERY_KEYS.transports(tripId), id, d as Partial<Transport>)
+      return { rollback }
+    },
+    onError: (_e, _v, ctx) => { ctx?.rollback(); toast.error('Failed to update transport') },
+    onSuccess: () => { inv(QUERY_KEYS.transports(tripId)); invStats() },
+  })
+
+  const deleteTransportMut = useMutation({
+    mutationFn: (id: string) => apiDeleteTransport(tripId, id),
+    onMutate: (id) => {
+      const rollback = optimisticDelete<Transport>(qc, QUERY_KEYS.transports(tripId), id)
+      return { rollback }
+    },
+    onError: (_e, _v, ctx) => { ctx?.rollback(); toast.error('Failed to delete transport') },
+    onSuccess: () => { inv(QUERY_KEYS.transports(tripId)); invStats() },
+  })
 
   const addTransport    = (d: TransportCreate)             => mut(() => addTransportMut.mutateAsync(d))
   const updateTransport = (id: string, d: TransportCreate) => mut(() => updateTransportMut.mutateAsync([id, d]))
   const deleteTransport = (id: string)                     => mut(() => deleteTransportMut.mutateAsync(id))
 
   // ── Extra mutations ──
-  const addExtraMut    = useMutation({ mutationFn: (d: ExtraCreate)             => createExtra(tripId, d),         onSuccess: () => { inv(QUERY_KEYS.extras(tripId)); invStats() }, onError: () => toast.error('Failed to add extra') })
-  const updateExtraMut = useMutation({ mutationFn: ([id, d]: [string, ExtraUpdate]) => apiUpdateExtra(tripId, id, d), onSuccess: () => { inv(QUERY_KEYS.extras(tripId)); invStats() }, onError: () => toast.error('Failed to update extra') })
-  const deleteExtraMut = useMutation({ mutationFn: (id: string)                 => apiDeleteExtra(tripId, id),     onSuccess: () => { inv(QUERY_KEYS.extras(tripId)); invStats() }, onError: () => toast.error('Failed to delete extra') })
+  const addExtraMut = useMutation({
+    mutationFn: (d: ExtraCreate) => createExtra(tripId, d),
+    onMutate: (d) => {
+      const rollback = optimisticAdd<Extra>(qc, QUERY_KEYS.extras(tripId), {
+        id: `temp-${Date.now()}`, trip_id: tripId, ...d,
+      } as Extra)
+      return { rollback }
+    },
+    onError: (_e, _v, ctx) => { ctx?.rollback(); toast.error('Failed to add extra') },
+    onSuccess: () => { inv(QUERY_KEYS.extras(tripId)); invStats() },
+  })
+
+  const updateExtraMut = useMutation({
+    mutationFn: ([id, d]: [string, ExtraUpdate]) => apiUpdateExtra(tripId, id, d),
+    onMutate: ([id, d]) => {
+      const rollback = optimisticUpdate<Extra>(qc, QUERY_KEYS.extras(tripId), id, d as Partial<Extra>)
+      return { rollback }
+    },
+    onError: (_e, _v, ctx) => { ctx?.rollback(); toast.error('Failed to update extra') },
+    onSuccess: () => { inv(QUERY_KEYS.extras(tripId)); invStats() },
+  })
+
+  const deleteExtraMut = useMutation({
+    mutationFn: (id: string) => apiDeleteExtra(tripId, id),
+    onMutate: (id) => {
+      const rollback = optimisticDelete<Extra>(qc, QUERY_KEYS.extras(tripId), id)
+      return { rollback }
+    },
+    onError: (_e, _v, ctx) => { ctx?.rollback(); toast.error('Failed to delete extra') },
+    onSuccess: () => { inv(QUERY_KEYS.extras(tripId)); invStats() },
+  })
 
   const addExtra    = (d: ExtraCreate)             => mut(() => addExtraMut.mutateAsync(d))
   const updateExtra = (id: string, d: ExtraUpdate) => mut(() => updateExtraMut.mutateAsync([id, d]))
   const deleteExtra = (id: string)                 => mut(() => deleteExtraMut.mutateAsync(id))
 
   // ── Packing mutations ──
-  const addPackingMut    = useMutation({ mutationFn: (d: PackingItemCreate) => createPackingItem(tripId, d),    onSuccess: () => inv(QUERY_KEYS.packingItems(tripId)), onError: () => toast.error('Failed to add packing item') })
-  const deletePackingMut = useMutation({ mutationFn: (id: string)           => apiDeletePackingItem(tripId, id), onSuccess: () => inv(QUERY_KEYS.packingItems(tripId)), onError: () => toast.error('Failed to delete packing item') })
-  const togglePackingMut = useMutation({ mutationFn: (id: string)           => togglePackingItem(tripId, id),   onSuccess: () => inv(QUERY_KEYS.packingItems(tripId)), onError: () => toast.error('Failed to update packing item') })
+  const addPackingMut = useMutation({
+    mutationFn: (d: PackingItemCreate) => createPackingItem(tripId, d),
+    onMutate: (d) => {
+      const rollback = optimisticAdd<PackingItem>(qc, QUERY_KEYS.packingItems(tripId), {
+        id: `temp-${Date.now()}`, trip_id: tripId, checked: false, ...d,
+      } as PackingItem)
+      return { rollback }
+    },
+    onError: (_e, _v, ctx) => { ctx?.rollback(); toast.error('Failed to add packing item') },
+    onSuccess: () => inv(QUERY_KEYS.packingItems(tripId)),
+  })
+
+  const deletePackingMut = useMutation({
+    mutationFn: (id: string) => apiDeletePackingItem(tripId, id),
+    onMutate: (id) => {
+      const rollback = optimisticDelete<PackingItem>(qc, QUERY_KEYS.packingItems(tripId), id)
+      return { rollback }
+    },
+    onError: (_e, _v, ctx) => { ctx?.rollback(); toast.error('Failed to delete packing item') },
+    onSuccess: () => inv(QUERY_KEYS.packingItems(tripId)),
+  })
+
+  const togglePackingMut = useMutation({
+    mutationFn: (id: string) => togglePackingItem(tripId, id),
+    onMutate: (id) => {
+      const key = QUERY_KEYS.packingItems(tripId)
+      qc.cancelQueries({ queryKey: key })
+      const prev = qc.getQueryData<PackingItem[]>(key)
+      qc.setQueryData<PackingItem[]>(key, (old) =>
+        (old ?? []).map((item) => item.id === id ? { ...item, checked: !item.checked } : item),
+      )
+      return { rollback: () => qc.setQueryData(key, prev) }
+    },
+    onError: (_e, _v, ctx) => { ctx?.rollback(); toast.error('Failed to update packing item') },
+    onSuccess: () => inv(QUERY_KEYS.packingItems(tripId)),
+  })
 
   const addPackingItem    = (d: PackingItemCreate) => mut(() => addPackingMut.mutateAsync(d))
   const deletePackingItem = (id: string)           => mut(() => deletePackingMut.mutateAsync(id))
   const togglePacking     = (id: string)           => mut(() => togglePackingMut.mutateAsync(id))
 
   // ── Note mutations ──
-  const addNoteMut    = useMutation({ mutationFn: (d: NoteCreate)               => createNote(tripId, d),         onSuccess: () => inv(QUERY_KEYS.notes(tripId)), onError: () => toast.error('Failed to add note') })
-  const updateNoteMut = useMutation({ mutationFn: ([id, d]: [string, NoteCreate]) => apiUpdateNote(tripId, id, d), onSuccess: () => inv(QUERY_KEYS.notes(tripId)), onError: () => toast.error('Failed to update note') })
-  const deleteNoteMut = useMutation({ mutationFn: (id: string)                   => apiDeleteNote(tripId, id),    onSuccess: () => inv(QUERY_KEYS.notes(tripId)), onError: () => toast.error('Failed to delete note') })
+  const addNoteMut = useMutation({
+    mutationFn: (d: NoteCreate) => createNote(tripId, d),
+    onMutate: (d) => {
+      const rollback = optimisticAdd<Note>(qc, QUERY_KEYS.notes(tripId), {
+        id: `temp-${Date.now()}`, trip_id: tripId, created_at: new Date().toISOString(), ...d,
+      } as Note)
+      return { rollback }
+    },
+    onError: (_e, _v, ctx) => { ctx?.rollback(); toast.error('Failed to add note') },
+    onSuccess: () => inv(QUERY_KEYS.notes(tripId)),
+  })
+
+  const updateNoteMut = useMutation({
+    mutationFn: ([id, d]: [string, NoteCreate]) => apiUpdateNote(tripId, id, d),
+    onMutate: ([id, d]) => {
+      const rollback = optimisticUpdate<Note>(qc, QUERY_KEYS.notes(tripId), id, d as Partial<Note>)
+      return { rollback }
+    },
+    onError: (_e, _v, ctx) => { ctx?.rollback(); toast.error('Failed to update note') },
+    onSuccess: () => inv(QUERY_KEYS.notes(tripId)),
+  })
+
+  const deleteNoteMut = useMutation({
+    mutationFn: (id: string) => apiDeleteNote(tripId, id),
+    onMutate: (id) => {
+      const rollback = optimisticDelete<Note>(qc, QUERY_KEYS.notes(tripId), id)
+      return { rollback }
+    },
+    onError: (_e, _v, ctx) => { ctx?.rollback(); toast.error('Failed to delete note') },
+    onSuccess: () => inv(QUERY_KEYS.notes(tripId)),
+  })
 
   const addNote    = (d: NoteCreate)             => mut(() => addNoteMut.mutateAsync(d))
   const updateNote = (id: string, d: NoteCreate) => mut(() => updateNoteMut.mutateAsync([id, d]))
   const deleteNote = (id: string)                => mut(() => deleteNoteMut.mutateAsync(id))
 
   // ── Trip mutations ──
-  const updateTripMut = useMutation({ mutationFn: (d: TripCreate) => apiUpdateTrip(tripId, d), onSuccess: () => inv(QUERY_KEYS.trip(tripId)), onError: () => toast.error('Failed to update trip') })
-  const deleteTripMut = useMutation({ mutationFn: ()              => apiDeleteTrip(tripId),    onError: () => toast.error('Failed to delete trip') })
+  const updateTripMut = useMutation({
+    mutationFn: (d: TripCreate) => apiUpdateTrip(tripId, d),
+    onMutate: (d) => {
+      const key = QUERY_KEYS.trip(tripId)
+      qc.cancelQueries({ queryKey: key })
+      const prev = qc.getQueryData<Trip>(key)
+      qc.setQueryData<Trip>(key, (old) => old ? { ...old, ...d } : old)
+      return { rollback: () => qc.setQueryData(key, prev) }
+    },
+    onError: (_e, _v, ctx) => { ctx?.rollback(); toast.error('Failed to update trip') },
+    onSuccess: () => inv(QUERY_KEYS.trip(tripId)),
+  })
+
+  const deleteTripMut = useMutation({
+    mutationFn: () => apiDeleteTrip(tripId),
+    onError: () => toast.error('Failed to delete trip'),
+  })
 
   const updateTrip = (d: TripCreate) => mut(() => updateTripMut.mutateAsync(d))
   // deleteTrip propagates — caller (TripDetailPage) navigates only on success
