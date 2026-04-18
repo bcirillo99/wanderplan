@@ -1,6 +1,7 @@
 // frontend/src/pages/HomePage.tsx
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { toast } from 'sonner'
 import Navbar from '../components/Navbar'
 import Modal from '../components/Modal'
 import { TripForm } from '../components/forms/Forms'
@@ -103,25 +104,42 @@ export default function HomePage() {
   const [search, setSearch]         = useState('')
 
   useEffect(() => {
-    getTrips().then((d) => { setTrips(d); setLoading(false) }).catch(() => setLoading(false))
+    getTrips()
+      .then((d) => { setTrips(d); setLoading(false) })
+      .catch(() => { setLoading(false); toast.error('Failed to load trips') })
   }, [])
 
   const handleCreate = async (data: TripCreate) => {
     setSaving(true)
-    try { const t = await createTrip(data); setTrips((p) => [t, ...p]); setShowCreate(false) }
-    finally { setSaving(false) }
+    try {
+      const t = await createTrip(data)
+      setTrips((p) => [t, ...p])
+      setShowCreate(false)
+    } catch {
+      toast.error('Failed to create trip')
+    } finally { setSaving(false) }
   }
   const handleEdit = async (data: TripCreate) => {
     if (!editTrip) return
     setSaving(true)
-    try { const t = await updateTrip(editTrip.id, data); setTrips((p) => p.map((x) => x.id === t.id ? t : x)); setEditTrip(null) }
-    finally { setSaving(false) }
+    try {
+      const t = await updateTrip(editTrip.id, data)
+      setTrips((p) => p.map((x) => x.id === t.id ? t : x))
+      setEditTrip(null)
+    } catch {
+      toast.error('Failed to update trip')
+    } finally { setSaving(false) }
   }
   const handleDelete = async () => {
     if (!deleteTarget) return
     setSaving(true)
-    try { await deleteTrip(deleteTarget.id); setTrips((p) => p.filter((x) => x.id !== deleteTarget.id)); setDelete(null) }
-    finally { setSaving(false) }
+    try {
+      await deleteTrip(deleteTarget.id)
+      setTrips((p) => p.filter((x) => x.id !== deleteTarget.id))
+      setDelete(null)
+    } catch {
+      toast.error('Failed to delete trip')
+    } finally { setSaving(false) }
   }
 
   return (

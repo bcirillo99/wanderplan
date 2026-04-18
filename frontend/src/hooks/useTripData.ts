@@ -1,5 +1,6 @@
 // frontend/src/hooks/useTripData.ts
 import { useState, useEffect } from 'react'
+import { toast } from 'sonner'
 import { getTrip, updateTrip as apiUpdateTrip, deleteTrip as apiDeleteTrip } from '../api/trips'
 import { getFlights, createFlight, updateFlight as apiUpdateFlight, deleteFlight as apiDeleteFlight } from '../api/flights'
 import { getAccommodations, createAccommodation, updateAccommodation as apiUpdateAccommodation, deleteAccommodation as apiDeleteAccommodation } from '../api/accommodations'
@@ -41,7 +42,10 @@ export function useTripData(tripId: string) {
       setAccommodations(a); setTransports(tr); setExtras(e)
       setPackingItems(p); setStats(s); setNotes(n)
       setLoading(false)
-    }).catch(() => setLoading(false))
+    }).catch(() => {
+      setLoading(false)
+      toast.error('Failed to load trip data')
+    })
   }, [tripId])
 
   // ── Derived ──
@@ -60,115 +64,141 @@ export function useTripData(tripId: string) {
   const tripMax = trip?.end_date ? `${trip.end_date}T23:59` : undefined
 
   // ── Saving wrapper ──
-  const withSaving = async (fn: () => Promise<void>) => {
+  const withSaving = async (fn: () => Promise<void>, errorMsg?: string) => {
     setSaving(true)
-    try { await fn() } finally { setSaving(false) }
+    try {
+      await fn()
+    } catch {
+      toast.error(errorMsg ?? 'Something went wrong')
+    } finally {
+      setSaving(false)
+    }
   }
 
   // ── Activity mutations ──
   const addActivity = (data: ActivityCreate) => withSaving(async () => {
     const r = await createActivity(tripId, data)
     setActivities((p) => [...p, r])
-  })
+  }, 'Failed to add activity')
   const updateActivity = (id: string, data: ActivityCreate) => withSaving(async () => {
     const r = await apiUpdateActivity(tripId, id, data)
     setActivities((p) => p.map((a) => a.id === id ? r : a))
-  })
+  }, 'Failed to update activity')
   const deleteActivity = async (id: string) => {
-    await apiDeleteActivity(tripId, id)
-    setActivities((p) => p.filter((a) => a.id !== id))
+    try {
+      await apiDeleteActivity(tripId, id)
+      setActivities((p) => p.filter((a) => a.id !== id))
+    } catch { toast.error('Failed to delete activity') }
   }
 
   // ── Flight mutations ──
   const addFlight = (data: FlightCreate) => withSaving(async () => {
     const r = await createFlight(tripId, data)
     setFlights((p) => [...p, r])
-  })
+  }, 'Failed to add flight')
   const updateFlight = (id: string, data: FlightCreate) => withSaving(async () => {
     const r = await apiUpdateFlight(tripId, id, data)
     setFlights((p) => p.map((f) => f.id === id ? r : f))
-  })
+  }, 'Failed to update flight')
   const deleteFlight = async (id: string) => {
-    await apiDeleteFlight(tripId, id)
-    setFlights((p) => p.filter((f) => f.id !== id))
+    try {
+      await apiDeleteFlight(tripId, id)
+      setFlights((p) => p.filter((f) => f.id !== id))
+    } catch { toast.error('Failed to delete flight') }
   }
 
   // ── Accommodation mutations ──
   const addAccommodation = (data: AccommodationCreate) => withSaving(async () => {
     const r = await createAccommodation(tripId, data)
     setAccommodations((p) => [...p, r])
-  })
+  }, 'Failed to add accommodation')
   const updateAccommodation = (id: string, data: AccommodationCreate) => withSaving(async () => {
     const r = await apiUpdateAccommodation(tripId, id, data)
     setAccommodations((p) => p.map((a) => a.id === id ? r : a))
-  })
+  }, 'Failed to update accommodation')
   const deleteAccommodation = async (id: string) => {
-    await apiDeleteAccommodation(tripId, id)
-    setAccommodations((p) => p.filter((a) => a.id !== id))
+    try {
+      await apiDeleteAccommodation(tripId, id)
+      setAccommodations((p) => p.filter((a) => a.id !== id))
+    } catch { toast.error('Failed to delete accommodation') }
   }
 
   // ── Transport mutations ──
   const addTransport = (data: TransportCreate) => withSaving(async () => {
     const r = await createTransport(tripId, data)
     setTransports((p) => [...p, r])
-  })
+  }, 'Failed to add transport')
   const updateTransport = (id: string, data: TransportCreate) => withSaving(async () => {
     const r = await apiUpdateTransport(tripId, id, data)
     setTransports((p) => p.map((t) => t.id === id ? r : t))
-  })
+  }, 'Failed to update transport')
   const deleteTransport = async (id: string) => {
-    await apiDeleteTransport(tripId, id)
-    setTransports((p) => p.filter((t) => t.id !== id))
+    try {
+      await apiDeleteTransport(tripId, id)
+      setTransports((p) => p.filter((t) => t.id !== id))
+    } catch { toast.error('Failed to delete transport') }
   }
 
   // ── Extra mutations ──
   const addExtra = (data: ExtraCreate) => withSaving(async () => {
     const r = await createExtra(tripId, data)
     setExtras((p) => [...p, r])
-  })
+  }, 'Failed to add extra')
   const updateExtra = (id: string, data: ExtraUpdate) => withSaving(async () => {
     const r = await apiUpdateExtra(tripId, id, data)
     setExtras((p) => p.map((e) => e.id === id ? r : e))
-  })
+  }, 'Failed to update extra')
   const deleteExtra = async (id: string) => {
-    await apiDeleteExtra(tripId, id)
-    setExtras((p) => p.filter((e) => e.id !== id))
+    try {
+      await apiDeleteExtra(tripId, id)
+      setExtras((p) => p.filter((e) => e.id !== id))
+    } catch { toast.error('Failed to delete extra') }
   }
 
   // ── Packing mutations ──
   const addPackingItem = (data: PackingItemCreate) => withSaving(async () => {
     const r = await createPackingItem(tripId, data)
     setPackingItems((p) => [...p, r])
-  })
+  }, 'Failed to add packing item')
   const deletePackingItem = async (id: string) => {
-    await apiDeletePackingItem(tripId, id)
-    setPackingItems((p) => p.filter((i) => i.id !== id))
+    try {
+      await apiDeletePackingItem(tripId, id)
+      setPackingItems((p) => p.filter((i) => i.id !== id))
+    } catch { toast.error('Failed to delete packing item') }
   }
   const togglePacking = async (id: string) => {
-    const updated = await togglePackingItem(tripId, id)
-    setPackingItems((p) => p.map((i) => i.id === id ? updated : i))
+    try {
+      const updated = await togglePackingItem(tripId, id)
+      setPackingItems((p) => p.map((i) => i.id === id ? updated : i))
+    } catch { toast.error('Failed to update packing item') }
   }
 
   // ── Note mutations ──
   const addNote = (data: NoteCreate) => withSaving(async () => {
     const r = await createNote(tripId, data)
     setNotes((p) => [r, ...p])
-  })
+  }, 'Failed to add note')
   const updateNote = (id: string, data: NoteCreate) => withSaving(async () => {
     const r = await apiUpdateNote(tripId, id, data)
     setNotes((p) => p.map((n) => n.id === id ? r : n))
-  })
+  }, 'Failed to update note')
   const deleteNote = async (id: string) => {
-    await apiDeleteNote(tripId, id)
-    setNotes((p) => p.filter((n) => n.id !== id))
+    try {
+      await apiDeleteNote(tripId, id)
+      setNotes((p) => p.filter((n) => n.id !== id))
+    } catch { toast.error('Failed to delete note') }
   }
 
   // ── Trip mutations ──
   const updateTrip = (data: TripCreate) => withSaving(async () => {
     const r = await apiUpdateTrip(tripId, data)
     setTrip(r)
-  })
-  const deleteTrip = () => apiDeleteTrip(tripId)
+  }, 'Failed to update trip')
+  const deleteTrip = async () => {
+    try {
+      await apiDeleteTrip(tripId)
+    } catch { toast.error('Failed to delete trip'); throw new Error('delete failed') }
+  }
 
   return {
     // Data
