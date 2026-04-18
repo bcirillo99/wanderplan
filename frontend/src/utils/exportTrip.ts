@@ -162,12 +162,12 @@ function makeTable(headers: string[], rows: (string | TextRun[])[][]): Table {
   return new Table({
     width: { size: 100, type: WidthType.PERCENTAGE },
     borders: {
-      top:          { style: BorderStyle.NONE },
-      bottom:       { style: BorderStyle.NONE },
-      left:         { style: BorderStyle.NONE },
-      right:        { style: BorderStyle.NONE },
-      insideH:      { style: BorderStyle.SINGLE, size: 2, color: C.greyLight },
-      insideV:      { style: BorderStyle.NONE },
+      top:              { style: BorderStyle.NONE },
+      bottom:           { style: BorderStyle.NONE },
+      left:             { style: BorderStyle.NONE },
+      right:            { style: BorderStyle.NONE },
+      insideHorizontal: { style: BorderStyle.SINGLE, size: 2, color: C.greyLight },
+      insideVertical:   { style: BorderStyle.NONE },
     },
     rows: [tHead(headers), ...rows.map((r, i) => tRow(r, i % 2 === 0))],
   })

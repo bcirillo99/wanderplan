@@ -3,12 +3,13 @@ import { useNavigate } from 'react-router-dom'
 import type { Trip, Activity, Flight, Accommodation, Transport, TripStats, Note } from '../../types'
 import { ItemCard } from './TabShared'
 import { fmt, PREVIEW_LIMIT } from './tabUtils'
+import { TripCalendar } from '../TripCalendar'
 
 type TodoItem = { icon: string; label: string; category: string }
 
 export function SummaryTab({
   trip, tripId, activities, flights, accommodations, transports, stats, dates,
-  onEditTrip, onDeleteTrip, notes, onAddNote, onEditNote, onDeleteNote,
+  onEditTrip: _onEditTrip, onDeleteTrip: _onDeleteTrip, notes, onAddNote, onEditNote, onDeleteNote,
 }: {
   trip: Trip | null; tripId: string
   activities: Activity[]; flights: Flight[]
@@ -46,40 +47,57 @@ export function SummaryTab({
         {/* Left column: Notes + To-do */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
 
-          {/* Notes */}
+          {/* Calendar + Notes side by side */}
           <div className="summary-section">
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 12 }}>
-              <p className="summary-section__title" style={{ margin: 0 }}>📝 Trip Notes</p>
-              <button className="btn-add" onClick={onAddNote} type="button">
-                <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
-                  <path d="M5.5 1v9M1 5.5h9" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/>
-                </svg>
-                Add
-              </button>
-            </div>
-            {notes.length === 0 ? (
-              <p style={{ fontSize: '0.85rem', color: '#9ca3af', fontStyle: 'italic', margin: 0 }}>
-                No notes yet — add reminders, booking refs, tips…
-              </p>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                {notes.map((note) => (
-                  <ItemCard key={note.id} onDelete={() => onDeleteNote(note.id)} onEdit={() => onEditNote(note)}>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                      <p style={{ margin: 0, fontSize: '0.72rem', color: '#9ca3af' }}>
-                        {new Date(note.created_at).toLocaleString('en-US', {
-                          weekday: 'short', month: 'short', day: 'numeric',
-                          hour: '2-digit', minute: '2-digit',
-                        })}
-                      </p>
-                      <p style={{ margin: 0, fontSize: '0.875rem', color: 'var(--charcoal)', whiteSpace: 'pre-wrap' }}>
-                        {note.text}
-                      </p>
-                    </div>
-                  </ItemCard>
-                ))}
+            <div style={{ display: 'flex', gap: 20, alignItems: 'flex-start' }}>
+
+              {/* Calendar */}
+              {trip && (
+                <div style={{ flexShrink: 0 }}>
+                  <p className="summary-section__title" style={{ marginBottom: 10 }}>📅 Calendar</p>
+                  <TripCalendar trip={trip} tripId={tripId} activities={activities} dates={dates} />
+                </div>
+              )}
+
+              {/* Divider */}
+              {trip && <div style={{ width: 1, background: 'var(--cream-dark)', alignSelf: 'stretch', flexShrink: 0 }} />}
+
+              {/* Notes */}
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 12 }}>
+                  <p className="summary-section__title" style={{ margin: 0 }}>📝 Trip Notes</p>
+                  <button className="btn-add" onClick={onAddNote} type="button">
+                    <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
+                      <path d="M5.5 1v9M1 5.5h9" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/>
+                    </svg>
+                    Add
+                  </button>
+                </div>
+                {notes.length === 0 ? (
+                  <p style={{ fontSize: '0.85rem', color: '#9ca3af', fontStyle: 'italic', margin: 0 }}>
+                    No notes yet — add reminders, booking refs, tips…
+                  </p>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10, maxHeight: 320, overflowY: 'auto' }}>
+                    {notes.map((note) => (
+                      <ItemCard key={note.id} onDelete={() => onDeleteNote(note.id)} onEdit={() => onEditNote(note)}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                          <p style={{ margin: 0, fontSize: '0.72rem', color: '#9ca3af' }}>
+                            {new Date(note.created_at).toLocaleString('en-US', {
+                              weekday: 'short', month: 'short', day: 'numeric',
+                              hour: '2-digit', minute: '2-digit',
+                            })}
+                          </p>
+                          <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--charcoal)', whiteSpace: 'pre-wrap' }}>
+                            {note.text}
+                          </p>
+                        </div>
+                      </ItemCard>
+                    ))}
+                  </div>
+                )}
               </div>
-            )}
+            </div>
           </div>
 
           {/* To-do */}
@@ -146,8 +164,8 @@ export function SummaryTab({
       </div>
 
       {/* Day strip */}
-      <div style={{ marginTop: 12 }}>
-        <p className="summary-section__title" style={{ marginBottom: 14 }}>📅 Days</p>
+      <div style={{ marginTop: 24 }}>
+        <p className="summary-section__title" style={{ marginBottom: 14 }}>📋 Days</p>
         {dates.length === 0 ? (
           <p style={{ fontSize: '0.85rem', color: 'var(--sage)' }}>Set trip start/end dates to see days here</p>
         ) : (
