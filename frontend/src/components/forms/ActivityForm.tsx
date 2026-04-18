@@ -81,8 +81,7 @@ export function ActivityForm({
         ) : (
           <FormField
             label="Date"
-            type="input"
-            inputType="date"
+            type="date"
             value={activityDate}
             onChange={setActivityDate}
             min={tripStartDate ?? undefined}
@@ -94,8 +93,8 @@ export function ActivityForm({
       <FormField label="Title" type="input" value={title} onChange={setTitle} placeholder="Visit to the Colosseum" required />
       <FormField label="Description" type="textarea" value={description} onChange={setDesc} rows={2} />
       <div className="form-grid-2">
-        <FormField label="Start Time" type="input" inputType="time" value={startTime} onChange={setStart} />
-        <FormField label="End Time" type="input" inputType="time" value={endTime} onChange={setEnd} />
+        <FormField label="Start Time" type="time" value={startTime} onChange={setStart} />
+        <FormField label="End Time" type="time" value={endTime} onChange={setEnd} />
       </div>
       <div className="form-grid-2">
         <FormField label="Location" type="input" value={location} onChange={setLocation} placeholder="Via Sacra, Rome" />

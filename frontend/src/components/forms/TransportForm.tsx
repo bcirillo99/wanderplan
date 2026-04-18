@@ -43,8 +43,8 @@ export function TransportForm({ initial, onSubmit, loading, minDateTime, maxDate
         <FormField label="To" type="input" value={dest} onChange={setDest} placeholder="Naples" required />
       </div>
       <div className="form-grid-2">
-        <FormField label="Departure" type="input" inputType="datetime-local" value={dep} onChange={setDep} min={minDateTime} max={maxDateTime} />
-        <FormField label="Arrival" type="input" inputType="datetime-local" value={arr} onChange={setArr} min={dep || minDateTime} max={maxDateTime} />
+        <FormField label="Departure" type="datetime" value={dep} onChange={setDep} min={minDateTime} max={maxDateTime} />
+        <FormField label="Arrival" type="datetime" value={arr} onChange={setArr} min={dep || minDateTime} max={maxDateTime} />
       </div>
       <div className="form-grid-2">
         <FormField label="Operator" type="input" value={operator} onChange={setOperator} placeholder="Trenitalia" />

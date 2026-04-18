@@ -30,8 +30,8 @@ export function FlightForm({ initial, onSubmit, loading, minDateTime, maxDateTim
         <FormField label="Destination" type="input" value={dest} onChange={setDest} placeholder="NRT" required />
       </div>
       <div className="form-grid-2">
-        <FormField label="Departure" type="input" inputType="datetime-local" value={dep} onChange={setDep} min={minDateTime} max={maxDateTime} />
-        <FormField label="Arrival" type="input" inputType="datetime-local" value={arr} onChange={setArr} min={dep || minDateTime} max={maxDateTime} />
+        <FormField label="Departure" type="datetime" value={dep} onChange={setDep} min={minDateTime} max={maxDateTime} />
+        <FormField label="Arrival" type="datetime" value={arr} onChange={setArr} min={dep || minDateTime} max={maxDateTime} />
       </div>
       <div className="form-grid-2">
         <FormField label="Airline" type="input" value={airline} onChange={setAirline} placeholder="Ryanair" />

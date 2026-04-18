@@ -31,8 +31,8 @@ export function AccommodationForm({ initial, onSubmit, loading, minDate, maxDate
       </div>
       <FormField label="Address" type="input" value={address} onChange={setAddress} placeholder="123 Main St" />
       <div className="form-grid-2">
-        <FormField label="Check-in" type="input" inputType="date" value={checkIn} onChange={setCheckIn} min={minDate} max={maxDate} />
-        <FormField label="Check-out" type="input" inputType="date" value={checkOut} onChange={setCheckOut} min={checkIn || minDate} max={maxDate} />
+        <FormField label="Check-in" type="date" value={checkIn} onChange={setCheckIn} min={minDate} max={maxDate} />
+        <FormField label="Check-out" type="date" value={checkOut} onChange={setCheckOut} min={checkIn || minDate} max={maxDate} />
       </div>
       <div className="form-grid-2">
         <FormField label="Cost/Night (€)" type="input" inputType="number" value={costPerNight} onChange={setCost} />
