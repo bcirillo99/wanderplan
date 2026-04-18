@@ -150,3 +150,4 @@ Tests use an in-memory SQLite database — no running PostgreSQL needed.
 - **Packing list** — categorised checklist with progress bar
 - **Budget** — aggregated cost breakdown across all categories
 - **Notes** — freeform trip notes with timestamps
+- **Export** — download full trip summary as `.docx` (Word) or `.pdf`

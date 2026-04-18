@@ -1,7 +1,7 @@
 // frontend/src/pages/TripDetailPage.tsx
 import { useState } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
-import { exportTripToDocx } from '../utils/exportTrip'
+import { exportTripToDocx, exportTripToPdf } from '../utils/exportTrip'
 import Navbar from '../components/Navbar'
 import Modal from '../components/Modal'
 import { useTripData } from '../hooks/useTripData'
@@ -174,11 +174,23 @@ export default function TripDetailPage() {
                   onClick={() => trip && exportTripToDocx({ trip, flights, accommodations, transports, activities, notes, stats, extras, packingItems })}
                   className="trip-header__action-btn"
                   disabled={!trip}
+                  title="Export as Word document"
                 >
                   <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
                     <path d="M6 1v7M3 5.5L6 8.5l3-3M1.5 9.5v1h9v-1" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
                   </svg>
-                  Export
+                  DOCX
+                </button>
+                <button
+                  onClick={() => trip && exportTripToPdf({ trip, flights, accommodations, transports, activities, notes, stats, extras, packingItems })}
+                  className="trip-header__action-btn"
+                  disabled={!trip}
+                  title="Export as PDF"
+                >
+                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                    <path d="M6 1v7M3 5.5L6 8.5l3-3M1.5 9.5v1h9v-1" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                  PDF
                 </button>
                 <button onClick={() => setModal('edit-trip')} className="trip-header__action-btn">
                   <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
