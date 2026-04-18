@@ -4,16 +4,16 @@ import { createPortal } from 'react-dom'
 import { useParams, Link } from 'react-router-dom'
 import Navbar from '../components/Navbar'
 import Modal from '../components/Modal'
-import StatusBadge from '../components/StatusBadge'
 import { getTrip } from '../api/trips'
-import { createActivity, updateActivity } from '../api/activities'
-import { createFlight } from '../api/flights'
-import { createAccommodation } from '../api/accommodations'
-import { createTransport } from '../api/transports'
+import { createActivity, updateActivity, deleteActivity, getActivity } from '../api/activities'
+import { createFlight, updateFlight, deleteFlight, getFlight } from '../api/flights'
+import { createAccommodation, updateAccommodation, deleteAccommodation, getAccommodation } from '../api/accommodations'
+import { createTransport, updateTransport, deleteTransport, getTransport } from '../api/transports'
 import { getDailySummary } from '../api/daily_summary'
 import type {
   Trip, Activity, ActivityCreate, DailySummaryItem,
-  FlightCreate, AccommodationCreate, TransportCreate,
+  Flight, FlightCreate, Accommodation, AccommodationCreate,
+  Transport, TransportCreate,
 } from '../types'
 import {
   ActivityForm, FlightForm, AccommodationForm, TransportForm,
@@ -24,12 +24,6 @@ function fmtDay(d?: string | null) {
   if (!d) return '—'
   return new Date(d).toLocaleDateString('en-US', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
 }
-function fmtTime(d?: string | null) {
-  if (!d) return null
-  if (d.length <= 5) return d
-  return new Date(d).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
-}
-
 function getIconForType(type: string): string {
   switch (type) {
     case 'activity': return '🗓️'
@@ -41,10 +35,14 @@ function getIconForType(type: string): string {
 }
 
 // ── Summary Item Card ─────────────────────────────────────────────────────────
-function SummaryItemCard({ item }: { item: DailySummaryItem }) {
+function SummaryItemCard({ item, onClick }: { item: DailySummaryItem; onClick?: () => void }) {
   const icon = getIconForType(item.type)
   return (
-    <div className="activity-card animate-fade-up">
+    <div
+      className="activity-card animate-fade-up"
+      onClick={onClick}
+      style={onClick ? { cursor: 'pointer' } : undefined}
+    >
       <div className="activity-card__inner">
         <div className="activity-card__time" style={{ justifyContent: 'center', paddingTop: 4 }}>
           <span style={{ fontSize: '1.5rem' }}>{icon}</span>
@@ -63,73 +61,14 @@ function SummaryItemCard({ item }: { item: DailySummaryItem }) {
   )
 }
 
-// ── Activity Detail View ───────────────────────────────────────────────────────
-function ActivityDetailView({ activity, onEdit, onClose }: {
-  activity: Activity; onEdit: () => void; onClose: () => void
-}) {
-  return (
-    <div className="form-stack">
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
-        <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.2rem', fontWeight: 700, color: 'var(--forest)', margin: 0 }}>
-          {activity.title || 'Untitled Activity'}
-        </h3>
-        <StatusBadge status={activity.status} />
-      </div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 8, fontSize: '0.875rem', color: '#4b5563' }}>
-        {(activity.start_time || activity.end_time) && (
-          <div style={{ display: 'flex', gap: 8 }}>
-            <span style={{ minWidth: 20 }}>🕐</span>
-            <span>
-              {fmtTime(activity.start_time) ?? '—'}
-              {activity.end_time ? ` → ${fmtTime(activity.end_time)}` : ''}
-            </span>
-          </div>
-        )}
-        {activity.location && (
-          <div style={{ display: 'flex', gap: 8 }}>
-            <span style={{ minWidth: 20 }}>📍</span>
-            <span>{activity.location}</span>
-          </div>
-        )}
-        {activity.cost != null && (
-          <div style={{ display: 'flex', gap: 8 }}>
-            <span style={{ minWidth: 20 }}>💶</span>
-            <span style={{ fontWeight: 600 }}>€ {activity.cost.toFixed(2)}</span>
-          </div>
-        )}
-        {activity.link && (
-          <div style={{ display: 'flex', gap: 8 }}>
-            <span style={{ minWidth: 20 }}>🔗</span>
-            <a href={activity.link} target="_blank" rel="noopener noreferrer"
-              style={{ color: 'var(--forest-light)', wordBreak: 'break-all' }}>
-              {activity.link}
-            </a>
-          </div>
-        )}
-        {activity.description && (
-          <div style={{ marginTop: 4, padding: '10px 12px', background: 'var(--ivory)', borderRadius: 10, lineHeight: 1.6 }}>
-            {activity.description}
-          </div>
-        )}
-        {activity.notes && (
-          <div style={{ display: 'flex', gap: 8, fontStyle: 'italic', color: '#9ca3af', borderLeft: '2px solid var(--mint)', paddingLeft: 10 }}>
-            <span>{activity.notes}</span>
-          </div>
-        )}
-      </div>
-      <div style={{ display: 'flex', gap: 10, marginTop: 4 }}>
-        <button className="btn-primary" style={{ flex: 1, justifyContent: 'center' }} onClick={onEdit}>Edit</button>
-        <button onClick={onClose} style={{ flex: 1, padding: '10px 16px', borderRadius: 10, border: '1px solid var(--cream-dark)', background: '#fff', color: 'var(--forest-mid)', cursor: 'pointer', fontSize: '0.875rem', fontWeight: 500 }}>
-          Close
-        </button>
-      </div>
-    </div>
-  )
-}
-
 // ── Main Page ─────────────────────────────────────────────────────────────────
 type AddKind = 'activity' | 'flight' | 'accommodation' | 'transport'
-type ModalKind = 'add-activity' | 'add-flight' | 'add-accommodation' | 'add-transport' | 'edit' | 'view' | null
+type ModalKind = 'add-activity' | 'add-flight' | 'add-accommodation' | 'add-transport' | 'edit-item' | null
+type SelectedItem =
+  | { type: 'activity'; data: Activity }
+  | { type: 'flight'; data: Flight }
+  | { type: 'accommodation'; data: Accommodation }
+  | { type: 'transport'; data: Transport }
 
 export default function TripDayPage() {
   const { tripId, date } = useParams<{ tripId: string; date: string }>()
@@ -137,8 +76,7 @@ export default function TripDayPage() {
   const [summaryItems, setSummaryItems] = useState<DailySummaryItem[]>([])
   const [modal, setModal]           = useState<ModalKind>(null)
   const [addMenuOpen, setAddMenuOpen] = useState(false)
-  const [editTarget, setEditTarget] = useState<Activity | null>(null)
-  const [viewTarget, setViewTarget] = useState<Activity | null>(null)
+  const [selectedItem, setSelectedItem] = useState<SelectedItem | null>(null)
   const [saving, setSaving]         = useState(false)
   const [loading, setLoading]       = useState(true)
   const addBtnRef = useRef<HTMLButtonElement | null>(null)
@@ -252,23 +190,80 @@ export default function TripDayPage() {
     }
   }
 
-  const handleEdit = async (data: ActivityCreate) => {
-    if (!editTarget) return
-    setSaving(true)
+  const openItem = async (item: DailySummaryItem) => {
     try {
-      await updateActivity(tripId, editTarget.id, { ...data })
-      await loadDaySummary()
-      setModal(null)
-      setEditTarget(null)
-    } finally {
-      setSaving(false)
+      if (item.type === 'activity') {
+        const data = await getActivity(tripId, item.id)
+        setSelectedItem({ type: 'activity', data })
+      } else if (item.type === 'flight') {
+        const data = await getFlight(tripId, item.id)
+        setSelectedItem({ type: 'flight', data })
+      } else if (item.type === 'accommodation') {
+        const data = await getAccommodation(tripId, item.id)
+        setSelectedItem({ type: 'accommodation', data })
+      } else {
+        const data = await getTransport(tripId, item.id)
+        setSelectedItem({ type: 'transport', data })
+      }
+      setModal('edit-item')
+    } catch (err) {
+      console.error('Error loading item:', err)
     }
   }
 
-  const openEdit = (act: Activity) => {
-    setEditTarget(act)
-    setViewTarget(null)
-    setModal('edit')
+  const closeItem = () => { setModal(null); setSelectedItem(null) }
+
+  const handleUpdateActivity = async (data: ActivityCreate) => {
+    if (!selectedItem || selectedItem.type !== 'activity') return
+    setSaving(true)
+    try {
+      await updateActivity(tripId, selectedItem.data.id, data)
+      await loadDaySummary()
+      closeItem()
+    } finally { setSaving(false) }
+  }
+
+  const handleUpdateFlight = async (data: FlightCreate) => {
+    if (!selectedItem || selectedItem.type !== 'flight') return
+    setSaving(true)
+    try {
+      await updateFlight(tripId, selectedItem.data.id, data)
+      await loadDaySummary()
+      closeItem()
+    } finally { setSaving(false) }
+  }
+
+  const handleUpdateAccommodation = async (data: AccommodationCreate) => {
+    if (!selectedItem || selectedItem.type !== 'accommodation') return
+    setSaving(true)
+    try {
+      await updateAccommodation(tripId, selectedItem.data.id, data)
+      await loadDaySummary()
+      closeItem()
+    } finally { setSaving(false) }
+  }
+
+  const handleUpdateTransport = async (data: TransportCreate) => {
+    if (!selectedItem || selectedItem.type !== 'transport') return
+    setSaving(true)
+    try {
+      await updateTransport(tripId, selectedItem.data.id, data)
+      await loadDaySummary()
+      closeItem()
+    } finally { setSaving(false) }
+  }
+
+  const handleDeleteItem = async () => {
+    if (!selectedItem) return
+    setSaving(true)
+    try {
+      if (selectedItem.type === 'activity') await deleteActivity(tripId, selectedItem.data.id)
+      else if (selectedItem.type === 'flight') await deleteFlight(tripId, selectedItem.data.id)
+      else if (selectedItem.type === 'accommodation') await deleteAccommodation(tripId, selectedItem.data.id)
+      else await deleteTransport(tripId, selectedItem.data.id)
+      await loadDaySummary()
+      closeItem()
+    } finally { setSaving(false) }
   }
 
   return (
@@ -390,7 +385,11 @@ export default function TripDayPage() {
         ) : (
           <div className="timeline">
             {summaryItems.map((item) => (
-              <SummaryItemCard key={item.id} item={item} />
+              <SummaryItemCard
+                key={item.id}
+                item={item}
+                onClick={() => openItem(item)}
+              />
             ))}
           </div>
         )}
@@ -444,27 +443,59 @@ export default function TripDayPage() {
           />
         </Modal>
       )}
-      {modal === 'view' && viewTarget && (
-        <Modal title="Activity Details" onClose={() => { setModal(null); setViewTarget(null) }} size="lg">
-          <ActivityDetailView
-            activity={viewTarget}
-            onEdit={() => openEdit(viewTarget)}
-            onClose={() => { setModal(null); setViewTarget(null) }}
-          />
-        </Modal>
-      )}
-      {modal === 'edit' && editTarget && (
-        <Modal title="Edit Activity" onClose={() => { setModal(null); setEditTarget(null) }} size="lg">
-          <ActivityForm
-            initial={editTarget}
-            loading={saving}
-            onSubmit={handleEdit}
-            showDayPicker
-            tripStartDate={trip?.start_date}
-            tripEndDate={trip?.end_date}
-          />
-        </Modal>
-      )}
+      {modal === 'edit-item' && selectedItem && (() => {
+        const titles = { activity: 'Edit Activity', flight: 'Edit Flight', accommodation: 'Edit Accommodation', transport: 'Edit Transportation' }
+        return (
+          <Modal title={titles[selectedItem.type]} onClose={closeItem} size="lg">
+            {selectedItem.type === 'activity' && (
+              <ActivityForm
+                initial={selectedItem.data}
+                loading={saving}
+                onSubmit={handleUpdateActivity}
+                showDayPicker
+                tripStartDate={trip?.start_date}
+                tripEndDate={trip?.end_date}
+              />
+            )}
+            {selectedItem.type === 'flight' && (
+              <FlightForm
+                initial={selectedItem.data}
+                loading={saving}
+                onSubmit={handleUpdateFlight}
+                minDateTime={trip?.start_date ? `${trip.start_date}T00:00` : undefined}
+                maxDateTime={trip?.end_date ? `${trip.end_date}T23:59` : undefined}
+              />
+            )}
+            {selectedItem.type === 'accommodation' && (
+              <AccommodationForm
+                initial={selectedItem.data}
+                loading={saving}
+                onSubmit={handleUpdateAccommodation}
+                minDate={trip?.start_date ?? undefined}
+                maxDate={trip?.end_date ?? undefined}
+              />
+            )}
+            {selectedItem.type === 'transport' && (
+              <TransportForm
+                initial={selectedItem.data}
+                loading={saving}
+                onSubmit={handleUpdateTransport}
+                minDateTime={trip?.start_date ? `${trip.start_date}T00:00` : undefined}
+                maxDateTime={trip?.end_date ? `${trip.end_date}T23:59` : undefined}
+              />
+            )}
+            <div style={{ marginTop: 8, paddingTop: 12, borderTop: '1px solid var(--cream-dark)' }}>
+              <button
+                onClick={handleDeleteItem}
+                disabled={saving}
+                style={{ width: '100%', padding: '10px 16px', borderRadius: 10, border: '1px solid #fca5a5', background: '#fff5f5', color: '#dc2626', cursor: 'pointer', fontSize: '0.875rem', fontWeight: 500 }}
+              >
+                {saving ? 'Deleting...' : `Delete ${selectedItem.type.charAt(0).toUpperCase() + selectedItem.type.slice(1)}`}
+              </button>
+            </div>
+          </Modal>
+        )
+      })()}
     </div>
   )
 }
