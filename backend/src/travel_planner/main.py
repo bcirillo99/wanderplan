@@ -5,6 +5,7 @@ from travel_planner.routers import (
     activity_router,
     accommodation_router,
     flight_router,
+    flight_search_router,
     transport_router,
     packing_item_router,
     extra_router,
@@ -26,6 +27,7 @@ app.include_router(trip_router)
 app.include_router(activity_router)
 app.include_router(accommodation_router)
 app.include_router(flight_router)
+app.include_router(flight_search_router)
 app.include_router(transport_router)
 app.include_router(packing_item_router)
 app.include_router(extra_router)

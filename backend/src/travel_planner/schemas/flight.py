@@ -1,6 +1,7 @@
 # backend/src/travel_planner/schemas/flight.py
 from uuid import UUID
 from datetime import datetime
+from typing import Any
 from pydantic import BaseModel, field_validator
 from travel_planner.db.enums import Status
 
@@ -19,6 +20,8 @@ class FlightBase(BaseModel):
     booking_reference: str | None = None
     link: str | None = None
     notes: str | None = None
+    stops: int | None = None
+    legs: list[Any] | None = None
 
     @field_validator("arrival_time")
     @classmethod
@@ -27,7 +30,7 @@ class FlightBase(BaseModel):
         if departure_time and arrival_time and arrival_time < departure_time:
             raise ValueError("arrival_time must be after departure_time")
         return arrival_time
-    
+
     @field_validator("cost")
     @classmethod
     def validate_cost(cls, cost):
@@ -54,6 +57,8 @@ class FlightUpdate(BaseModel):
     booking_reference: str | None = None
     link: str | None = None
     notes: str | None = None
+    stops: int | None = None
+    legs: list[Any] | None = None
 
     @field_validator("arrival_time")
     @classmethod
@@ -62,7 +67,7 @@ class FlightUpdate(BaseModel):
         if departure_time and arrival_time and arrival_time < departure_time:
             raise ValueError("arrival_time must be after departure_time")
         return arrival_time
-    
+
     @field_validator("cost")
     @classmethod
     def validate_cost(cls, cost):

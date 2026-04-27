@@ -1,6 +1,18 @@
 // frontend/src/api/flights.ts
 import client from './client'
-import type { Flight, FlightCreate, FlightUpdate } from '../types'
+import type { Flight, FlightCreate, FlightUpdate, FlightSearchResult } from '../types'
+
+export const searchFlights = async (
+  origin: string,
+  destination: string,
+  date: string,
+  cabin = 'economy',
+): Promise<FlightSearchResult[]> => {
+  const { data } = await client.get('/flights/search', {
+    params: { origin, destination, date, cabin },
+  })
+  return data
+}
 
 export const getFlights = async (tripId: string): Promise<Flight[]> => {
   const { data } = await client.get(`/trips/${tripId}/flights`)

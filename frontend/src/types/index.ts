@@ -55,6 +55,24 @@ export interface Activity {
   notes?: string | null
 }
 
+export interface FlightLegResult {
+  airline: string
+  flight_number: string
+  departure_airport: string
+  arrival_airport: string
+  departure_time: string
+  arrival_time: string
+  duration_minutes: number
+}
+
+export interface FlightSearchResult {
+  price: number | null
+  currency: string | null
+  duration_minutes: number
+  stops: number
+  legs: FlightLegResult[]
+}
+
 export interface Flight {
   id: string
   trip_id: string
@@ -71,6 +89,8 @@ export interface Flight {
   booking_reference?: string | null
   link?: string | null
   notes?: string | null
+  stops?: number | null
+  legs?: FlightLegResult[] | null
 }
 
 export interface Accommodation {

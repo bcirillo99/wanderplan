@@ -1,8 +1,8 @@
 # backend/src/travel_planner/db/models/flight.py
 import uuid
 from datetime import datetime
-from sqlalchemy import ForeignKey, String, DateTime, Boolean, Text, Enum as SAEnum
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy import ForeignKey, String, DateTime, Boolean, Text, Integer, Enum as SAEnum
+from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from travel_planner.db.base import Base
 from travel_planner.db.enums import Status
@@ -30,6 +30,8 @@ class Flight(Base):
     booking_reference: Mapped[str | None] = mapped_column(String(50), nullable=True)
     link: Mapped[str | None] = mapped_column(Text, nullable=True)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    stops: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    legs: Mapped[list | None] = mapped_column(JSONB, nullable=True)
 
     # relationships
     trip: Mapped["Trip"] = relationship(back_populates="flights")
