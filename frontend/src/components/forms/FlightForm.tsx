@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import FormField from '../FormField'
+import AirportInput from '../AirportInput'
 import type { Flight, FlightCreate, FlightSearchResult, Status } from '../../types'
 import { STATUS_OPTIONS } from './formOptions'
 import { searchFlights } from '../../api/flights'
@@ -44,9 +45,11 @@ interface FlightSearchModalProps {
   destination: string
   onSelect: (result: FlightSearchResult) => void
   onClose: () => void
+  minDate?: string   // YYYY-MM-DD
+  maxDate?: string   // YYYY-MM-DD
 }
 
-function FlightSearchModal({ origin, destination, onSelect, onClose }: FlightSearchModalProps) {
+function FlightSearchModal({ origin, destination, onSelect, onClose, minDate, maxDate }: FlightSearchModalProps) {
   const [searchDate, setSearchDate] = useState('')
   const [cabin, setCabin]           = useState('economy')
   const [results, setResults]       = useState<FlightSearchResult[]>([])
@@ -160,7 +163,17 @@ function FlightSearchModal({ origin, destination, onSelect, onClose }: FlightSea
 
           {/* Search controls */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-            <FormField label="Date" type="date" value={searchDate} onChange={setSearchDate} />
+            <div className="form-group">
+              <label className="form-label">Date</label>
+              <input
+                type="date"
+                className="form-control"
+                value={searchDate}
+                min={minDate}
+                max={maxDate}
+                onChange={e => setSearchDate(e.target.value)}
+              />
+            </div>
             <div className="form-group">
               <label className="form-label">Cabin class</label>
               <select className="form-control" value={cabin} onChange={e => setCabin(e.target.value)}>
@@ -355,8 +368,8 @@ export function FlightForm({ initial, onSubmit, loading, minDateTime, maxDateTim
     <div className="form-stack">
       {/* Route */}
       <div className="form-grid-2">
-        <FormField label="Origin" type="input" value={origin} onChange={setOrigin} placeholder="MXP" required />
-        <FormField label="Destination" type="input" value={dest} onChange={setDest} placeholder="NRT" required />
+        <AirportInput label="Origin" value={origin} onChange={setOrigin} placeholder="MXP" required />
+        <AirportInput label="Destination" value={dest} onChange={setDest} placeholder="NRT" required />
       </div>
 
       {/* Search button */}
@@ -426,6 +439,8 @@ export function FlightForm({ initial, onSubmit, loading, minDateTime, maxDateTim
           destination={dest}
           onSelect={applyResult}
           onClose={() => setSearchModalOpen(false)}
+          minDate={minDateTime?.slice(0, 10)}
+          maxDate={maxDateTime?.slice(0, 10)}
         />
       )}
     </div>

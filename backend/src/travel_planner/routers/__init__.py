@@ -9,3 +9,4 @@ from .extra_router import router as extra_router
 from .stats_router import router as stats_router
 from .note_router import router as note_router
 from .flight_search_router import router as flight_search_router
+from .airport_router import router as airport_router
