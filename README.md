@@ -13,6 +13,8 @@ For people who love planning trips themselves — flights, accommodations, activ
 
 No subscriptions. No AI suggestions. No "let us book that for you." Just your trip, organized exactly the way you want it.
 
+> Yes, AI can plan your trip in seconds. But half the fun is doing it yourself — obsessing over the itinerary, finding the hidden restaurant, building the perfect day. WanderPlan is for people who feel the same way.
+
 ---
 
 ## What you can do
@@ -26,6 +28,8 @@ No subscriptions. No AI suggestions. No "let us book that for you." Just your tr
 - **Keep notes** — freeform trip notes with timestamps
 - **Export** — download your full trip summary as `.pdf` or `.docx`
 - **Cover photos** — automatic destination photos via Unsplash
+
+> WanderPlan doesn't suggest anything — it just keeps track of what *you* decide.
 
 ## What's not there yet
 
