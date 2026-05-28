@@ -1,0 +1,209 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-05-24T00:00:00Z",
+  "title": "Design System: Wanderplan",
+  "extensions": {
+    "colorMeta": {
+      "primary": {
+        "role": "primary",
+        "displayName": "Rausch Coral",
+        "canonical": "oklch(62% 0.200 23)",
+        "tonalRamp": ["#4A0F0F","#721A18","#9B2825","#C43835","#FF5A5F","#FF8B8D","#FFBABB","#FFE8E8"]
+      },
+      "primary-deep": {
+        "role": "primary",
+        "displayName": "Rausch Deep",
+        "canonical": "oklch(55% 0.200 23)",
+        "tonalRamp": ["#3D0A0A","#621614","#881F1D","#AD2F2C","#E5484D","#EF7C7F","#F7B0B2","#FBE0E0"]
+      },
+      "text-primary": {
+        "role": "neutral",
+        "displayName": "Charcoal",
+        "canonical": "oklch(16% 0.004 60)",
+        "tonalRamp": ["#111111","#222222","#333333","#444444","#666666","#888888","#AAAAAA","#CCCCCC"]
+      },
+      "text-secondary": {
+        "role": "neutral",
+        "displayName": "Fog",
+        "canonical": "oklch(49% 0.008 60)",
+        "tonalRamp": ["#2A2A2A","#444444","#555555","#666666","#717171","#909090","#B0B0B0","#D0D0D0"]
+      },
+      "surface-white": {
+        "role": "neutral",
+        "displayName": "Canvas White",
+        "canonical": "oklch(100% 0 0)",
+        "tonalRamp": ["#C8C8C8","#D4D4D4","#E0E0E0","#EBEBEB","#F2F2F2","#F7F7F7","#FAFAFA","#FFFFFF"]
+      },
+      "surface-warm": {
+        "role": "neutral",
+        "displayName": "Warm Mist",
+        "canonical": "oklch(96% 0.003 80)",
+        "tonalRamp": ["#C5C5C2","#D0D0CD","#DCDCD9","#E5E5E2","#EEEEEB","#F4F4F1","#F7F7F4","#FDFDF9"]
+      },
+      "border-subtle": {
+        "role": "neutral",
+        "displayName": "Feather",
+        "canonical": "oklch(87% 0.005 60)",
+        "tonalRamp": ["#888888","#999999","#AAAAAA","#BBBBBB","#CCCCCC","#DDDDDD","#EEEEEE","#F5F5F5"]
+      },
+      "destructive": {
+        "role": "tertiary",
+        "displayName": "Alarm",
+        "canonical": "oklch(44% 0.18 28)",
+        "tonalRamp": ["#3D0800","#6B1008","#941A10","#BF2618","#C13515","#D96050","#EDAA9A","#FAEAE6"]
+      },
+      "success": {
+        "role": "tertiary",
+        "displayName": "Grove",
+        "canonical": "oklch(45% 0.15 142)",
+        "tonalRamp": ["#002200","#003D00","#005A05","#007005","#008A05","#30A830","#79CC79","#C1EAC1"]
+      }
+    },
+    "typographyMeta": {
+      "display":  { "displayName": "Display",  "purpose": "Trip titles and hero headings. One per screen." },
+      "headline": { "displayName": "Headline", "purpose": "Section headings within tabs and modal titles." },
+      "title":    { "displayName": "Title",    "purpose": "Card titles, list item primary labels, form section groups." },
+      "body":     { "displayName": "Body",     "purpose": "Descriptions, notes, helper text. Max 65ch." },
+      "label":    { "displayName": "Label",    "purpose": "Badges, chips, button copy, metadata. Always uppercase." }
+    },
+    "shadows": [
+      { "name": "card-rest",       "value": "0 0 0 1px #DDDDDD",                   "purpose": "Card and input border at rest. Simulated as box-shadow for hover-transition ease." },
+      { "name": "card-hover",      "value": "0 2px 16px rgba(0, 0, 0, 0.12)",      "purpose": "Card elevation on mouse hover. Border fades simultaneously." },
+      { "name": "floating",        "value": "0 8px 28px rgba(0, 0, 0, 0.16)",      "purpose": "Modals, dropdowns, autocomplete panels." },
+      { "name": "search-pill-rest","value": "0 2px 8px rgba(0, 0, 0, 0.10)",       "purpose": "Search pill ambient lift at rest." },
+      { "name": "search-pill-focus","value": "0 4px 16px rgba(0, 0, 0, 0.16)",     "purpose": "Search pill on focus — expanded lift signals engagement." }
+    ],
+    "motion": [
+      { "name": "ease-out-standard", "value": "cubic-bezier(0.16, 1, 0.3, 1)",  "purpose": "Default ease for state transitions (hover, shadow, transform). Fast settle." },
+      { "name": "ease-out-quick",    "value": "cubic-bezier(0.4, 0, 0.2, 1)",   "purpose": "Tab underline slides, chip toggle switches." },
+      { "name": "duration-fast",     "value": "150ms", "purpose": "Color-only transitions: button hover background, text color." },
+      { "name": "duration-standard", "value": "220ms", "purpose": "Shadow/border transitions, opacity fades." },
+      { "name": "duration-enter",    "value": "320ms", "purpose": "Modal enter, card mount animations." }
+    ],
+    "breakpoints": [
+      { "name": "sm",  "value": "640px",  "purpose": "Mobile upper bound." },
+      { "name": "md",  "value": "768px",  "purpose": "Tablet — 2-col trip grid." },
+      { "name": "lg",  "value": "1024px", "purpose": "Desktop — 3-col trip grid, sticky sidebar layouts." },
+      { "name": "xl",  "value": "1280px", "purpose": "Wide desktop — max container width." }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Main CTA. Used for New Trip, Save, confirm actions. Always uppercase label copy.",
+      "html": "<button class=\"ds-btn-primary\">NEW TRIP</button>",
+      "css": ".ds-btn-primary { display: inline-flex; align-items: center; gap: 8px; background: #FF5A5F; color: #FFFFFF; padding: 14px 24px; border: none; border-radius: 8px; font-family: 'DM Sans', system-ui, sans-serif; font-size: 0.6875rem; font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; cursor: pointer; transition: background 150ms cubic-bezier(0.4,0,0.2,1), transform 150ms cubic-bezier(0.16,1,0.3,1); } .ds-btn-primary:hover { background: #E5484D; transform: translateY(-1px); } .ds-btn-primary:active { transform: translateY(0); background: #D43C41; } .ds-btn-primary:focus-visible { outline: 2px solid #222222; outline-offset: 2px; }"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Tertiary actions alongside a primary CTA. Cancel, Export, back navigation.",
+      "html": "<button class=\"ds-btn-secondary\">CANCEL</button>",
+      "css": ".ds-btn-secondary { display: inline-flex; align-items: center; gap: 8px; background: #FFFFFF; color: #222222; padding: 13px 23px; border: 1px solid #222222; border-radius: 8px; font-family: 'DM Sans', system-ui, sans-serif; font-size: 0.6875rem; font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; cursor: pointer; transition: background 150ms cubic-bezier(0.4,0,0.2,1); } .ds-btn-secondary:hover { background: #F7F7F7; } .ds-btn-secondary:focus-visible { outline: 2px solid #222222; outline-offset: 2px; }"
+    },
+    {
+      "name": "Search Pill Input",
+      "kind": "input",
+      "refersTo": "input-pill",
+      "description": "Signature search/filter input. Used on HomePage for trip search. Pill shape with ambient shadow.",
+      "html": "<div class=\"ds-search-pill\"><svg class=\"ds-search-icon\" width=\"16\" height=\"16\" viewBox=\"0 0 16 16\" fill=\"none\"><circle cx=\"6.5\" cy=\"6.5\" r=\"5\" stroke=\"#717171\" stroke-width=\"1.4\"/><path d=\"M10.5 10.5l3.5 3.5\" stroke=\"#717171\" stroke-width=\"1.4\" stroke-linecap=\"round\"/></svg><input class=\"ds-search-pill__input\" type=\"text\" placeholder=\"Search trips\"/></div>",
+      "css": ".ds-search-pill { display: flex; align-items: center; gap: 10px; background: #FFFFFF; border: 1px solid transparent; border-radius: 9999px; padding: 12px 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.10); transition: box-shadow 220ms cubic-bezier(0.16,1,0.3,1), border-color 220ms; cursor: text; } .ds-search-pill:focus-within { box-shadow: 0 4px 16px rgba(0,0,0,0.16); border-color: #DDDDDD; } .ds-search-icon { flex-shrink: 0; } .ds-search-pill__input { border: none; outline: none; background: transparent; font-family: 'DM Sans', system-ui, sans-serif; font-size: 0.9375rem; font-weight: 400; color: #222222; width: 100%; } .ds-search-pill__input::placeholder { color: #717171; }"
+    },
+    {
+      "name": "Standard Input",
+      "kind": "input",
+      "refersTo": "input-default",
+      "description": "Form field input for all modal forms (flight, activity, accommodation, etc.).",
+      "html": "<div class=\"ds-input-wrap\"><label class=\"ds-input-label\">DESTINATION</label><input class=\"ds-input\" type=\"text\" placeholder=\"e.g. Tokyo, Japan\"/></div>",
+      "css": ".ds-input-wrap { display: flex; flex-direction: column; gap: 6px; } .ds-input-label { font-family: 'DM Sans', system-ui, sans-serif; font-size: 0.6875rem; font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; color: #222222; } .ds-input { background: #FFFFFF; border: 1px solid #DDDDDD; border-radius: 8px; padding: 12px 16px; font-family: 'DM Sans', system-ui, sans-serif; font-size: 0.9375rem; font-weight: 400; color: #222222; transition: border-color 150ms; outline: none; } .ds-input::placeholder { color: #B0B0B0; } .ds-input:hover { border-color: #B0B0B0; } .ds-input:focus { border-color: #222222; } .ds-input:disabled { background: #F7F7F7; color: #B0B0B0; cursor: not-allowed; }"
+    },
+    {
+      "name": "Trip Card",
+      "kind": "card",
+      "refersTo": "card-trip",
+      "description": "Photo-first trip card on the HomePage grid. Image top, metadata below. Border at rest, shadow on hover.",
+      "html": "<article class=\"ds-trip-card\"><div class=\"ds-trip-card__img-zone\"><img class=\"ds-trip-card__img\" src=\"https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=600&q=80\" alt=\"Japan\"/><div class=\"ds-trip-card__img-overlay\"></div><span class=\"ds-trip-card__destination\">Tokyo, Japan</span><span class=\"ds-trip-card__days\">12 DAYS</span></div><div class=\"ds-trip-card__body\"><h3 class=\"ds-trip-card__title\">Japan 2025</h3><p class=\"ds-trip-card__date\">14 Mar → 26 Mar 2025</p><span class=\"ds-trip-card__cta\">View itinerary →</span></div></article>",
+      "css": ".ds-trip-card { background: #FFFFFF; border-radius: 12px; overflow: hidden; cursor: pointer; box-shadow: 0 0 0 1px #DDDDDD; transition: box-shadow 220ms cubic-bezier(0.16,1,0.3,1), transform 220ms cubic-bezier(0.16,1,0.3,1); } .ds-trip-card:hover { box-shadow: 0 2px 16px rgba(0,0,0,0.12); transform: translateY(-2px); } .ds-trip-card__img-zone { position: relative; aspect-ratio: 3/2; overflow: hidden; } .ds-trip-card__img { width: 100%; height: 100%; object-fit: cover; transition: transform 400ms cubic-bezier(0.16,1,0.3,1); } .ds-trip-card:hover .ds-trip-card__img { transform: scale(1.03); } .ds-trip-card__img-overlay { position: absolute; inset: 0; background: linear-gradient(to bottom, transparent 40%, rgba(0,0,0,0.45) 100%); } .ds-trip-card__destination { position: absolute; bottom: 12px; left: 14px; font-family: 'DM Sans', system-ui, sans-serif; font-size: 0.6875rem; font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; color: #FFFFFF; } .ds-trip-card__days { position: absolute; top: 12px; right: 12px; background: rgba(255,255,255,0.92); color: #222222; font-family: 'DM Sans', system-ui, sans-serif; font-size: 0.6875rem; font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; padding: 4px 10px; border-radius: 9999px; } .ds-trip-card__body { padding: 16px; } .ds-trip-card__title { font-family: 'DM Sans', system-ui, sans-serif; font-size: 1rem; font-weight: 600; color: #222222; margin-bottom: 4px; } .ds-trip-card__date { font-family: 'DM Sans', system-ui, sans-serif; font-size: 0.875rem; font-weight: 400; color: #717171; margin-bottom: 12px; } .ds-trip-card__cta { font-family: 'DM Sans', system-ui, sans-serif; font-size: 0.8125rem; font-weight: 500; color: #222222; }"
+    },
+    {
+      "name": "Filter Chip (Active)",
+      "kind": "chip",
+      "refersTo": "chip-active",
+      "description": "Active/selected filter pill. Charcoal fill. Used in tab filters and status filters.",
+      "html": "<button class=\"ds-chip ds-chip--active\">FLIGHTS</button>",
+      "css": ".ds-chip { display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; border-radius: 9999px; font-family: 'DM Sans', system-ui, sans-serif; font-size: 0.6875rem; font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; cursor: pointer; transition: background 150ms, border-color 150ms; } .ds-chip--active { background: #222222; color: #FFFFFF; border: 1px solid #222222; } .ds-chip--active:hover { background: #333333; border-color: #333333; } .ds-chip--default { background: #FFFFFF; color: #222222; border: 1px solid #DDDDDD; } .ds-chip--default:hover { border-color: #B0B0B0; }"
+    },
+    {
+      "name": "Tab Navigation",
+      "kind": "nav",
+      "refersTo": null,
+      "description": "Underline-style tabs for the TripDetailPage. 10 tabs, horizontally scrollable on mobile. No icons.",
+      "html": "<nav class=\"ds-tabs\"><button class=\"ds-tab ds-tab--active\">Overview</button><button class=\"ds-tab\">Days</button><button class=\"ds-tab\">Activities</button><button class=\"ds-tab\">Flights</button><button class=\"ds-tab\">Accommodations</button></nav>",
+      "css": ".ds-tabs { display: flex; background: #FFFFFF; border-bottom: 1px solid #DDDDDD; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; } .ds-tabs::-webkit-scrollbar { display: none; } .ds-tab { flex-shrink: 0; padding: 16px 16px 14px; background: transparent; border: none; border-bottom: 2px solid transparent; font-family: 'DM Sans', system-ui, sans-serif; font-size: 0.9375rem; font-weight: 400; color: #717171; cursor: pointer; white-space: nowrap; transition: color 150ms, border-color 150ms; margin-bottom: -1px; } .ds-tab:hover { color: #222222; } .ds-tab--active { color: #222222; font-weight: 600; border-bottom-color: #222222; }"
+    },
+    {
+      "name": "Status Badge",
+      "kind": "chip",
+      "refersTo": null,
+      "description": "Read-only status indicator for flights, accommodations, activities. Not interactive.",
+      "html": "<span class=\"ds-badge ds-badge--confirmed\">CONFIRMED</span>",
+      "css": ".ds-badge { display: inline-flex; align-items: center; padding: 3px 8px; border-radius: 4px; font-family: 'DM Sans', system-ui, sans-serif; font-size: 0.625rem; font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; } .ds-badge--confirmed { background: #C1EAC1; color: #005A05; } .ds-badge--pending { background: #FEF3C7; color: #92400E; } .ds-badge--cancelled { background: #FAEAE6; color: #C13515; } .ds-badge--booked { background: #DBEAFE; color: #1E40AF; }"
+    },
+    {
+      "name": "Navbar",
+      "kind": "nav",
+      "refersTo": null,
+      "description": "Top navigation bar. Sticky, full-width, white. Brand name left, optional ghost actions right.",
+      "html": "<header class=\"ds-navbar\"><a class=\"ds-navbar__brand\" href=\"/\">Wanderplan</a><nav class=\"ds-navbar__actions\"><button class=\"ds-btn-ghost\">Sign out</button></nav></header>",
+      "css": ".ds-navbar { position: sticky; top: 0; z-index: 100; display: flex; align-items: center; justify-content: space-between; padding: 0 24px; height: 64px; background: #FFFFFF; border-bottom: 1px solid #DDDDDD; } .ds-navbar__brand { font-family: 'DM Sans', system-ui, sans-serif; font-size: 1rem; font-weight: 600; color: #222222; text-decoration: none; letter-spacing: -0.01em; } .ds-navbar__actions { display: flex; align-items: center; gap: 8px; } .ds-btn-ghost { background: transparent; border: none; padding: 8px 12px; border-radius: 8px; font-family: 'DM Sans', system-ui, sans-serif; font-size: 0.875rem; font-weight: 500; color: #222222; cursor: pointer; transition: background 150ms; } .ds-btn-ghost:hover { background: #F7F7F7; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Warm Navigator",
+    "overview": "Wanderplan is a precision instrument that happens to feel like a trusted friend. Every screen should communicate: 'We have this under control, and it's going to be a great trip.' The visual language is borrowed from Airbnb's design maturity — clean white surfaces, one warm coral voice, generous whitespace that lets photo-first content breathe — but expressed through the lens of a working planning tool used across devices, across months of preparation, and in the field.\n\nThis system runs on constraint. One accent color. One type family. A restrained elevation vocabulary that rewards hover interaction with a whisper of depth rather than a shout. When everything is quiet, the important action speaks.\n\nWhat this system explicitly rejects: dark SaaS environments (no cool grays, no #0A0A0A backgrounds, no neon accents); Bootstrap admin grids (no equal-padding boxed layouts, no muted-gray everything); nature travel blog aesthetics (no forest green palettes, no Playfair Display serifs).",
+    "keyCharacteristics": [
+      "White-dominant surfaces with warm neutral support (#F7F7F7)",
+      "Single coral accent (#FF5A5F) used sparingly — ≤15% of any screen",
+      "DM Sans at all scales: humanist warmth without serif nostalgia",
+      "Photo-first cards: images anchor trips, data layers beside or below",
+      "Border-then-shadow card elevation: flat at rest, lifted on hover",
+      "Pill-shaped search and filter inputs as signature interaction pattern",
+      "Responsive-first layout: desktop planning, mobile field reference"
+    ],
+    "rules": [
+      { "name": "The One Voice Rule",        "body": "Coral appears on ≤15% of any given screen. Every additional coral element dilutes the attention signal.",                                           "section": "colors" },
+      { "name": "The No-Gray-On-Gray Rule",  "body": "Text is always on white or warm mist. Fog (#717171) on Canvas White (#FFFFFF) is the floor. Never Fog on Warm Mist.",                          "section": "colors" },
+      { "name": "The Single Family Rule",    "body": "One typeface. Hierarchy comes from weight contrast (400→700). A second typeface signals difference — in a data tool, that's noise.",             "section": "typography" },
+      { "name": "The Scale Ratio Rule",      "body": "Adjacent type levels must differ by at least 1.2× in size or 100 in weight.",                                                                   "section": "typography" },
+      { "name": "The Flat-By-Default Rule",  "body": "Shadows appear only as state responses, never as decoration.",                                                                                  "section": "elevation" },
+      { "name": "The Border-Then-Shadow Rule","body": "Cards carry a 1px border at rest, transition to shadow on hover (border: transparent simultaneously). Never both at once.",                    "section": "elevation" }
+    ],
+    "dos": [
+      "Use Rausch Coral (#FF5A5F) for primary CTAs, active tab underlines, and progress fills — and nothing else.",
+      "Keep page backgrounds either white (#FFFFFF) or warm mist (#F7F7F7).",
+      "Use the border-then-shadow hover transition on all clickable cards.",
+      "Size all touch targets to minimum 44×44px on mobile.",
+      "Keep body text on white. Fog (#717171) on white only; never Fog on warm mist.",
+      "Use pill-shaped inputs for search and filter interactions.",
+      "Use uppercase Label typography for all button copy, status badges, and category chips.",
+      "Clip card images to 12px radius matching the card corner.",
+      "Remove emoji from tab labels — text labels only.",
+      "Ensure min 4.5:1 contrast for body copy, min 3:1 for large text."
+    ],
+    "donts": [
+      "Don't use dark backgrounds, dark mode surfaces, or cool-toned grays.",
+      "Don't use boxed card grids with equal padding and muted backgrounds.",
+      "Don't use Playfair Display or any serif typeface anywhere.",
+      "Don't carry over any forest green, sage, mint, or cream values from the previous palette.",
+      "Don't apply coral as a background fill for sections, panels, or full-width banners.",
+      "Don't use gradient text (background-clip: text).",
+      "Don't use glassmorphism (backdrop-filter blur on decorative surfaces).",
+      "Don't stack both a border and a shadow on cards simultaneously.",
+      "Don't add colored left-border stripes to list items, callouts, or alert cards.",
+      "Don't use light gray text (#AAAAAA or lighter) on white backgrounds."
+    ]
+  }
+}

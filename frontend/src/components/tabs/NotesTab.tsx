@@ -16,7 +16,7 @@ export function NotesTab({ notes, onAdd, onEdit, onDelete }: {
           {notes.map((note) => (
             <ItemCard key={note.id} onDelete={() => onDelete(note.id)} onEdit={() => onEdit(note)}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                <p style={{ margin: 0, fontSize: '0.75rem', color: '#9ca3af' }}>
+                <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--fog)' }}>
                   {new Date(note.created_at).toLocaleString('en-US', {
                     weekday: 'short', month: 'short', day: 'numeric',
                     hour: '2-digit', minute: '2-digit',

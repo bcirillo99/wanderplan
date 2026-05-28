@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { exportTripToDocx, exportTripToPdf } from '../utils/exportTrip'
 import Navbar from '../components/Navbar'
+import { useDestinationPhoto } from '../hooks/useDestinationPhoto'
 import Modal from '../components/Modal'
 import { useTripData } from '../hooks/useTripData'
 import type {
@@ -27,17 +28,17 @@ import { NotesTab } from '../components/tabs/NotesTab'
 
 // ── Tab types ─────────────────────────────────────────────────────────────────
 type Tab = 'summary' | 'days' | 'activities' | 'flights' | 'accommodations' | 'transports' | 'extras' | 'packing' | 'stats' | 'notes'
-const TABS: { id: Tab; label: string; icon: string }[] = [
-  { id: 'summary',        label: 'Overview',       icon: '🗺️' },
-  { id: 'days',           label: 'Days',           icon: '📅' },
-  { id: 'activities',     label: 'Activities',     icon: '🗓️' },
-  { id: 'flights',        label: 'Flights',        icon: '✈️' },
-  { id: 'accommodations', label: 'Accommodations', icon: '🏨' },
-  { id: 'transports',     label: 'Transports',     icon: '🚌' },
-  { id: 'extras',         label: 'Extras',         icon: '💰' },
-  { id: 'packing',        label: 'Packing',        icon: '🎒' },
-  { id: 'stats',          label: 'Budget',         icon: '📊' },
-  { id: 'notes',          label: 'Notes',          icon: '📝' },
+const TABS: { id: Tab; label: string }[] = [
+  { id: 'summary',        label: 'Overview'       },
+  { id: 'days',           label: 'Days'           },
+  { id: 'activities',     label: 'Activities'     },
+  { id: 'flights',        label: 'Flights'        },
+  { id: 'accommodations', label: 'Accommodations' },
+  { id: 'transports',     label: 'Transports'     },
+  { id: 'extras',         label: 'Extras'         },
+  { id: 'packing',        label: 'Packing'        },
+  { id: 'stats',          label: 'Budget'         },
+  { id: 'notes',          label: 'Notes'          },
 ]
 
 type ModalType =
@@ -144,9 +145,12 @@ export default function TripDetailPage() {
     ? new Date(d).toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' })
     : ''
 
-  const bgStyle = trip?.cover_image
-    ? { backgroundImage: `url(${trip.cover_image})`, backgroundSize: 'cover', backgroundPosition: 'center' }
-    : { background: 'linear-gradient(135deg, var(--forest) 0%, var(--forest-light) 100%)' }
+  const autoPhoto = useDestinationPhoto(trip?.cover_image ? null : trip?.destination)
+  const coverUrl  = trip?.cover_image ?? autoPhoto
+  const hasCover  = Boolean(coverUrl)
+  const bgStyle   = hasCover
+    ? { backgroundImage: `url(${coverUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' }
+    : {}
 
   // ── Render ──
   return (
@@ -154,8 +158,8 @@ export default function TripDetailPage() {
       <Navbar />
 
       {/* Trip header */}
-      <div className="trip-header" style={bgStyle}>
-        <div className="trip-header__overlay" />
+      <div className={`trip-header${hasCover ? '' : ' trip-header--no-cover'}`} style={bgStyle}>
+        {hasCover && <div className="trip-header__overlay" />}
         <div className="trip-header__content">
           <div className="trip-header__breadcrumb">
             <Link to="/">My Trips</Link>
@@ -219,13 +223,18 @@ export default function TripDetailPage() {
       {/* Tabs */}
       <div className="tabs-bar">
         <div className="tabs-bar__inner">
+          <div className="tabs-bar__identity">
+            <Link to="/" className="tabs-bar__back-link" aria-label="Back to My Trips">
+              ← My trips
+            </Link>
+          </div>
           {TABS.map((t) => (
             <button
               key={t.id}
               className={`tab-btn ${tab === t.id ? 'tab-btn--active' : ''}`}
               onClick={() => setTab(t.id)}
             >
-              <span>{t.icon}</span>{t.label}
+              {t.label}
             </button>
           ))}
         </div>

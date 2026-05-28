@@ -18,7 +18,7 @@ export function ExtrasTab({ extras, onAdd, onEdit, onDelete }: {
           marginBottom: 16, display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         }}>
           <span style={{ fontSize: '0.82rem', color: 'var(--mint)' }}>Total Extras</span>
-          <span style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.6rem', fontWeight: 700, color: '#fff' }}>
+          <span style={{ fontSize: '1.6rem', fontWeight: 700, color: '#fff', letterSpacing: '-0.02em' }}>
             € {total.toFixed(2)}
           </span>
         </div>

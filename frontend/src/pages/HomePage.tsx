@@ -1,107 +1,372 @@
 // frontend/src/pages/HomePage.tsx
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import Navbar from '../components/Navbar'
 import Modal from '../components/Modal'
 import { TripForm } from '../components/forms/Forms'
 import { getTrips, createTrip, updateTrip, deleteTrip } from '../api/trips'
+import { useDestinationPhoto } from '../hooks/useDestinationPhoto'
 import type { Trip, TripCreate } from '../types'
 
-const HERO_IMAGES = [
-  'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1600&q=80',
-  'https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?w=1600&q=80',
-  'https://images.unsplash.com/photo-1502602898657-3e91760cbb34?w=1600&q=80',
-]
-const CARD_IMAGES = [
-  'https://images.unsplash.com/photo-1518548419970-58e3b4079ab2?w=800&q=70',
-  'https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=800&q=70',
-  'https://images.unsplash.com/photo-1523482580672-f109ba8cb9be?w=800&q=70',
-  'https://images.unsplash.com/photo-1504214208698-ea1916a2195a?w=800&q=70',
-  'https://images.unsplash.com/photo-1519677100203-a0e668c92439?w=800&q=70',
-  'https://images.unsplash.com/photo-1543832923-44667a44c804?w=800&q=70',
-]
+// ── Helpers ────────────────────────────────────────────────────────────────────
 
-function formatDateRange(start?: string | null, end?: string | null) {
-  if (!start) return 'Dates to be defined'
-  const s = new Date(start).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })
-  if (!end) return s
-  const e = new Date(end).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })
-  return `${s} → ${e}`
+/** Curated warm palettes — seeded from destination/title text */
+const CARD_PALETTES = [
+  { from: 'oklch(88% 0.09 28)',  to: 'oklch(78% 0.13 18)',  text: 'oklch(38% 0.10 22)'  }, // coral-blush
+  { from: 'oklch(90% 0.08 58)',  to: 'oklch(80% 0.11 42)',  text: 'oklch(40% 0.11 48)'  }, // amber
+  { from: 'oklch(88% 0.07 338)', to: 'oklch(80% 0.09 322)', text: 'oklch(42% 0.09 330)' }, // rose-mauve
+  { from: 'oklch(88% 0.07 162)', to: 'oklch(80% 0.08 148)', text: 'oklch(40% 0.09 155)' }, // sage-teal
+  { from: 'oklch(89% 0.08 45)',  to: 'oklch(80% 0.11 32)',  text: 'oklch(42% 0.10 38)'  }, // peach-orange
+  { from: 'oklch(87% 0.06 275)', to: 'oklch(79% 0.08 262)', text: 'oklch(40% 0.08 268)' }, // lavender
+] as const
+
+function cardPalette(seed: string) {
+  let h = 0
+  for (let i = 0; i < seed.length; i++) {
+    h = seed.charCodeAt(i) + ((h << 5) - h)
+  }
+  return CARD_PALETTES[Math.abs(h) % CARD_PALETTES.length]
 }
 
-function tripDays(start?: string | null, end?: string | null) {
+function formatDateRange(start?: string | null, end?: string | null): string | null {
+  if (!start) return null
+  const fmt = (d: string) =>
+    new Date(d).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })
+  return end ? `${fmt(start)} – ${fmt(end)}` : fmt(start)
+}
+
+function tripDays(start?: string | null, end?: string | null): number | null {
   if (!start || !end) return null
-  const diff = Math.ceil((new Date(end).getTime() - new Date(start).getTime()) / 86400000)
-  return diff > 0 ? `${diff} days` : null
+  const diff = Math.ceil(
+    (new Date(end).getTime() - new Date(start).getTime()) / 86_400_000
+  )
+  return diff > 0 ? diff : null
 }
 
-// ── Empty State ────────────────────────────────────────────────────────────────
-function EmptyState({ onAdd }: { onAdd: () => void }) {
+// ── Icons ──────────────────────────────────────────────────────────────────────
+
+function SearchIcon({ size = 16 }: { size?: number }) {
   return (
-    <div className="empty-state animate-fade-up">
-      <div className="empty-state__icon">
-        <svg width="32" height="32" viewBox="0 0 32 32" fill="none" style={{ color: 'var(--sage)' }}>
-          <circle cx="16" cy="16" r="14" stroke="currentColor" strokeWidth="1.5"/>
-          <path d="M16 9v14M9 16h14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-        </svg>
-      </div>
-      <h3 className="empty-state__title">No trips yet</h3>
-      <p className="empty-state__sub">Your next big trip starts here. Create your first itinerary.</p>
-      <button className="btn-primary" onClick={onAdd}>Create Your First Trip</button>
-    </div>
+    <svg width={size} height={size} viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <circle cx="6.5" cy="6.5" r="5" stroke="currentColor" strokeWidth="1.4" />
+      <path d="M10.5 10.5l3.5 3.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+    </svg>
   )
 }
 
-// ── Trip Card ──────────────────────────────────────────────────────────────────
-function TripCard({ trip, index, onEdit, onDelete, onClick }: {
-  trip: Trip; index: number
-  onEdit: (t: Trip) => void; onDelete: (t: Trip) => void; onClick: (t: Trip) => void
+function MoreIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <circle cx="3"  cy="8" r="1.25" fill="currentColor" />
+      <circle cx="8"  cy="8" r="1.25" fill="currentColor" />
+      <circle cx="13" cy="8" r="1.25" fill="currentColor" />
+    </svg>
+  )
+}
+
+function PlusIcon() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+      <path d="M6 1v10M1 6h10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    </svg>
+  )
+}
+
+// ── TripCard ───────────────────────────────────────────────────────────────────
+
+type MenuMode = 'options' | 'confirm'
+
+function TripCard({
+  trip,
+  isPast,
+  onNavigate,
+  onEdit,
+  onDelete,
+}: {
+  trip: Trip
+  isPast: boolean
+  onNavigate: () => void
+  onEdit: () => void
+  onDelete: () => void
 }) {
-  const imgUrl = trip.cover_image || CARD_IMAGES[index % CARD_IMAGES.length]
-  const days = tripDays(trip.start_date, trip.end_date)
+  const [menuOpen, setMenuOpen]   = useState(false)
+  const [menuMode, setMenuMode]   = useState<MenuMode>('options')
+  const menuZoneRef               = useRef<HTMLDivElement>(null)
+
+  const dateRange = formatDateRange(trip.start_date, trip.end_date)
+  const days      = tripDays(trip.start_date, trip.end_date)
+
+  // Close on outside click
+  useEffect(() => {
+    if (!menuOpen) return
+    function handleOutside(e: MouseEvent) {
+      if (menuZoneRef.current && !menuZoneRef.current.contains(e.target as Node)) {
+        setMenuOpen(false)
+        setMenuMode('options')
+      }
+    }
+    document.addEventListener('mousedown', handleOutside)
+    return () => document.removeEventListener('mousedown', handleOutside)
+  }, [menuOpen])
+
+  function toggleMenu(e: React.MouseEvent) {
+    e.stopPropagation()
+    if (menuOpen) {
+      setMenuOpen(false)
+      setMenuMode('options')
+    } else {
+      setMenuOpen(true)
+    }
+  }
+
+  function handleEdit(e: React.MouseEvent) {
+    e.stopPropagation()
+    setMenuOpen(false)
+    setMenuMode('options')
+    onEdit()
+  }
+
+  function handleDeleteConfirm(e: React.MouseEvent) {
+    e.stopPropagation()
+    setMenuOpen(false)
+    setMenuMode('options')
+    onDelete()
+  }
+
+  function handleCancelDelete(e: React.MouseEvent) {
+    e.stopPropagation()
+    setMenuMode('options')
+    setMenuOpen(false)
+  }
+
+
+  const autoPhoto = useDestinationPhoto(trip.cover_image ? null : trip.destination)
+  const photoUrl  = trip.cover_image ?? autoPhoto
+
+  const seed    = trip.destination || trip.title || 'T'
+  const initial = (trip.destination || trip.title || '?')[0].toUpperCase()
+  const palette = cardPalette(seed)
 
   return (
-    <article className="trip-card animate-fade-up" style={{ animationDelay: `${0.05 * index}s` }} onClick={() => onClick(trip)}>
-      <div className="trip-card__img-wrap">
-        <img src={imgUrl} alt={trip.title} className="trip-card__img" />
-        <div className="trip-card__img-overlay" />
-        {days && <span className="trip-card__days-badge">{days}</span>}
-        <div className="trip-card__actions" onClick={(e) => e.stopPropagation()}>
-          <button className="trip-card__action-btn" onClick={() => onEdit(trip)} title="Edit">
-            <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
-              <path d="M9 1.5l2.5 2.5L3.5 11.5H1v-2.5L9 1.5z" stroke="var(--forest)" strokeWidth="1.2" strokeLinejoin="round"/>
-            </svg>
-          </button>
-          <button className="trip-card__action-btn" onClick={() => onDelete(trip)} title="Delete">
-            <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
-              <path d="M2 3h9M5 3V2h3v1M4 3l.5 8h4l.5-8" stroke="#9b2020" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-          </button>
-        </div>
-        {trip.destination && <span className="trip-card__destination">{trip.destination}</span>}
+    <article
+      className="trip-card"
+      onClick={() => { if (!menuOpen) onNavigate() }}
+      aria-label={`Open ${trip.title}`}
+    >
+      {/* Image / placeholder zone */}
+      <div className="trip-card__image">
+        {photoUrl ? (
+          <img src={photoUrl} alt={trip.destination ?? trip.title} />
+        ) : (
+          <div
+            className="trip-card__placeholder"
+            style={{ background: `linear-gradient(145deg, ${palette.from} 0%, ${palette.to} 100%)` }}
+          >
+            <span className="trip-card__placeholder-initial" style={{ color: palette.text }}>
+              {initial}
+            </span>
+          </div>
+        )}
       </div>
+
+      {/* Body */}
       <div className="trip-card__body">
         <h3 className="trip-card__title">{trip.title}</h3>
-        <p className="trip-card__date">{formatDateRange(trip.start_date, trip.end_date)}</p>
-        {trip.description && <p className="trip-card__desc">{trip.description}</p>}
-        <div className="trip-card__footer">View itinerary →</div>
+        {trip.destination && (
+          <p className="trip-card__location">{trip.destination}</p>
+        )}
+        {dateRange ? (
+          <p className="trip-card__date">{dateRange}</p>
+        ) : (
+          <p className="trip-card__date trip-card__date--placeholder">Dates TBD</p>
+        )}
+        {isPast && (
+          <span className="trip-card__past-badge">Past trip</span>
+        )}
+      </div>
+
+      {/* Footer */}
+      <div className="trip-card__footer">
+        {days != null ? (
+          <span className="trip-card__days">{days} days</span>
+        ) : (
+          <span />
+        )}
+        <span className="trip-card__view" aria-hidden="true">View →</span>
+      </div>
+
+      {/* ••• menu zone (stops card click from propagating) */}
+      <div
+        className="trip-card__menu-zone"
+        ref={menuZoneRef}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <button
+          className="trip-card__more"
+          data-open={menuOpen ? '' : undefined}
+          onClick={toggleMenu}
+          aria-label={`Options for ${trip.title}`}
+          aria-expanded={menuOpen}
+          aria-haspopup="menu"
+        >
+          <MoreIcon />
+        </button>
+
+        {menuOpen && (
+          <div className="trip-menu" role="menu">
+            {menuMode === 'options' ? (
+              <>
+                <button
+                  className="trip-menu__item"
+                  role="menuitem"
+                  onClick={handleEdit}
+                >
+                  Edit trip
+                </button>
+                <div className="trip-menu__divider" role="separator" />
+                <button
+                  className="trip-menu__item trip-menu__item--danger"
+                  role="menuitem"
+                  onClick={(e) => { e.stopPropagation(); setMenuMode('confirm') }}
+                >
+                  Delete trip
+                </button>
+              </>
+            ) : (
+              <div className="trip-menu__confirm">
+                <p className="trip-menu__confirm-title">
+                  Delete "{trip.title}"?
+                </p>
+                <p className="trip-menu__confirm-sub">
+                  This can't be undone.
+                </p>
+                <div className="trip-menu__confirm-actions">
+                  <button
+                    className="btn-secondary"
+                    style={{ flex: 1, justifyContent: 'center', padding: '8px 12px' }}
+                    onClick={handleCancelDelete}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    className="btn-danger"
+                    style={{ flex: 1, padding: '8px 12px' }}
+                    onClick={handleDeleteConfirm}
+                  >
+                    Delete
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </article>
   )
 }
 
+// ── SkeletonCard ───────────────────────────────────────────────────────────────
+
+function SkeletonCard() {
+  return (
+    <div className="trip-card-skeleton" aria-hidden="true">
+      <div className="skeleton trip-card-skeleton__image" />
+      <div style={{ padding: '16px 20px 12px' }}>
+        <div
+          className="skeleton"
+          style={{ height: 18, width: '62%', borderRadius: 6, marginBottom: 10 }}
+        />
+        <div
+          className="skeleton"
+          style={{ height: 14, width: '40%', borderRadius: 4, marginBottom: 6 }}
+        />
+        <div
+          className="skeleton"
+          style={{ height: 14, width: '54%', borderRadius: 4 }}
+        />
+      </div>
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '12px 20px 16px',
+          borderTop: '1px solid var(--border-subtle)',
+        }}
+      >
+        <div className="skeleton" style={{ height: 24, width: 68, borderRadius: 9999 }} />
+        <div className="skeleton" style={{ height: 14, width: 44, borderRadius: 4 }} />
+      </div>
+    </div>
+  )
+}
+
+// ── HeroBar ────────────────────────────────────────────────────────────────────
+
+function HeroBar({ onSubmit }: { onSubmit: (destination: string) => void }) {
+  const [value, setValue] = useState('')
+
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    onSubmit(value.trim())
+    setValue('')
+  }
+
+  return (
+    <section className="home-hero" aria-label="Start planning">
+      <h1 className="home-hero__headline">Your travel organizer. 100% AI-free.<br /><span style={{ fontWeight: 400, fontSize: '0.8em', opacity: 0.6 }}>(For now...)</span></h1>
+      <p className="home-hero__sub">One place to keep everything.</p>
+      <form className="home-hero__bar" onSubmit={handleSubmit} role="search">
+        <label htmlFor="hero-destination" className="sr-only">Where do you want to go?</label>
+        <span className="home-hero__bar-icon">
+          <SearchIcon size={18} />
+        </span>
+        <input
+          id="hero-destination"
+          className="home-hero__bar-input"
+          type="text"
+          placeholder="Where do you want to go?"
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          autoComplete="off"
+          autoCorrect="off"
+          spellCheck={false}
+        />
+        <button type="submit" className="home-hero__bar-cta">
+          Plan a trip
+        </button>
+      </form>
+    </section>
+  )
+}
+
+// ── EmptyState ─────────────────────────────────────────────────────────────────
+
+function EmptyState({ onAdd }: { onAdd: () => void }) {
+  return (
+    <div className="empty-state">
+      <p className="empty-state__heading">No trips yet.</p>
+      <button className="btn-primary" onClick={onAdd}>
+        <PlusIcon />
+        Plan a trip
+      </button>
+    </div>
+  )
+}
+
 // ── HomePage ───────────────────────────────────────────────────────────────────
+
 export default function HomePage() {
   const navigate = useNavigate()
-  const [trips, setTrips]           = useState<Trip[]>([])
-  const [loading, setLoading]       = useState(true)
-  const [saving, setSaving]         = useState(false)
-  const [showCreate, setShowCreate] = useState(false)
-  const [editTrip, setEditTrip]     = useState<Trip | null>(null)
-  const [deleteTarget, setDelete]   = useState<Trip | null>(null)
-  const [heroIdx]                   = useState(() => Math.floor(Math.random() * HERO_IMAGES.length))
-  const [search, setSearch]         = useState('')
+
+  const [trips,           setTrips]           = useState<Trip[]>([])
+  const [loading,         setLoading]         = useState(true)
+  const [saving,          setSaving]          = useState(false)
+  const [showCreate,      setShowCreate]      = useState(false)
+  const [heroDestination, setHeroDestination] = useState('')
+  const [editTrip,        setEditTrip]        = useState<Trip | null>(null)
+  const [search,          setSearch]          = useState('')
 
   useEffect(() => {
     getTrips()
@@ -109,166 +374,190 @@ export default function HomePage() {
       .catch(() => { setLoading(false); toast.error('Failed to load trips') })
   }, [])
 
+  // ── Mutations ──────────────────────────────────────────────────────────────
+
   const handleCreate = async (data: TripCreate) => {
     setSaving(true)
     try {
       const t = await createTrip(data)
-      setTrips((p) => [t, ...p])
+      setTrips((prev) => [t, ...prev])
       setShowCreate(false)
+      setHeroDestination('')
     } catch {
       toast.error('Failed to create trip')
-    } finally { setSaving(false) }
+    } finally {
+      setSaving(false)
+    }
   }
+
   const handleEdit = async (data: TripCreate) => {
     if (!editTrip) return
     setSaving(true)
     try {
       const t = await updateTrip(editTrip.id, data)
-      setTrips((p) => p.map((x) => x.id === t.id ? t : x))
+      setTrips((prev) => prev.map((x) => (x.id === t.id ? t : x)))
       setEditTrip(null)
     } catch {
       toast.error('Failed to update trip')
-    } finally { setSaving(false) }
+    } finally {
+      setSaving(false)
+    }
   }
-  const handleDelete = async () => {
-    if (!deleteTarget) return
-    setSaving(true)
+
+  // Optimistic delete with rollback on error
+  const handleDelete = async (trip: Trip) => {
+    setTrips((prev) => prev.filter((x) => x.id !== trip.id))
     try {
-      await deleteTrip(deleteTarget.id)
-      setTrips((p) => p.filter((x) => x.id !== deleteTarget.id))
-      setDelete(null)
+      await deleteTrip(trip.id)
     } catch {
+      setTrips((prev) => [trip, ...prev])
       toast.error('Failed to delete trip')
-    } finally { setSaving(false) }
+    }
   }
+
+  // ── Hero bar handler ───────────────────────────────────────────────────────
+
+  function handleHeroSubmit(destination: string) {
+    setHeroDestination(destination)
+    setShowCreate(true)
+  }
+
+  // ── Filtered + sorted trips ────────────────────────────────────────────────
+
+  const q = search.trim().toLowerCase()
+  const filtered = q
+    ? trips.filter(
+        (t) =>
+          t.title.toLowerCase().includes(q) ||
+          (t.destination ?? '').toLowerCase().includes(q)
+      )
+    : trips
+
+  function isTripPast(t: Trip): boolean {
+    const ref = t.end_date ?? t.start_date
+    if (!ref) return false
+    const d = new Date(ref)
+    d.setHours(23, 59, 59, 999)
+    return d < new Date()
+  }
+
+  const sorted = [...filtered].sort((a, b) => {
+    const pastA = isTripPast(a)
+    const pastB = isTripPast(b)
+    // Past trips sink to bottom
+    if (!pastA && pastB) return -1
+    if (pastA && !pastB) return 1
+    // Future/no-date: nearest start_date first; no-date floats to end of group
+    if (!pastA && !pastB) {
+      if (!a.start_date && !b.start_date) return 0
+      if (!a.start_date) return 1
+      if (!b.start_date) return -1
+      return new Date(a.start_date).getTime() - new Date(b.start_date).getTime()
+    }
+    // Past: most recently ended first
+    const refA = a.end_date ?? a.start_date ?? ''
+    const refB = b.end_date ?? b.start_date ?? ''
+    return new Date(refB).getTime() - new Date(refA).getTime()
+  })
+
+  // ── Render ─────────────────────────────────────────────────────────────────
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--ivory)' }}>
+    <div style={{ minHeight: '100vh', backgroundColor: 'var(--surface-white)' }}>
       <Navbar />
 
-      {/* Hero */}
-      <section className="hero noise">
-        <img src={HERO_IMAGES[heroIdx]} alt="hero" className="hero__img" />
-        <div className="hero__overlay" />
-        <div className="hero__content">
-          <p className="hero__eyebrow animate-fade-up">Your travel planner</p>
-          <h1 className="hero__title animate-fade-up delay-100">
-            Plan.<br /><em>Explore.</em>
-          </h1>
-          <p className="hero__sub animate-fade-up delay-200">
-            Organize every detail of your next trip in one place.
-          </p>
-          <button className="hero__cta animate-fade-up delay-300" onClick={() => setShowCreate(true)}>
-            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-              <circle cx="9" cy="9" r="8" stroke="currentColor" strokeWidth="1.5"/>
-              <path d="M9 5v8M5 9h8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-            </svg>
-            New Trip
-          </button>
-        </div>
-      </section>
+      <HeroBar onSubmit={handleHeroSubmit} />
 
-      {/* Trips */}
-      <section className="trips-section">
-        <div className="container">
-          <div className="trips-header">
-            <div>
-              <h2 className="trips-header__title">My Trips</h2>
-              {trips.length > 0 && (
-                <p className="trips-header__count">{trips.length} {trips.length === 1 ? 'trip' : 'trips'} saved</p>
-              )}
-            </div>
-            <button className="btn-primary" onClick={() => setShowCreate(true)}>
-              <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                <path d="M6 1v10M1 6h10" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-              </svg>
-              Add Trip
-            </button>
+      <main className="container">
+        {/* Trips section header */}
+        {!loading && trips.length > 0 && (
+          <div className="trips-section-header">
+            <h1 className="trips-section-header__title">My trips</h1>
+            <span className="trips-section-header__count">
+              {trips.length} {trips.length === 1 ? 'trip' : 'trips'}
+            </span>
           </div>
+        )}
 
-          {!loading && trips.length > 0 && (
-            <div style={{ marginBottom: 24, position: 'relative', maxWidth: 360 }}>
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{
-                position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)',
-                color: 'var(--sage)', pointerEvents: 'none',
-              }}>
-                <circle cx="6.5" cy="6.5" r="5" stroke="currentColor" strokeWidth="1.4"/>
-                <path d="M10.5 10.5l3.5 3.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/>
-              </svg>
+        {/* Search — only when trips exist */}
+        {!loading && trips.length > 0 && (
+          <div className="search-pill-wrap">
+            <label htmlFor="trip-search" className="sr-only">Search trips</label>
+            <div className="search-pill">
+              <span className="search-pill__icon">
+                <SearchIcon />
+              </span>
               <input
-                className="form-control"
-                style={{ paddingLeft: 36 }}
-                placeholder="Search trips…"
+                id="trip-search"
+                className="search-pill__input"
+                type="text"
+                placeholder="Search trips"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
+                autoComplete="off"
               />
+              {search && (
+                <button
+                  className="search-pill__clear"
+                  onClick={() => setSearch('')}
+                  aria-label="Clear search"
+                >
+                  Clear
+                </button>
+              )}
             </div>
-          )}
+          </div>
+        )}
 
-          {loading ? (
-            <div className="trips-grid">
-              {[1,2,3].map((i) => <div key={i} className="skeleton" style={{ height: 280 }} />)}
-            </div>
-          ) : trips.length === 0 ? (
-            <EmptyState onAdd={() => setShowCreate(true)} />
-          ) : (() => {
-            const q = search.trim().toLowerCase()
-            const filtered = q
-              ? trips.filter((t) =>
-                  t.title.toLowerCase().includes(q) ||
-                  (t.destination ?? '').toLowerCase().includes(q)
-                )
-              : trips
-            return filtered.length === 0 ? (
-              <p style={{ color: 'var(--sage)', fontSize: '0.9rem' }}>No trips match "{search}"</p>
-            ) : (
-              <div className="trips-grid">
-                {filtered.map((trip, i) => (
-                  <TripCard
-                    key={trip.id} trip={trip} index={i}
-                    onClick={(t) => navigate(`/trips/${t.id}`)}
-                    onEdit={(t) => setEditTrip(t)}
-                    onDelete={(t) => setDelete(t)}
-                  />
-                ))}
-              </div>
-            )
-          })()}
-        </div>
-      </section>
+        {/* Content states */}
+        {loading ? (
+          <div className="trips-grid" aria-busy="true" aria-label="Loading trips">
+            {[1, 2, 3, 4, 5, 6].map((i) => (
+              <SkeletonCard key={i} />
+            ))}
+          </div>
+        ) : trips.length === 0 ? (
+          <EmptyState onAdd={() => handleHeroSubmit('')} />
+        ) : sorted.length === 0 ? (
+          <p className="no-results" role="status">
+            No results for "{search}"
+          </p>
+        ) : (
+          <div className="trips-grid">
+            {sorted.map((trip) => (
+              <TripCard
+                key={trip.id}
+                trip={trip}
+                isPast={isTripPast(trip)}
+                onNavigate={() => navigate(`/trips/${trip.id}`)}
+                onEdit={() => setEditTrip(trip)}
+                onDelete={() => handleDelete(trip)}
+              />
+            ))}
+          </div>
+        )}
+      </main>
 
-      <footer className="footer">Wanderplan — every trip is a story</footer>
+      <footer className="footer">Wanderplan</footer>
 
-      {/* Modals */}
+      {/* Create modal */}
       {showCreate && (
-        <Modal title="New Trip" onClose={() => setShowCreate(false)}>
-          <TripForm onSubmit={handleCreate} loading={saving} />
+        <Modal
+          title="New Trip"
+          onClose={() => { setShowCreate(false); setHeroDestination('') }}
+        >
+          <TripForm
+            initial={heroDestination ? { destination: heroDestination } : undefined}
+            onSubmit={handleCreate}
+            loading={saving}
+          />
         </Modal>
       )}
+
+      {/* Edit modal */}
       {editTrip && (
         <Modal title="Edit Trip" onClose={() => setEditTrip(null)}>
           <TripForm initial={editTrip} onSubmit={handleEdit} loading={saving} />
-        </Modal>
-      )}
-      {deleteTarget && (
-        <Modal title="Delete Trip" onClose={() => setDelete(null)} size="sm">
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ width: 56, height: 56, background: '#fee2e2', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" stroke="#9b2020" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-            </div>
-            <p style={{ fontWeight: 600, color: 'var(--charcoal)', marginBottom: 6 }}>Are you sure?</p>
-            <p style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: 24 }}>
-              You will delete <strong>{deleteTarget.title}</strong> and all associated data.
-            </p>
-            <div style={{ display: 'flex', gap: 12 }}>
-              <button className="btn-secondary" style={{ flex: 1, justifyContent: 'center' }} onClick={() => setDelete(null)}>Cancel</button>
-              <button className="btn-danger" style={{ flex: 1 }} onClick={handleDelete} disabled={saving}>
-                {saving ? 'Deleting...' : 'Delete'}
-              </button>
-            </div>
-          </div>
         </Modal>
       )}
     </div>

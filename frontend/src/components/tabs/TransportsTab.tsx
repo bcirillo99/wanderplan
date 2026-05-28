@@ -28,7 +28,7 @@ export function TransportsTab({ transports, onAdd, onEdit, onDelete }: {
                     <p style={{ fontWeight: 600, color: 'var(--forest)', margin: 0 }}>{t.origin} → {t.destination}</p>
                     <StatusBadge status={t.status} />
                   </div>
-                  <p style={{ fontSize: '0.75rem', color: '#9ca3af', marginTop: 2 }}>
+                  <p style={{ fontSize: '0.75rem', color: 'var(--fog)', marginTop: 2 }}>
                     {fmtDateTime(t.departure_time)}{t.operator ? ` · ${t.operator}` : ''}
                   </p>
                 </div>
