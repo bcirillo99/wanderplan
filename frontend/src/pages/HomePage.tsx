@@ -44,6 +44,26 @@ function tripDays(start?: string | null, end?: string | null): number | null {
   return diff > 0 ? diff : null
 }
 
+type CountdownResult = { label: string; soon: boolean }
+
+function daysToGoLabel(start?: string | null, end?: string | null): CountdownResult | null {
+  if (!start) return null
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const startDate = new Date(start)
+  startDate.setHours(0, 0, 0, 0)
+  const diff = Math.round((startDate.getTime() - today.getTime()) / 86_400_000)
+  if (diff > 1) return { label: `✈️ ${diff} days to go`, soon: false }
+  if (diff === 1) return { label: '🌅 Tomorrow', soon: true }
+  if (diff === 0) return { label: '🎉 Today!', soon: true }
+  if (end) {
+    const endDate = new Date(end)
+    endDate.setHours(23, 59, 59, 999)
+    if (endDate >= new Date()) return { label: '📍 Ongoing', soon: true }
+  }
+  return null
+}
+
 // ── Icons ──────────────────────────────────────────────────────────────────────
 
 function SearchIcon({ size = 16 }: { size?: number }) {
@@ -94,8 +114,9 @@ function TripCard({
   const [menuMode, setMenuMode]   = useState<MenuMode>('options')
   const menuZoneRef               = useRef<HTMLDivElement>(null)
 
-  const dateRange = formatDateRange(trip.start_date, trip.end_date)
-  const days      = tripDays(trip.start_date, trip.end_date)
+  const dateRange  = formatDateRange(trip.start_date, trip.end_date)
+  const days       = tripDays(trip.start_date, trip.end_date)
+  const countdown  = !isPast ? daysToGoLabel(trip.start_date, trip.end_date) : null
 
   // Close on outside click
   useEffect(() => {
@@ -172,7 +193,14 @@ function TripCard({
 
       {/* Body */}
       <div className="trip-card__body">
-        <h3 className="trip-card__title">{trip.title}</h3>
+        <div className="trip-card__body-header">
+          <h3 className="trip-card__title">{trip.title}</h3>
+          {countdown && (
+            <span className={`trip-card__countdown${countdown.soon ? ' trip-card__countdown--soon' : ''}`}>
+              {countdown.label}
+            </span>
+          )}
+        </div>
         {trip.destination && (
           <p className="trip-card__location">{trip.destination}</p>
         )}

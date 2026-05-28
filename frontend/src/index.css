@@ -443,11 +443,18 @@ body {
   padding: 16px 20px 12px;
   flex: 1;
 }
+.trip-card__body-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 5px;
+}
 .trip-card__title {
   font-size: 1rem;
   font-weight: 600;
   color: var(--charcoal);
-  margin-bottom: 5px;
+  min-width: 0;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -467,6 +474,27 @@ body {
   color: var(--fog);
 }
 .trip-card__date--placeholder { font-style: italic; }
+.trip-card__countdown {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  gap: 3px;
+  padding: 3px 8px;
+  border-radius: 9999px;
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  background: var(--surface-warm);
+  color: var(--charcoal);
+  border: 1px solid var(--border-subtle);
+}
+.trip-card__countdown--soon {
+  background: oklch(97% 0.04 25);
+  color: #FF5A5F;
+  border-color: oklch(88% 0.08 25);
+}
 .trip-card__past-badge {
   display: inline-flex;
   align-items: center;
