@@ -256,7 +256,7 @@ export default function TripDetailPage() {
             onDeleteNote={tripData.deleteNote}
           />
         )}
-        {tab === 'days' && <DaysTab tripId={tripId} dates={uniqueDates} activities={activities} />}
+        {tab === 'days' && <DaysTab tripId={tripId} dates={uniqueDates} activities={activities} flights={flights} transports={transports} accommodations={accommodations} />}
         {tab === 'activities' && (
           <ActivitiesTab
             activities={activities}

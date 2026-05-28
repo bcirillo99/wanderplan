@@ -3,7 +3,7 @@ import { useState } from 'react'
 import type { Activity, Status } from '../../types'
 import StatusBadge from '../StatusBadge'
 import { SectionHeader, ItemCard, TabEmpty } from './TabShared'
-import { fmt, fmtDateTime } from './tabUtils'
+import { fmt } from './tabUtils'
 
 const STATUS_FILTER_OPTIONS: { value: Status | ''; label: string }[] = [
   { value: '', label: 'All statuses' },
@@ -99,7 +99,7 @@ export function ActivitiesTab({ activities, onAdd, onEdit, onDelete }: {
                           {activity.title || 'Untitled activity'}
                         </h4>
                         <StatusBadge status={activity.status} />
-                        {activity.start_time && <span style={{ fontSize: '0.8rem', color: '#6b7280' }}>{fmtDateTime(activity.start_time)}</span>}
+                        {activity.start_time && <span style={{ fontSize: '0.8rem', color: '#6b7280' }}>{activity.start_time.slice(0, 5)}</span>}
                         {activity.location && <span style={{ fontSize: '0.8rem', color: '#6b7280' }}>· {activity.location}</span>}
                         {activity.cost != null && <span style={{ fontSize: '0.8rem', color: '#6b7280' }}>· €{activity.cost.toFixed(2)}</span>}
                       </div>
