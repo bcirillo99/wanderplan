@@ -59,6 +59,11 @@ These are directions the project is moving toward, gradually.
 
 ### Running the app
 
+```bash
+git clone https://github.com/bcirillo99/wanderplan.git
+cd wanderplan
+```
+
 WanderPlan has three parts that all need to run at the same time. Open **three terminal tabs**.
 
 **Tab 1 — Database**
