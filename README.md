@@ -48,6 +48,22 @@ These are directions the project is moving toward, gradually.
 
 ---
 
+## Screenshots
+
+### Homepage
+![Homepage](https://github.com/user-attachments/assets/0356bce7-2e9b-401a-b84c-22be1b0d9a72)
+
+### Flights
+![Flights](https://github.com/user-attachments/assets/63ba9243-e59a-4306-90a5-8862db86338b)
+
+### Trip Detail
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/f4c34bd9-caed-4ec6-88bc-c6dfeaf37bf1" width="48%" />
+  <img src="https://github.com/user-attachments/assets/219797cc-89fb-4f62-a5a8-14a24ded6742" width="48%" />
+</p>
+
+---
+
 ## Tech Stack
 
 | Layer     | Technology                                      |
