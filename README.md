@@ -1,6 +1,39 @@
 # WanderPlan
 
-A full-stack trip planning app. Organise flights, accommodations, transports, activities, packing lists, budget tracking, and notes — all in one place.
+**Your travel organizer. 100% AI-free. *(For now...)*.**
+
+For people who love planning trips themselves — flights, accommodations, activities, transport, packing, budget, notes — all in one place, built around your itinerary.
+
+No subscriptions. No AI suggestions. No "let us book that for you." Just your trip, organized exactly the way you want it.
+
+---
+
+## What you can do
+
+- **Plan your itinerary day by day** — activities with time, location, cost, and status on a per-day timeline
+- **Track flights** — origin/destination, departure/arrival times, airline, booking ref; search real flights via Google Flights
+- **Manage accommodations** — check-in/out dates, nightly cost, booking status
+- **Log ground transport** — transfers between locations (trains, buses, ferries, car rentals)
+- **Track every cost** — extras like visas, insurance, SIM cards; full budget breakdown across all categories
+- **Packing list** — categorized checklist with progress bar
+- **Keep notes** — freeform trip notes with timestamps
+- **Export** — download your full trip summary as `.pdf` or `.docx`
+- **Cover photos** — automatic destination photos via Unsplash
+
+## What's not there yet
+
+- **No accounts / multi-user** — single user, local setup only; no sharing or collaboration
+- **No mobile app** — web only (mobile-friendly layout, but no native app)
+- **No real booking** — WanderPlan tracks what you've planned/booked elsewhere; it doesn't book anything
+- **No notifications or reminders**
+
+## Roadmap
+
+These are directions the project is moving toward, gradually.
+
+- **Auth + hosted version** — accounts and a public deployment, so self-hosting isn't required
+- **Collaboration** — share a trip with travel companions
+- **AI companion** *(the "for now" part)* — slowly introducing opt-in assistance: starting small (e.g. flag scheduling conflicts, answer questions about your own itinerary), without taking over the planning experience
 
 ---
 
@@ -15,139 +48,70 @@ A full-stack trip planning app. Organise flights, accommodations, transports, ac
 
 ---
 
-## Project Structure
-
-```
-wanderplan/
-├── backend/
-│   ├── src/travel_planner/
-│   │   ├── db/            # SQLAlchemy models + migrations
-│   │   ├── routers/       # FastAPI route handlers
-│   │   ├── schemas/       # Pydantic request/response schemas
-│   │   ├── services/      # Business logic layer
-│   │   └── config.py      # Settings (DATABASE_URL from .env)
-│   ├── tests/             # Pytest test suite
-│   ├── alembic/           # Database migration scripts
-│   └── pyproject.toml
-├── frontend/
-│   ├── src/
-│   │   ├── api/           # Axios API client functions
-│   │   ├── components/
-│   │   │   ├── forms/     # Individual form components + formOptions.ts
-│   │   │   └── tabs/      # Tab components + TabShared + tabUtils
-│   │   ├── hooks/         # useTripData — data fetching + mutations
-│   │   ├── pages/         # TripDetailPage, TripDayPage, HomePage
-│   │   └── types/         # TypeScript interfaces
-│   └── package.json
-└── docker-compose.yml     # PostgreSQL service
-```
-
----
-
 ## Setup
 
 ### Prerequisites
 
-- Python 3.13+
-- Node 20+
-- Docker (for PostgreSQL) or a local PostgreSQL instance
+- [Python 3.13+](https://www.python.org/downloads/)
+- [uv](https://docs.astral.sh/uv/getting-started/installation/) — Python package manager
+- [Node 20+](https://nodejs.org/)
+- [Docker](https://www.docker.com/products/docker-desktop/) — for the PostgreSQL database
 
-### 1. Start the database
+### Running the app
+
+WanderPlan has three parts that all need to run at the same time. Open **three terminal tabs**.
+
+**Tab 1 — Database**
 
 ```bash
 docker compose up -d
 ```
 
-### 2. Backend
+**Tab 2 — Backend**
 
 ```bash
 cd backend
 
-# Install dependencies
 uv sync
 
-# Create .env with database URL
 echo "DATABASE_URL=postgresql://postgres:postgres@localhost:5432/wanderplan" > .env
 
-# Run migrations
 uv run alembic upgrade head
 
-# Start dev server (port 8000)
 uv run fastapi dev src/travel_planner/main.py
+# running on http://localhost:8000
 ```
 
-### 3. Frontend
+**Tab 3 — Frontend**
 
 ```bash
 cd frontend
 
 npm install
-npm run dev   # starts on http://localhost:5173
+
+# Optional: Unsplash key for destination photos
+cp .env.example .env   # then open .env and add your key
+
+npm run dev
+# running on http://localhost:5173
 ```
 
----
-
-## API Overview
-
-Base URL: `http://localhost:8000`
-
-| Resource        | Base path                              |
-|-----------------|----------------------------------------|
-| Trips           | `/trips`                               |
-| Activities      | `/trips/{trip_id}/activities`          |
-| Flights         | `/trips/{trip_id}/flights`             |
-| Accommodations  | `/trips/{trip_id}/accommodations`      |
-| Transports      | `/trips/{trip_id}/transports`          |
-| Extras          | `/trips/{trip_id}/extras`              |
-| Packing items   | `/trips/{trip_id}/packing-items`       |
-| Notes           | `/trips/{trip_id}/notes`               |
-| Budget stats    | `/trips/{trip_id}/stats`               |
-| Daily summary   | `/trips/{trip_id}/days/{date}/summary` |
-
-All collections support `GET` (list), `POST` (create), and individual items support `GET`, `PATCH`, `DELETE`.
-
-Interactive docs: `http://localhost:8000/docs`
+Open [http://localhost:5173](http://localhost:5173).
 
 ---
 
-## Database Migrations
+## External APIs & Libraries
 
-```bash
-cd backend
+| Name | Used for | Key required |
+|------|----------|--------------|
+| [Unsplash API](https://unsplash.com/developers) | Destination cover photos | Yes — `VITE_UNSPLASH_ACCESS_KEY` in `frontend/.env` (free tier: 50 req/hour) |
+| [airportsdata](https://github.com/mborsetti/airportsdata) | Offline IATA airport search | No |
+| [fli](https://github.com/punitarani/fli) | Google Flights scraping | No |
 
-# Generate migration after model changes
-uv run alembic revision --autogenerate -m "description"
-
-# Apply migrations
-uv run alembic upgrade head
-
-# Rollback one step
-uv run alembic downgrade -1
-```
+Unsplash is optional — cards fall back to gradient placeholders without a key.
 
 ---
 
-## Tests
+## Credits
 
-```bash
-cd backend
-uv run pytest
-```
-
-Tests use an in-memory SQLite database — no running PostgreSQL needed.
-
----
-
-## Features
-
-- **Trips** — create and manage trips with dates, destination, cover image
-- **Days** — auto-generated from trip date range, with per-day timeline view
-- **Activities** — scheduled activities with time, location, cost, status
-- **Flights** — origin/destination, departure/arrival times, airline, booking ref
-- **Accommodations** — check-in/out dates, cost per night, booking status
-- **Transports** — ground/rail/sea transfers between locations
-- **Extras** — miscellaneous costs (visas, insurance, etc.)
-- **Packing list** — categorised checklist with progress bar
-- **Budget** — aggregated cost breakdown across all categories
-- **Notes** — freeform trip notes with timestamps
-- **Export** — download full trip summary as `.docx` (Word) or `.pdf`
+Frontend built with [Claude Code](https://claude.ai/code) by Anthropic.

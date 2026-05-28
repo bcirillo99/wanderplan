@@ -144,3 +144,24 @@ Run tests:
 ```bash
 uv run pytest
 ```
+
+Tests use an in-memory SQLite database — no running PostgreSQL needed.
+
+## API Overview
+
+Base URL: `http://localhost:8000` — interactive docs at `/docs`.
+
+| Resource        | Base path                              |
+|-----------------|----------------------------------------|
+| Trips           | `/trips`                               |
+| Activities      | `/trips/{trip_id}/activities`          |
+| Flights         | `/trips/{trip_id}/flights`             |
+| Accommodations  | `/trips/{trip_id}/accommodations`      |
+| Transports      | `/trips/{trip_id}/transports`          |
+| Extras          | `/trips/{trip_id}/extras`              |
+| Packing items   | `/trips/{trip_id}/packing-items`       |
+| Notes           | `/trips/{trip_id}/notes`               |
+| Budget stats    | `/trips/{trip_id}/stats`               |
+| Daily summary   | `/trips/{trip_id}/days/{date}/summary` |
+
+All collections: `GET` (list), `POST` (create). Individual items: `GET`, `PATCH`, `DELETE`.
