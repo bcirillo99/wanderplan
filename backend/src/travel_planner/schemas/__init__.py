@@ -7,3 +7,4 @@ from .transport import TransportCreate, TransportUpdate, TransportResponse
 from .packing_item import PackingItemCreate, PackingItemUpdate, PackingItemResponse
 from .extra import ExtraCreate, ExtraUpdate, ExtraResponse
 from .note import NoteCreate, NoteUpdate, NoteResponse
+from .chat import ChatRequest, ChatResponse, ProposedAction

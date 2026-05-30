@@ -25,6 +25,7 @@ import { ExtrasTab } from '../components/tabs/ExtrasTab'
 import { PackingTab } from '../components/tabs/PackingTab'
 import { StatsTab } from '../components/tabs/StatsTab'
 import { NotesTab } from '../components/tabs/NotesTab'
+import ChatAssistant from '../components/ChatAssistant'
 
 // ── Tab types ─────────────────────────────────────────────────────────────────
 type Tab = 'summary' | 'days' | 'activities' | 'flights' | 'accommodations' | 'transports' | 'extras' | 'packing' | 'stats' | 'notes'
@@ -389,6 +390,9 @@ export default function TripDetailPage() {
           <NoteForm initial={editNote} loading={saving} onSubmit={handleEditNote} />
         </Modal>
       )}
+
+      {/* ── CHAT ASSISTANT ── */}
+      <ChatAssistant tripId={tripId} />
 
       {/* ── CONFIRM DELETE ── */}
       {modal === 'confirm-delete' && (

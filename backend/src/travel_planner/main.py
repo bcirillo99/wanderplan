@@ -14,6 +14,7 @@ from travel_planner.routers import (
     extra_router,
     stats_router,
     note_router,
+    chat_router,
 )
 
 app = FastAPI(title="Wanderplan API")
@@ -39,3 +40,4 @@ app.include_router(packing_item_router)
 app.include_router(extra_router)
 app.include_router(stats_router)
 app.include_router(note_router)
+app.include_router(chat_router)
