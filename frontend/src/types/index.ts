@@ -47,6 +47,8 @@ export interface Activity {
   start_time?: string | null
   end_time?: string | null
   location?: string | null
+  latitude?: number | null
+  longitude?: number | null
   status?: Status | null
   cost?: number | null
   pay_method?: string | null
@@ -100,6 +102,8 @@ export interface Accommodation {
   accommodation_type?: AccommodationType | null
   address?: string | null
   location?: string | null
+  latitude?: number | null
+  longitude?: number | null
   check_in?: string | null
   check_out?: string | null
   cost_per_night?: number | null

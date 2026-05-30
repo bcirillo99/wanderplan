@@ -25,14 +25,16 @@ import { ExtrasTab } from '../components/tabs/ExtrasTab'
 import { PackingTab } from '../components/tabs/PackingTab'
 import { StatsTab } from '../components/tabs/StatsTab'
 import { NotesTab } from '../components/tabs/NotesTab'
+import { MapTab } from '../components/tabs/MapTab'
 import ChatAssistant from '../components/ChatAssistant'
 
 // ── Tab types ─────────────────────────────────────────────────────────────────
-type Tab = 'summary' | 'days' | 'activities' | 'flights' | 'accommodations' | 'transports' | 'extras' | 'packing' | 'stats' | 'notes'
+type Tab = 'summary' | 'days' | 'activities' | 'map' | 'flights' | 'accommodations' | 'transports' | 'extras' | 'packing' | 'stats' | 'notes'
 const TABS: { id: Tab; label: string }[] = [
   { id: 'summary',        label: 'Overview'       },
   { id: 'days',           label: 'Days'           },
   { id: 'activities',     label: 'Activities'     },
+  { id: 'map',            label: 'Map'            },
   { id: 'flights',        label: 'Flights'        },
   { id: 'accommodations', label: 'Accommodations' },
   { id: 'transports',     label: 'Transports'     },
@@ -242,7 +244,7 @@ export default function TripDetailPage() {
       </div>
 
       {/* Tab content */}
-      <main className="container" style={{ paddingTop: 32, paddingBottom: 64 }}>
+      <main className={tab === 'map' ? '' : 'container'} style={tab === 'map' ? { padding: '24px 32px 48px' } : { paddingTop: 32, paddingBottom: 64 }}>
         {tab === 'summary' && (
           <SummaryTab
             trip={trip} tripId={tripId}
@@ -258,6 +260,14 @@ export default function TripDetailPage() {
           />
         )}
         {tab === 'days' && <DaysTab tripId={tripId} dates={uniqueDates} activities={activities} flights={flights} transports={transports} accommodations={accommodations} />}
+        {tab === 'map' && (
+          <MapTab
+            activities={activities}
+            accommodations={accommodations}
+            onEditActivity={(a) => { setEditActivity(a); setModal('edit-activity') }}
+            onEditAccommodation={(a) => { setEditAccommodation(a); setModal('edit-accommodation') }}
+          />
+        )}
         {tab === 'activities' && (
           <ActivitiesTab
             activities={activities}

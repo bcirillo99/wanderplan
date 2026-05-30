@@ -4,6 +4,7 @@ import type { Trip, Activity, Flight, Accommodation, Transport, TripStats, Note 
 import { ItemCard } from './TabShared'
 import { fmt, PREVIEW_LIMIT } from './tabUtils'
 import { TripCalendar } from '../TripCalendar'
+import { TripMiniMap } from '../TripMiniMap'
 
 type TodoItem = { icon: string; label: string; category: string }
 
@@ -207,6 +208,11 @@ export function SummaryTab({
             })}
           </div>
         )}
+      </div>
+
+      {/* Mini map */}
+      <div style={{ marginTop: 24 }}>
+        <TripMiniMap activities={activities} accommodations={accommodations} />
       </div>
     </div>
   )

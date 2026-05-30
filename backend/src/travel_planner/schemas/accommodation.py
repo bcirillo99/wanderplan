@@ -10,6 +10,8 @@ class AccommodationBase(BaseModel):
     accommodation_type: AccommodationType | None = None
     address: str | None = None
     location: str | None = None
+    latitude: float | None = None
+    longitude: float | None = None
     check_in: date | None = None
     check_out: date | None = None
     status: Status | None = None
@@ -28,7 +30,7 @@ class AccommodationBase(BaseModel):
         if check_in and check_out and check_out < check_in:
             raise ValueError("check_out must be after check_in")
         return check_out
-    
+
     @field_validator("cost_per_night")
     @classmethod
     def validate_cost_per_night(cls, cost_per_night):
@@ -46,6 +48,8 @@ class AccommodationUpdate(BaseModel):
     accommodation_type: AccommodationType | None = None
     address: str | None = None
     location: str | None = None
+    latitude: float | None = None
+    longitude: float | None = None
     check_in: date | None = None
     check_out: date | None = None
     status: Status | None = None

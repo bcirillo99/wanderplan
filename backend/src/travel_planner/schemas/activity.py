@@ -13,6 +13,8 @@ class ActivityBase(BaseModel):
     start_time: time | None = None  
     end_time: time | None = None    
     location: str | None = None
+    latitude: float | None = None
+    longitude: float | None = None
     status: Status | None = None
     cost: float | None = None
     pay_method: str | None = None
@@ -27,7 +29,7 @@ class ActivityBase(BaseModel):
         if start_time and end_time and end_time < start_time:
             raise ValueError("end_time must be after start_time")
         return end_time
-    
+
     @field_validator("cost")
     @classmethod
     def validate_cost(cls, cost):
@@ -42,9 +44,11 @@ class ActivityUpdate(BaseModel):
     title: str | None = None
     activity_date: date | None = None
     description: str | None = None
-    start_time: time | None = None  
-    end_time: time | None = None    
+    start_time: time | None = None
+    end_time: time | None = None
     location: str | None = None
+    latitude: float | None = None
+    longitude: float | None = None
     status: Status | None = None
     cost: float | None = None
     pay_method: str | None = None

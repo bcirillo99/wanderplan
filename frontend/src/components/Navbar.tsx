@@ -27,6 +27,7 @@ function AboutModal({ onClose }: { onClose: () => void }) {
               'Manage your packing list',
               'Keep freeform notes',
               'Export your trip as PDF or Word document',
+              'Map view — pin activities and accommodations on an interactive map, grouped by day',
             ].map((item) => (
               <li key={item} style={{ display: 'flex', alignItems: 'baseline', gap: 8, fontSize: '0.88rem', color: 'var(--charcoal)' }}>
                 <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--coral)', flexShrink: 0, marginTop: 2, display: 'inline-block' }} />

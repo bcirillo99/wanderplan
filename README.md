@@ -20,6 +20,7 @@ No subscriptions. No AI suggestions. No "let us book that for you." Just your tr
 ## What you can do
 
 - **Plan your itinerary day by day** — activities with time, location, cost, and status on a per-day timeline
+- **Interactive map** — pin activities and accommodations on a map; color-coded by day, filterable, with an overview mini-map in the summary tab
 - **Track flights** — origin/destination, departure/arrival times, airline, booking ref; search real flights via Google Flights
 - **Manage accommodations** — check-in/out dates, nightly cost, booking status
 - **Log ground transport** — transfers between locations (trains, buses, ferries, car rentals)
@@ -139,6 +140,9 @@ Open [http://localhost:5173](http://localhost:5173).
 | [Unsplash API](https://unsplash.com/developers) | Destination cover photos | Yes — `VITE_UNSPLASH_ACCESS_KEY` in `frontend/.env` (free tier: 50 req/hour) |
 | [airportsdata](https://github.com/mborsetti/airportsdata) | Offline IATA airport search | No |
 | [fli](https://github.com/punitarani/fli) | Google Flights scraping | No |
+| [Leaflet](https://leafletjs.com/) + [react-leaflet](https://react-leaflet.js.org/) | Interactive maps | No |
+| [Nominatim](https://nominatim.org/) (OpenStreetMap) | Location geocoding in map picker | No |
+| [CARTO Voyager tiles](https://carto.com/basemaps/) | Map tile layer | No |
 
 Unsplash is optional — cards fall back to gradient placeholders without a key.
 
