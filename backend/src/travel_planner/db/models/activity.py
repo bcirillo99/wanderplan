@@ -17,7 +17,7 @@ class Activity(Base):
     trip_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("trips.id", ondelete="CASCADE"), nullable=False
     )
-    title: Mapped[str | None] = mapped_column(String(255), nullable=False)
+    title: Mapped[str] = mapped_column(String(255), nullable=False)
     activity_date: Mapped[date | None] = mapped_column(Date, nullable=True)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     start_time: Mapped[time | None] = mapped_column(Time, nullable=True)
@@ -34,7 +34,3 @@ class Activity(Base):
 
     # relationships
     trip: Mapped["Trip"] = relationship(back_populates="activities")
-
-    @property
-    def trip_date(self) -> date | None:
-        return self.trip.trip_date if self.trip else None

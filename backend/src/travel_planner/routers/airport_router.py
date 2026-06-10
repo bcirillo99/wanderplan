@@ -70,12 +70,12 @@ def _normalize(s: str) -> str:
 def search_airports(q: str = Query(..., min_length=2)) -> list[AirportResult]:
     nq = _normalize(q.strip())
 
-    scored: list[tuple[int, int, int, AirportResult]] = []
+    scored: list[tuple[int, int, str, AirportResult]] = []
 
     for a in _load():
         code = a["code"]
-        nc   = _normalize(a["city"])
-        nn   = _normalize(a["name"])
+        nc = _normalize(a["city"])
+        nn = _normalize(a["name"])
 
         if code.lower() == nq:
             priority = 0
@@ -88,23 +88,13 @@ def search_airports(q: str = Query(..., min_length=2)) -> list[AirportResult]:
         else:
             continue
 
-        hub   = 0 if code in _MAJOR_HUBS else 1
-        alpha = code  # str comparison for stable ordering within same bucket
+        hub = 0 if code in _MAJOR_HUBS else 1
+        result = AirportResult(code=code, name=a["name"], city=a["city"], country=a["country"])
+        # sort key: priority → major-hub status → code alpha (stable within bucket)
+        scored.append((priority, hub, code, result))
 
-        scored.append((priority, hub, 0, AirportResult(
-            code=code, name=a["name"], city=a["city"], country=a["country"],
-        )))
-        # store alpha separately for sort
-        scored[-1] = (priority, hub, 0, scored[-1][3])
-
-    # sort: priority → hub status → code alpha
-    scored_final = sorted(
-        ((p, h, code_alpha, r) for p, h, _, r in scored
-         for code_alpha in [r.code]),
-        key=lambda x: (x[0], x[1], x[2])
-    )
-
-    return [r for _, _, _, r in scored_final[:10]]
+    scored.sort(key=lambda x: (x[0], x[1], x[2]))
+    return [r for _, _, _, r in scored[:10]]
 
 
 @router.get("/{code}", response_model=AirportResult | None)

@@ -17,7 +17,7 @@ class Transport(Base):
     trip_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("trips.id", ondelete="CASCADE"), nullable=False
     )
-    transport_type: Mapped[TransportType | None] = mapped_column(SAEnum(TransportType, values_callable=lambda x: [e.value for e in x]), nullable=False)
+    transport_type: Mapped[TransportType] = mapped_column(SAEnum(TransportType, values_callable=lambda x: [e.value for e in x]), nullable=False)
     origin: Mapped[str] = mapped_column(String(255), nullable=False)
     destination: Mapped[str] = mapped_column(String(255), nullable=False)
     departure_time: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)

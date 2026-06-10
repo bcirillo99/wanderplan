@@ -56,7 +56,10 @@ def create(trip_id: UUID, data: AccommodationCreate, db: Session = Depends(get_d
 @router.patch("/{accommodation_id}", response_model=AccommodationResponse)
 def update(trip_id: UUID, accommodation_id: UUID, data: AccommodationUpdate, db: Session = Depends(get_db)):
     get_accommodation_or_404(accommodation_id, trip_id, db)
-    acc = accommodation_service.update(db, accommodation_id, data)
+    try:
+        acc = accommodation_service.update(db, accommodation_id, data)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc))
     return _build_response(acc)
 
 

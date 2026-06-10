@@ -29,6 +29,13 @@ def update(db: Session, flight_id: UUID, data: FlightUpdate) -> Flight | None:
         return None
     for key, value in data.model_dump(exclude_unset=True).items():
         setattr(flight, key, value)
+    if (
+        flight.departure_time
+        and flight.arrival_time
+        and flight.arrival_time < flight.departure_time
+    ):
+        db.rollback()
+        raise ValueError("arrival_time must be after departure_time")
     db.commit()
     db.refresh(flight)
     return flight

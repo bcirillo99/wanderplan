@@ -43,7 +43,10 @@ def create(trip_id: UUID, data: FlightCreate, db: Session = Depends(get_db)):
 @router.patch("/{flight_id}", response_model=FlightResponse)
 def update(trip_id: UUID, flight_id: UUID, data: FlightUpdate, db: Session = Depends(get_db)):
     get_flight_or_404(flight_id, trip_id, db)
-    return flight_service.update(db, flight_id, data)
+    try:
+        return flight_service.update(db, flight_id, data)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc))
 
 
 @router.delete("/{flight_id}", status_code=204)

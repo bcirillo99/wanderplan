@@ -28,6 +28,12 @@ def update(db: Session, activity_id: UUID, data: ActivityUpdate) -> Activity | N
         return None
     for key, value in data.model_dump(exclude_unset=True).items():
         setattr(activity, key, value)
+    # Cross-field validation against the merged state (Pydantic validators only
+    # see the patch payload, so a PATCH that sets only end_time can't compare
+    # to the existing start_time).
+    if activity.start_time and activity.end_time and activity.end_time < activity.start_time:
+        db.rollback()
+        raise ValueError("end_time must be after start_time")
     db.commit()
     db.refresh(activity)
     return activity

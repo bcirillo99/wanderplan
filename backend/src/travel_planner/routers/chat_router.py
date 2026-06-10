@@ -22,3 +22,7 @@ def chat(trip_id: UUID, body: ChatRequest, db: Session = Depends(get_db)):
         raise HTTPException(status_code=503, detail="Ollama not reachable — run: ollama serve")
     except requests.exceptions.Timeout:
         raise HTTPException(status_code=504, detail="Ollama timeout")
+    except requests.exceptions.HTTPError as exc:
+        raise HTTPException(status_code=502, detail=f"Ollama returned an error: {exc.response.status_code}")
+    except requests.exceptions.RequestException as exc:
+        raise HTTPException(status_code=502, detail=f"Ollama request failed: {exc}")

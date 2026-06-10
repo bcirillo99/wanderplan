@@ -44,7 +44,10 @@ def create(trip_id: UUID, data: ActivityCreate, db: Session = Depends(get_db)):
 def update(trip_id: UUID, activity_id: UUID, data: ActivityUpdate, db: Session = Depends(get_db)):
     get_trip_or_404(trip_id, db)
     get_activity_or_404(activity_id, trip_id, db)
-    return activity_service.update(db, activity_id, data)
+    try:
+        return activity_service.update(db, activity_id, data)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc))
 
 
 @router.delete("/{activity_id}", status_code=204)

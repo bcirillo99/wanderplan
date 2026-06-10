@@ -43,7 +43,10 @@ def create(trip_id: UUID, data: TransportCreate, db: Session = Depends(get_db)):
 @router.patch("/{transport_id}", response_model=TransportResponse)
 def update(trip_id: UUID, transport_id: UUID, data: TransportUpdate, db: Session = Depends(get_db)):
     get_transport_or_404(transport_id, trip_id, db)
-    return transport_service.update(db, transport_id, data)
+    try:
+        return transport_service.update(db, transport_id, data)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc))
 
 
 @router.delete("/{transport_id}", status_code=204)

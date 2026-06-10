@@ -29,6 +29,13 @@ def update(db: Session, accommodation_id: UUID, data: AccommodationUpdate) -> Ac
         return None
     for key, value in data.model_dump(exclude_unset=True).items():
         setattr(accommodation, key, value)
+    if (
+        accommodation.check_in
+        and accommodation.check_out
+        and accommodation.check_out < accommodation.check_in
+    ):
+        db.rollback()
+        raise ValueError("check_out must be after check_in")
     db.commit()
     db.refresh(accommodation)
     return accommodation

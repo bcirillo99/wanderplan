@@ -30,7 +30,6 @@ def get_all(trip_id: UUID, db: Session = Depends(get_db)):
 
 @router.get("/{note_id}", response_model=NoteResponse)
 def get_by_id(trip_id: UUID, note_id: UUID, db: Session = Depends(get_db)):
-    get_trip_or_404(trip_id, db)
     return get_note_or_404(note_id, trip_id, db)
 
 
@@ -42,13 +41,11 @@ def create(trip_id: UUID, data: NoteCreate, db: Session = Depends(get_db)):
 
 @router.patch("/{note_id}", response_model=NoteResponse)
 def update(trip_id: UUID, note_id: UUID, data: NoteUpdate, db: Session = Depends(get_db)):
-    get_trip_or_404(trip_id, db)
     get_note_or_404(note_id, trip_id, db)
     return note_service.update(db, note_id, data)
 
 
 @router.delete("/{note_id}", status_code=204)
 def delete(trip_id: UUID, note_id: UUID, db: Session = Depends(get_db)):
-    get_trip_or_404(trip_id, db)
     get_note_or_404(note_id, trip_id, db)
     note_service.delete(db, note_id)

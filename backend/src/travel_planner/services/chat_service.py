@@ -34,6 +34,15 @@ from travel_planner.services import (
     trip_service,
 )
 
+# Cap history sent to Ollama: most recent N user+assistant turns.
+# Prevents context overflow and runaway latency on long sessions.
+MAX_HISTORY_MESSAGES = 20
+
+VALID_ENTITY_TYPES = {
+    "activity", "transport", "accommodation", "flight",
+    "note", "packing_item", "extra",
+}
+
 # ── Tool definitions ───────────────────────────────────────────────────────────
 # Each tool maps to an insertable entity in the trip.
 # Names follow the insert_<entity> convention — used later to extract entity_type.
@@ -158,6 +167,24 @@ TOOLS = [
 ]
 
 
+def _geocode(query: str) -> tuple[float, float] | None:
+    """Call Nominatim to resolve a location string to (lat, lng). Returns None on any failure."""
+    try:
+        r = requests.get(
+            "https://nominatim.openstreetmap.org/search",
+            params={"format": "json", "limit": 1, "q": query},
+            headers={"User-Agent": "WanderPlan/1.0"},
+            timeout=5,
+        )
+        r.raise_for_status()
+        results = r.json()
+        if results:
+            return float(results[0]["lat"]), float(results[0]["lon"])
+    except Exception:
+        pass
+    return None
+
+
 def _summarize(db: Session, trip_id: UUID) -> str:
     """
     Serializes the entire trip into compact text to inject into the system prompt.
@@ -240,7 +267,10 @@ def chat(db: Session, trip_id: UUID, user_message: str, history: list[HistoryMes
         f"TRIP CONTEXT:\n{context}"
     )
 
-    history_dicts = [{"role": m.role, "content": m.content} for m in (history or [])]
+    history_dicts = [
+        {"role": m.role, "content": m.content}
+        for m in (history or [])[-MAX_HISTORY_MESSAGES:]
+    ]
 
     payload = {
         "model": settings.OLLAMA_MODEL,
@@ -268,10 +298,28 @@ def chat(db: Session, trip_id: UUID, user_message: str, history: list[HistoryMes
     # Only the first tool call is used — the prompt instructs the model to call one at a time
     call = tool_calls[0]
     entity_type = call["function"]["name"].removeprefix("insert_")  # "insert_activity" → "activity"
+    if entity_type not in VALID_ENTITY_TYPES:
+        return ChatResponse(
+            type="text",
+            content=f"The assistant suggested an unsupported action ({entity_type}). Please rephrase.",
+        )
+
     args = call["function"]["arguments"]
     if isinstance(args, str):
-        # Some Ollama models return arguments as a JSON string instead of a dict
-        args = json.loads(args)
+        # Some Ollama models return arguments as a JSON string instead of a dict.
+        # On malformed JSON, fall back to a text reply rather than 500.
+        try:
+            args = json.loads(args)
+        except json.JSONDecodeError:
+            return ChatResponse(
+                type="text",
+                content="The assistant produced an invalid action payload. Please rephrase.",
+            )
+    if not isinstance(args, dict):
+        return ChatResponse(
+            type="text",
+            content="The assistant produced an invalid action payload. Please rephrase.",
+        )
 
     # Date validation happens here in Python, not in the LLM.
     # The model frequently ignores the date constraint in the system prompt;
@@ -295,6 +343,19 @@ def chat(db: Session, trip_id: UUID, user_message: str, history: list[HistoryMes
                     f"({trip.start_date} → {trip.end_date})."
                 ),
             )
+
+    # Geocode location text so map pins work without manual picker interaction.
+    # Skip if the model already provided coords — avoids overwriting and a wasted network call.
+    has_coords = args.get("latitude") is not None and args.get("longitude") is not None
+    if not has_coords:
+        if entity_type == "activity" and args.get("location"):
+            coords = _geocode(args["location"])
+            if coords:
+                args["latitude"], args["longitude"] = coords
+        elif entity_type == "accommodation" and args.get("address"):
+            coords = _geocode(args["address"])
+            if coords:
+                args["latitude"], args["longitude"] = coords
 
     # Return the proposed action — the frontend shows an ActionCard and calls
     # the appropriate REST endpoint only after the user confirms

@@ -29,6 +29,13 @@ def update(db: Session, transport_id: UUID, data: TransportUpdate) -> Transport 
         return None
     for key, value in data.model_dump(exclude_unset=True).items():
         setattr(transport, key, value)
+    if (
+        transport.departure_time
+        and transport.arrival_time
+        and transport.arrival_time < transport.departure_time
+    ):
+        db.rollback()
+        raise ValueError("arrival_time must be after departure_time")
     db.commit()
     db.refresh(transport)
     return transport

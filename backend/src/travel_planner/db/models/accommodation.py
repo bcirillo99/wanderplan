@@ -18,7 +18,7 @@ class Accommodation(Base):
         UUID(as_uuid=True), ForeignKey("trips.id", ondelete="CASCADE"), nullable=False
     )
     accommodation_type: Mapped[AccommodationType | None] = mapped_column(SAEnum(AccommodationType, values_callable=lambda x: [e.value for e in x]), nullable=True)
-    name: Mapped[str | None] = mapped_column(String(255), nullable=False)
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
     address: Mapped[str | None] = mapped_column(String(255), nullable=True)
     location: Mapped[str | None] = mapped_column(String(255), nullable=True)
     latitude: Mapped[float | None] = mapped_column(Float, nullable=True)
