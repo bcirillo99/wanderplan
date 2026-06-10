@@ -6,10 +6,12 @@ RUN npm ci
 
 COPY . .
 
-# VITE_API_URL is baked into the static bundle at build time. Override via
-# docker-compose build args for production (e.g. https://api.example.com).
+# VITE_* vars are baked into the static bundle at build time. Override via
+# docker-compose build args (production API URL, Unsplash key, ...).
 ARG VITE_API_URL=http://localhost:8000
-ENV VITE_API_URL=$VITE_API_URL
+ARG VITE_UNSPLASH_ACCESS_KEY=
+ENV VITE_API_URL=$VITE_API_URL \
+    VITE_UNSPLASH_ACCESS_KEY=$VITE_UNSPLASH_ACCESS_KEY
 
 RUN npm run build
 
