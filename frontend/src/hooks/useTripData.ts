@@ -11,7 +11,7 @@ import { getTripStats } from '../api/stats'
 import { getActivities, createActivity, updateActivity as apiUpdateActivity, deleteActivity as apiDeleteActivity } from '../api/activities'
 import { getNotes, createNote, updateNote as apiUpdateNote, deleteNote as apiDeleteNote } from '../api/notes'
 import type {
-  Trip, Activity, Flight, Accommodation, Transport, Extra, PackingItem, TripStats, Note,
+  Trip, Activity, Flight, Accommodation, Transport, Extra, PackingItem, Note,
   ActivityCreate, FlightCreate, AccommodationCreate, TransportCreate, ExtraCreate, ExtraUpdate,
   PackingItemCreate, TripCreate, NoteCreate,
 } from '../types'
@@ -389,15 +389,22 @@ export function useTripData(tripId: string) {
 
   // ── Trip mutations ──
   const updateTripMut = useMutation({
-    mutationFn: (d: TripCreate) => apiUpdateTrip(tripId, d),
-    onMutate: (d) => {
+    mutationFn: ({ data, confirm }: { data: TripCreate; confirm?: boolean }) =>
+      apiUpdateTrip(tripId, data, confirm),
+    onMutate: ({ data }) => {
       const key = QUERY_KEYS.trip(tripId)
       qc.cancelQueries({ queryKey: key })
       const prev = qc.getQueryData<Trip>(key)
-      qc.setQueryData<Trip>(key, (old) => old ? { ...old, ...d } : old)
+      qc.setQueryData<Trip>(key, (old) => old ? { ...old, ...data } : old)
       return { rollback: () => qc.setQueryData(key, prev) }
     },
-    onError: (_e, _v, ctx) => { ctx?.rollback(); toast.error('Failed to update trip') },
+    onError: (err, _v, ctx) => {
+      ctx?.rollback()
+      // Cascade-delete confirmation is handled by the caller — don't toast it
+      if ((err as Error)?.name !== 'CascadeDeletionRequired') {
+        toast.error('Failed to update trip')
+      }
+    },
     onSuccess: () => inv(QUERY_KEYS.trip(tripId)),
   })
 
@@ -406,7 +413,8 @@ export function useTripData(tripId: string) {
     onError: () => toast.error('Failed to delete trip'),
   })
 
-  const updateTrip = (d: TripCreate) => mut(() => updateTripMut.mutateAsync(d))
+  const updateTrip = (d: TripCreate, confirm = false) =>
+    mut(() => updateTripMut.mutateAsync({ data: d, confirm }))
   // deleteTrip propagates — caller (TripDetailPage) navigates only on success
   const deleteTrip = () => deleteTripMut.mutateAsync()
 

@@ -5,7 +5,8 @@ import { toast } from 'sonner'
 import Navbar from '../components/Navbar'
 import Modal from '../components/Modal'
 import { TripForm } from '../components/forms/Forms'
-import { getTrips, createTrip, updateTrip, deleteTrip } from '../api/trips'
+import { getTrips, createTrip, updateTrip, deleteTrip, CascadeDeletionRequired, type CascadeDeletionPreview } from '../api/trips'
+import CascadeDeleteConfirmModal from '../components/CascadeDeleteConfirmModal'
 import { useDestinationPhoto } from '../hooks/useDestinationPhoto'
 import type { Trip, TripCreate } from '../types'
 
@@ -395,6 +396,7 @@ export default function HomePage() {
   const [heroDestination, setHeroDestination] = useState('')
   const [editTrip,        setEditTrip]        = useState<Trip | null>(null)
   const [search,          setSearch]          = useState('')
+  const [cascade,         setCascade]         = useState<{ preview: CascadeDeletionPreview; total: number; pending: TripCreate } | null>(null)
 
   useEffect(() => {
     getTrips()
@@ -418,13 +420,35 @@ export default function HomePage() {
     }
   }
 
+  const applyTripUpdate = async (data: TripCreate, confirm = false) => {
+    if (!editTrip) return
+    const t = await updateTrip(editTrip.id, data, confirm)
+    setTrips((prev) => prev.map((x) => (x.id === t.id ? t : x)))
+    setEditTrip(null)
+    setCascade(null)
+  }
+
   const handleEdit = async (data: TripCreate) => {
     if (!editTrip) return
     setSaving(true)
     try {
-      const t = await updateTrip(editTrip.id, data)
-      setTrips((prev) => prev.map((x) => (x.id === t.id ? t : x)))
-      setEditTrip(null)
+      await applyTripUpdate(data)
+    } catch (err) {
+      if (err instanceof CascadeDeletionRequired) {
+        setCascade({ preview: err.preview, total: err.total, pending: data })
+      } else {
+        toast.error('Failed to update trip')
+      }
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleCascadeConfirm = async () => {
+    if (!cascade) return
+    setSaving(true)
+    try {
+      await applyTripUpdate(cascade.pending, true)
     } catch {
       toast.error('Failed to update trip')
     } finally {
@@ -587,6 +611,16 @@ export default function HomePage() {
         <Modal title="Edit Trip" onClose={() => setEditTrip(null)}>
           <TripForm initial={editTrip} onSubmit={handleEdit} loading={saving} />
         </Modal>
+      )}
+
+      {cascade && (
+        <CascadeDeleteConfirmModal
+          preview={cascade.preview}
+          total={cascade.total}
+          busy={saving}
+          onCancel={() => setCascade(null)}
+          onConfirm={handleCascadeConfirm}
+        />
       )}
     </div>
   )

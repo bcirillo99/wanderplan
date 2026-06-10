@@ -5,6 +5,8 @@ import { exportTripToDocx, exportTripToPdf } from '../utils/exportTrip'
 import Navbar from '../components/Navbar'
 import { useDestinationPhoto } from '../hooks/useDestinationPhoto'
 import Modal from '../components/Modal'
+import CascadeDeleteConfirmModal from '../components/CascadeDeleteConfirmModal'
+import { CascadeDeletionRequired, type CascadeDeletionPreview } from '../api/trips'
 import { useTripData } from '../hooks/useTripData'
 import type {
   Activity, Flight, Accommodation, Transport, Extra, Note,
@@ -130,8 +132,34 @@ export default function TripDetailPage() {
     await tripData.updateNote(editNote.id, data)
     setModal(null); setEditNote(null)
   }
+  const [cascadeState, setCascadeState] = useState<{
+    preview: CascadeDeletionPreview; total: number; pendingData: TripCreate
+  } | null>(null)
+  const [cascadeBusy, setCascadeBusy] = useState(false)
+
   const handleUpdateTrip = async (data: TripCreate) => {
-    await tripData.updateTrip(data); setModal(null)
+    try {
+      await tripData.updateTrip(data)
+      setModal(null)
+    } catch (err) {
+      if (err instanceof CascadeDeletionRequired) {
+        setCascadeState({ preview: err.preview, total: err.total, pendingData: data })
+      } else {
+        throw err
+      }
+    }
+  }
+
+  const handleCascadeConfirm = async () => {
+    if (!cascadeState) return
+    setCascadeBusy(true)
+    try {
+      await tripData.updateTrip(cascadeState.pendingData, true)
+      setCascadeState(null)
+      setModal(null)
+    } finally {
+      setCascadeBusy(false)
+    }
   }
   const handleDeleteTrip = async () => {
     await tripData.deleteTrip(); navigate('/')
@@ -423,6 +451,16 @@ export default function TripDetailPage() {
             </div>
           </div>
         </Modal>
+      )}
+
+      {cascadeState && (
+        <CascadeDeleteConfirmModal
+          preview={cascadeState.preview}
+          total={cascadeState.total}
+          busy={cascadeBusy}
+          onCancel={() => setCascadeState(null)}
+          onConfirm={handleCascadeConfirm}
+        />
       )}
     </div>
   )

@@ -11,6 +11,79 @@ from uuid import UUID
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
+def preview_entities_outside_range(
+    db: Session,
+    trip_id: UUID,
+    start_date: date,
+    end_date: date,
+) -> dict:
+    """List items that would be deleted if the trip range shrinks to [start, end].
+    Returns a dict with counts and labels per entity type. No mutation.
+    """
+    params = {
+        "trip_id": str(trip_id),
+        "start_date": start_date,
+        "end_date": end_date,
+    }
+
+    activities = db.execute(
+        text("""
+            SELECT id::text AS id, title AS label, activity_date AS date
+            FROM activities
+            WHERE trip_id = :trip_id
+              AND activity_date IS NOT NULL
+              AND (activity_date < :start_date OR activity_date > :end_date)
+        """),
+        params,
+    ).fetchall()
+
+    flights = db.execute(
+        text("""
+            SELECT id::text AS id, origin || ' → ' || destination AS label,
+                   DATE(departure_time) AS date
+            FROM flights
+            WHERE trip_id = :trip_id
+              AND departure_time IS NOT NULL
+              AND (DATE(departure_time) < :start_date OR DATE(departure_time) > :end_date)
+        """),
+        params,
+    ).fetchall()
+
+    transports = db.execute(
+        text("""
+            SELECT id::text AS id, origin || ' → ' || destination AS label,
+                   DATE(departure_time) AS date
+            FROM transports
+            WHERE trip_id = :trip_id
+              AND departure_time IS NOT NULL
+              AND (DATE(departure_time) < :start_date OR DATE(departure_time) > :end_date)
+        """),
+        params,
+    ).fetchall()
+
+    accommodations = db.execute(
+        text("""
+            SELECT id::text AS id, name AS label, check_in AS date
+            FROM accommodations
+            WHERE trip_id = :trip_id
+              AND check_in IS NOT NULL
+              AND check_out IS NOT NULL
+              AND (DATE(check_out) < :start_date OR DATE(check_in) > :end_date)
+        """),
+        params,
+    ).fetchall()
+
+    def to_list(rows):
+        return [{"id": r.id, "label": r.label, "date": str(r.date) if r.date else None} for r in rows]
+
+    return {
+        "activities": to_list(activities),
+        "flights": to_list(flights),
+        "transports": to_list(transports),
+        "accommodations": to_list(accommodations),
+    }
+
+
 def cleanup_trip_related_entities_outside_range(
     db: Session,
     trip_id: UUID,
