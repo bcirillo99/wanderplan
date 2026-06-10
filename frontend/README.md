@@ -90,12 +90,26 @@ src/
 
 ## Setup
 
+Two options. See the [root README](../README.md) for the full-stack containerized mode (one `docker compose up`). This guide covers frontend dev mode (HMR).
+
 ```bash
 npm install
-npm run dev   # http://localhost:5173
+cp .env.example .env   # optional — for VITE_API_URL override + Unsplash key
+npm run dev            # http://localhost:5173
 ```
 
-Requires the backend running on `http://localhost:8000`. See root README for backend setup.
+Requires the backend running on `http://localhost:8000`. See root or backend README.
+
+### Containerized mode
+
+The frontend ships with a multi-stage `Dockerfile`: stage 1 builds the static bundle (`tsc -b && vite build`), stage 2 serves it via nginx on port 80. The compose maps that to host `:8080`. `nginx.conf` includes an SPA fallback so client-side router paths survive a refresh.
+
+`VITE_API_URL` is **baked into the bundle at build time** — to change the backend URL, rebuild the image:
+
+```bash
+docker compose build frontend --build-arg VITE_API_URL=https://api.example.com
+docker compose up -d frontend
+```
 
 ---
 
@@ -120,7 +134,11 @@ const { flights, addFlight, updateFlight, deleteFlight } = useTripData(tripId)
 
 ### API client
 
-`src/api/client.ts` exports an Axios instance with `baseURL: http://localhost:8000`. All API files import from it.
+`src/api/client.ts` exports an Axios instance whose `baseURL` is read from `import.meta.env.VITE_API_URL`, falling back to `http://localhost:8000`. All API files import from it.
+
+### Cascade delete confirm
+
+`updateTrip(id, data, confirm=false)` may throw `CascadeDeletionRequired` if changing trip dates would delete child items. The error carries a deletion preview; callers (HomePage, TripDetailPage) catch it, render `CascadeDeleteConfirmModal`, and retry with `confirm=true` on user approval.
 
 ---
 

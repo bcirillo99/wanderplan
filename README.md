@@ -80,24 +80,75 @@ These are directions the project is moving toward, gradually.
 
 ### Prerequisites
 
-- [Python 3.13+](https://www.python.org/downloads/)
-- [uv](https://docs.astral.sh/uv/getting-started/installation/) — Python package manager
-- [Node 20+](https://nodejs.org/)
-- [Docker](https://www.docker.com/products/docker-desktop/) — for the PostgreSQL database
-
-### Running the app
+- [Docker](https://www.docker.com/products/docker-desktop/) — required for both modes
+- For dev mode only:
+  - [Python 3.13+](https://www.python.org/downloads/)
+  - [uv](https://docs.astral.sh/uv/getting-started/installation/) — Python package manager
+  - [Node 20+](https://nodejs.org/)
 
 ```bash
 git clone https://github.com/bcirillo99/wanderplan.git
 cd wanderplan
 ```
 
-WanderPlan has three parts that all need to run at the same time. Open **three terminal tabs**.
+WanderPlan ships in two modes: a one-command containerized stack (recommended for trying it out or self-hosting), and a dev mode with hot reload.
 
-**Tab 1 — Database**
+### Mode A — Containerized stack (recommended)
 
 ```bash
-docker compose up -d
+docker compose up -d --build
+```
+
+That's it. Three services start:
+
+| Service  | URL                              |
+|----------|----------------------------------|
+| Frontend | http://localhost:8080            |
+| Backend  | http://localhost:8000 (`/docs`)  |
+| Database | localhost:5432                   |
+
+Migrations run automatically on backend startup. Open [http://localhost:8080](http://localhost:8080).
+
+**Useful commands**
+
+```bash
+docker compose logs -f                       # follow logs from all services
+docker compose logs -f backend               # follow a single service
+docker compose ps                            # see what's running
+docker compose down                          # stop containers, keep DB volume
+docker compose down -v                       # stop and wipe the DB volume too
+docker compose up -d --build backend         # rebuild after backend code changes
+docker compose up -d --build frontend        # rebuild after frontend code changes
+                                             # (required if you change VITE_API_URL)
+```
+
+**Ollama (AI assistant)**
+
+The chat assistant talks to [Ollama](https://ollama.com/) on the host machine at `host.docker.internal:11434`. Install Ollama, then:
+
+```bash
+ollama serve
+ollama pull qwen3.5:4b
+```
+
+Without Ollama running, the rest of the app works fine — only the chat tab fails.
+
+**Optional: seed example data**
+
+```bash
+docker compose exec -T db psql -U postgres -d wanderplan < backend/scripts/seed.sql
+```
+
+### Mode B — Dev mode (hot reload)
+
+For active development: only Postgres in a container, backend and frontend run natively with auto-reload.
+
+Open **three terminal tabs**.
+
+**Tab 1 — Database only**
+
+```bash
+docker compose up -d db
 ```
 
 **Tab 2 — Backend**
@@ -112,7 +163,7 @@ echo "DATABASE_URL=postgresql://postgres:postgres@localhost:5432/wanderplan" > .
 uv run alembic upgrade head
 
 uv run fastapi dev src/travel_planner/main.py
-# running on http://localhost:8000
+# running on http://localhost:8000 — reloads on save
 ```
 
 **Tab 3 — Frontend**
@@ -126,10 +177,33 @@ npm install
 cp .env.example .env   # then open .env and add your key
 
 npm run dev
-# running on http://localhost:5173
+# running on http://localhost:5173 — HMR enabled
 ```
 
-Open [http://localhost:5173](http://localhost:5173).
+Open [http://localhost:5173](http://localhost:5173). **Different port than Mode A.**
+
+### When to use which
+
+| | Mode A (compose) | Mode B (dev) |
+|---|---|---|
+| Trying out the app | ✅ | |
+| Self-hosting | ✅ | |
+| Writing code | | ✅ (hot reload) |
+| Frontend URL | `:8080` | `:5173` |
+| Reflects prod build | ✅ | |
+| File change → live | rebuild image | immediate |
+
+### Environment variables
+
+Created from `.env.example` files; both modes read them.
+
+| Var | Where | Purpose |
+|-----|-------|---------|
+| `DATABASE_URL` | `backend/.env` (dev mode); injected by compose (Mode A) | Postgres connection string |
+| `ALLOWED_ORIGINS` | `backend/.env` (dev mode); compose env (Mode A) | CORS whitelist, comma-separated |
+| `OLLAMA_URL`, `OLLAMA_MODEL` | `backend/.env` | Ollama endpoint and model name |
+| `VITE_API_URL` | `frontend/.env` (dev); compose build arg (Mode A) | Backend base URL baked into bundle |
+| `VITE_UNSPLASH_ACCESS_KEY` | `frontend/.env` | Optional, for cover photos |
 
 ---
 

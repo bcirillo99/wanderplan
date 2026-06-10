@@ -44,19 +44,23 @@ The database is built around a `Trip` as the top-level entity. Everything else b
 | Entity | Description | Parent |
 |---|---|---|
 | `Trip` | A travel plan with dates and destination | — |
-| `Day` | A single day within a trip | Trip |
-| `Activity` | Something to do on a specific day | Day |
+| `Activity` | Something to do on a specific date (no `Day` table; the date lives on the activity) | Trip |
 | `Flight` | A flight leg | Trip |
 | `Transport` | Any non-flight transfer (train, bus, car, ...) | Trip |
 | `Accommodation` | A place to stay (hotel, airbnb, lodge, ...) | Trip |
 | `PackingItem` | An item on the packing list | Trip |
-| `Expense` | A cost entry (estimated or actual) | Trip |
+| `Extra` | An additional cost entry (was `Expense`) | Trip |
+| `Note` | A freeform note attached to the trip | Trip |
 
-Relations: `Trip` 1:N `Day`, `Day` 1:N `Activity`, `Trip` 1:N everything else.
+All children link directly to `Trip` via `trip_id` with `ON DELETE CASCADE`.
 
 `Transport` and `Accommodation` include an `extra_details` JSONB column for type-specific fields (e.g. train number, Airbnb code).
 
 All bookable entities (`Flight`, `Transport`, `Accommodation`, `Activity`) share a common `Status` enum: `draft → to_book → booked → cancelled / completed`.
+
+### Trip date changes cascade
+
+Shrinking a trip's `start_date`/`end_date` will delete related items that fall outside the new range (activities, flights, transports, accommodations). To prevent silent data loss, `PATCH /trips/{id}` returns **409 Conflict** with a deletion preview unless the caller passes `?confirm=true`. The frontend surfaces this as a confirmation modal.
 
 ## Getting Started
 
@@ -68,7 +72,9 @@ All bookable entities (`Flight`, `Transport`, `Accommodation`, `Activity`) share
 
 ### Setup
 
-1. Clone the repository and move into the backend folder:
+You have two options. For the full-stack containerized setup (one command), see the [root README](../README.md). This guide covers backend-only dev mode (hot reload).
+
+1. Move into the backend folder:
 ```bash
 cd wanderplan/backend
 ```
@@ -84,9 +90,9 @@ uv pip install -e .
 cp .env.example .env
 ```
 
-4. Start the database:
+4. Start the database (root compose runs only the `db` service):
 ```bash
-docker compose up -d db
+docker compose -f ../docker-compose.yml up -d db
 ```
 
 5. Run database migrations:
@@ -97,6 +103,20 @@ uv run alembic upgrade head
 6. Start the development server:
 ```bash
 uv run fastapi dev src/travel_planner/main.py
+```
+
+### Containerized mode
+
+The backend ships with a `Dockerfile` and `entrypoint.sh`. The entrypoint runs `alembic upgrade head` on every container start (migrations are idempotent), then launches uvicorn on `:8000`. Migrations don't need to be applied manually in this mode.
+
+Build and run as part of the full stack:
+```bash
+docker compose up -d --build           # from repo root
+```
+
+Build only this service:
+```bash
+docker compose build backend           # from repo root
 ```
 
 ### Database Migrations
@@ -159,7 +179,7 @@ Base URL: `http://localhost:8000` — interactive docs at `/docs`.
 | Accommodations  | `/trips/{trip_id}/accommodations`      |
 | Transports      | `/trips/{trip_id}/transports`          |
 | Extras          | `/trips/{trip_id}/extras`              |
-| Packing items   | `/trips/{trip_id}/packing-items`       |
+| Packing items   | `/trips/{trip_id}/packing_items`       |
 | Notes           | `/trips/{trip_id}/notes`               |
 | Budget stats    | `/trips/{trip_id}/stats`               |
 | Daily summary   | `/trips/{trip_id}/days/{date}/summary` |

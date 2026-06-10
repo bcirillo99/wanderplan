@@ -82,7 +82,7 @@ export default function FormField(props: FormFieldProps) {
         {label}
         <ReactDatePicker
           selected={toDate(props.value, DATE_FMT)}
-          onChange={(d) => props.onChange(fromDate(d, DATE_FMT))}
+          onChange={(d: Date | null) => props.onChange(fromDate(d, DATE_FMT))}
           dateFormat="dd MMM yyyy"
           minDate={parseMin(props.min, DATE_FMT)}
           maxDate={parseMin(props.max, DATE_FMT)}
@@ -101,7 +101,7 @@ export default function FormField(props: FormFieldProps) {
         {label}
         <ReactDatePicker
           selected={toDate(props.value, TIME_FMT)}
-          onChange={(d) => props.onChange(fromDate(d, TIME_FMT))}
+          onChange={(d: Date | null) => props.onChange(fromDate(d, TIME_FMT))}
           showTimeSelect
           showTimeSelectOnly
           timeIntervals={5}
@@ -123,7 +123,7 @@ export default function FormField(props: FormFieldProps) {
         {label}
         <ReactDatePicker
           selected={toDate(props.value, DATETIME_FMT)}
-          onChange={(d) => props.onChange(fromDate(d, DATETIME_FMT))}
+          onChange={(d: Date | null) => props.onChange(fromDate(d, DATETIME_FMT))}
           showTimeSelect
           timeIntervals={5}
           timeCaption="Time"
