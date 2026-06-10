@@ -49,6 +49,22 @@ These are directions the project is moving toward, gradually.
 
 ---
 
+## AI Assistant
+
+### What it can do now
+
+- Knows the full trip context (flights, accommodation, transport, activities, extras, packing, notes)
+- Inserts new items (any entity type) with user confirmation via ActionCard
+- Validates dates against trip range before proposing any insert
+- Geocodes locations automatically for map pins
+- Replies in the user's language
+
+### TODO
+
+- [ ] **Modify existing items** — let the user say e.g. "change the Eiffel Tower visit to 3pm" and have the AI propose an edit with user confirmation (same ActionCard flow as inserts)
+
+---
+
 ## Screenshots
 
 ### Homepage

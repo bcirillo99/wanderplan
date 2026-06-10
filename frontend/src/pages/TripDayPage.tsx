@@ -267,49 +267,41 @@ export default function TripDayPage() {
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--ivory)' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--surface-warm)' }}>
       <Navbar />
 
       <div className="day-header">
         <div className="day-header__content">
           <div className="day-header__breadcrumb">
-            <Link to="/">Trips</Link>
-            <span>/</span>
+            <Link to="/">My Trips</Link>
+            <span aria-hidden="true">›</span>
             <Link to={`/trips/${tripId}`}>{trip?.title ?? '...'}</Link>
-            <span>/</span>
-            <span style={{ color: '#fff' }}>Day</span>
+            <span aria-hidden="true">›</span>
+            <span style={{ color: 'var(--charcoal)' }}>Day</span>
           </div>
           {loading ? (
-            <div style={{ height: 36, width: 240, background: 'rgba(255,255,255,0.2)', borderRadius: 8 }} />
+            <div className="skeleton" style={{ height: 48, width: 320 }} />
           ) : (
             <div className="day-header__bottom">
               <div>
                 <h1 className="day-header__title">{fmtDay(date)}</h1>
               </div>
-              <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+              <div style={{ display: 'flex', gap: 14, alignItems: 'center', position: 'relative' }}>
                 {totalCost > 0 && (
                   <div className="day-header__cost-badge">
-                    <small>Day Expenses</small>
+                    <small>Day expenses</small>
                     <strong>€ {totalCost.toFixed(2)}</strong>
                   </div>
                 )}
                 <button
                   ref={addBtnRef}
                   className="btn-primary"
-                  style={{ background: '#fff', color: 'var(--forest)' }}
                   onClick={() => setAddMenuOpen((v) => !v)}
                   aria-haspopup="menu"
                   aria-expanded={addMenuOpen}
                 >
-                  <svg
-                    width="14"
-                    height="14"
-                    viewBox="0 0 16 16"
-                    fill="none"
-                    style={{ flexShrink: 0, overflow: 'visible', display: 'block' }}
-                    aria-hidden="true"
-                  >
-                    <path d="M8 3v10M3 8h10" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                  <svg width="13" height="13" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+                    <path d="M7 2v10M2 7h10" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
                   </svg>
                   Add
                 </button>
@@ -317,24 +309,24 @@ export default function TripDayPage() {
                   <div
                     ref={addMenuRef}
                     role="menu"
+                    className="material-panel"
                     style={{
                       position: 'fixed',
                       top: addMenuPos.top,
                       right: addMenuPos.right,
-                      background: '#fff',
-                      border: '1px solid var(--cream-dark)',
-                      borderRadius: 12,
-                      boxShadow: '0 8px 24px rgba(15,23,42,0.18)',
                       padding: 6,
-                      minWidth: 200,
+                      minWidth: 220,
                       zIndex: 1000,
+                      boxShadow: 'var(--shadow-float)',
+                      animation: 'scaleIn 0.18s var(--ease-out-quart) both',
+                      transformOrigin: 'top right',
                     }}
                   >
                     {[
-                      { kind: 'activity' as AddKind,      icon: '🗓️', label: 'Activity' },
-                      { kind: 'flight' as AddKind,        icon: '✈️', label: 'Flight' },
-                      { kind: 'accommodation' as AddKind, icon: '🏨', label: 'Accommodation' },
-                      { kind: 'transport' as AddKind,     icon: '🚌', label: 'Transportation' },
+                      { kind: 'activity' as AddKind,      label: 'Activity',       hint: 'A place, meal, plan' },
+                      { kind: 'flight' as AddKind,        label: 'Flight',         hint: 'Inbound or outbound' },
+                      { kind: 'accommodation' as AddKind, label: 'Accommodation',  hint: 'Hotel, stay, rental' },
+                      { kind: 'transport' as AddKind,     label: 'Transportation', hint: 'Train, bus, transfer' },
                     ].map((opt) => (
                       <button
                         key={opt.kind}
@@ -342,23 +334,25 @@ export default function TripDayPage() {
                         onClick={() => openAdd(opt.kind)}
                         style={{
                           display: 'flex',
-                          alignItems: 'center',
-                          gap: 10,
+                          flexDirection: 'column',
+                          alignItems: 'flex-start',
+                          gap: 2,
                           width: '100%',
-                          padding: '9px 12px',
+                          padding: '10px 14px',
                           border: 'none',
                           background: 'transparent',
                           borderRadius: 8,
                           cursor: 'pointer',
                           textAlign: 'left',
-                          fontSize: '0.875rem',
-                          color: 'var(--forest)',
+                          color: 'var(--charcoal)',
+                          fontFamily: 'inherit',
+                          transition: 'background var(--dur-fast)',
                         }}
-                        onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--ivory)')}
+                        onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--surface-warm)')}
                         onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
                       >
-                        <span style={{ fontSize: '1rem' }}>{opt.icon}</span>
-                        <span>{opt.label}</span>
+                        <span style={{ fontSize: '0.9375rem', fontWeight: 600, letterSpacing: '-0.008em' }}>{opt.label}</span>
+                        <span style={{ fontSize: '0.75rem', color: 'var(--fog)' }}>{opt.hint}</span>
                       </button>
                     ))}
                   </div>,
@@ -370,17 +364,18 @@ export default function TripDayPage() {
         </div>
       </div>
 
-      <main className="container" style={{ paddingTop: 32, paddingBottom: 64 }}>
+      <main className="container" style={{ paddingTop: 40, paddingBottom: 80 }}>
         {loading ? (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            {[1, 2, 3].map((i) => <div key={i} style={{ height: 90, background: 'var(--cream-dark)', borderRadius: 16 }} />)}
+          <div className="timeline" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            {[1, 2, 3].map((i) => <div key={i} className="skeleton" style={{ height: 100, borderRadius: 12 }} />)}
           </div>
         ) : summaryItems.length === 0 ? (
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '80px 24px', textAlign: 'center' }}>
-            <div style={{ fontSize: '2.5rem', marginBottom: 16 }}>🗺️</div>
-            <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.4rem', fontWeight: 600, color: 'var(--forest)', marginBottom: 8 }}>No Activities</h3>
-            <p style={{ color: 'var(--sage)', fontSize: '0.875rem', marginBottom: 24 }}>Start adding activities for this day.</p>
-            <button className="btn-primary" onClick={() => setModal('add-activity')}>Add First Activity</button>
+          <div className="empty-state">
+            <p className="empty-state__heading">No activities for this day.</p>
+            <p style={{ color: 'var(--fog)', fontSize: '0.9375rem', maxWidth: '38ch', lineHeight: 1.55 }}>
+              Add a place, a flight, or a stay to start shaping the day.
+            </p>
+            <button className="btn-primary" onClick={() => setModal('add-activity')}>Add first activity</button>
           </div>
         ) : (
           <div className="timeline">
@@ -484,13 +479,14 @@ export default function TripDayPage() {
                 maxDateTime={trip?.end_date ? `${trip.end_date}T23:59` : undefined}
               />
             )}
-            <div style={{ marginTop: 8, paddingTop: 12, borderTop: '1px solid var(--cream-dark)' }}>
+            <div style={{ marginTop: 12, paddingTop: 16, borderTop: '1px solid var(--border-subtle)' }}>
               <button
                 onClick={handleDeleteItem}
                 disabled={saving}
-                style={{ width: '100%', padding: '10px 16px', borderRadius: 10, border: '1px solid #fca5a5', background: '#fff5f5', color: '#dc2626', cursor: 'pointer', fontSize: '0.875rem', fontWeight: 500 }}
+                className="btn-danger"
+                style={{ width: '100%', justifyContent: 'center' }}
               >
-                {saving ? 'Deleting...' : `Delete ${selectedItem.type.charAt(0).toUpperCase() + selectedItem.type.slice(1)}`}
+                {saving ? 'Deleting…' : `Delete ${selectedItem.type}`}
               </button>
             </div>
           </Modal>

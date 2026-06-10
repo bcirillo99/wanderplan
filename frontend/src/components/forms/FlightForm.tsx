@@ -117,7 +117,7 @@ function FlightSearchModal({ origin, destination, onSelect, onClose, minDate, ma
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--forest-mid)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M17.8 19.2 16 11l3.5-3.5C21 6 21 4 19 2c-2-2-4-2-5.5-.5L10 5 1.8 6.2a1 1 0 0 0-.5 1.7l3.5 3.5L3 16l2 2 4-2 3.5 3.5a1 1 0 0 0 1.7-.5z"/>
             </svg>
-            <span style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.1rem', fontWeight: 600, color: 'var(--forest)' }}>
+            <span style={{ fontSize: '1.0625rem', fontWeight: 600, color: 'var(--charcoal)', letterSpacing: '-0.014em' }}>
               Search flights
             </span>
             <span style={{
@@ -236,7 +236,7 @@ function FlightSearchModal({ origin, destination, onSelect, onClose, minDate, ma
                     {/* Top: price + duration + stops badge */}
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <span style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.2rem', fontWeight: 700, color: 'var(--forest)' }}>
+                        <span className="tabular" style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--charcoal)', letterSpacing: '-0.018em' }}>
                           {result.price != null ? `${result.currency ?? '€'}${result.price.toFixed(0)}` : '—'}
                         </span>
                         <span style={{ fontSize: '0.75rem', color: 'var(--sage)' }}>

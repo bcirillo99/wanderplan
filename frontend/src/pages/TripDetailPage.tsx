@@ -185,7 +185,7 @@ export default function TripDetailPage() {
 
   // ── Render ──
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--ivory)' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--surface-warm)' }}>
       <Navbar />
 
       {/* Trip header */}
@@ -194,61 +194,73 @@ export default function TripDetailPage() {
         <div className="trip-header__content">
           <div className="trip-header__breadcrumb">
             <Link to="/">My Trips</Link>
-            <span>/</span>
-            <span style={{ color: '#fff' }}>{trip?.title ?? '...'}</span>
+            <span aria-hidden="true">›</span>
+            <span style={{ color: 'var(--surface-white)' }}>{trip?.title ?? '...'}</span>
           </div>
           {loading ? (
-            <div style={{ height: 32, width: 200, background: 'rgba(255,255,255,0.2)', borderRadius: 8 }} />
+            <div style={{ height: 48, width: 280, background: 'rgba(255,255,255,0.18)', borderRadius: 8 }} />
           ) : (
-            <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 16 }}>
-              <div>
-                <h1 className="trip-header__title">{trip?.title}</h1>
-                {trip?.destination && <p className="trip-header__meta">{trip.destination}</p>}
-                {(trip?.start_date || trip?.end_date) && (
-                  <p className="trip-header__dates">
-                    {fmtLong(trip?.start_date)}{trip?.end_date ? ` → ${fmtLong(trip?.end_date)}` : ''}
-                  </p>
-                )}
-              </div>
-              <div style={{ display: 'flex', gap: 8, flexShrink: 0, paddingBottom: 4 }}>
-                <button
-                  onClick={() => trip && exportTripToDocx({ trip, flights, accommodations, transports, activities, notes, stats, extras, packingItems })}
-                  className="trip-header__action-btn"
-                  disabled={!trip}
-                  title="Export as Word document"
-                >
-                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                    <path d="M6 1v7M3 5.5L6 8.5l3-3M1.5 9.5v1h9v-1" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                  DOCX
-                </button>
-                <button
-                  onClick={() => trip && exportTripToPdf({ trip, flights, accommodations, transports, activities, notes, stats, extras, packingItems })}
-                  className="trip-header__action-btn"
-                  disabled={!trip}
-                  title="Export as PDF"
-                >
-                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                    <path d="M6 1v7M3 5.5L6 8.5l3-3M1.5 9.5v1h9v-1" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                  PDF
-                </button>
-                <button onClick={() => setModal('edit-trip')} className="trip-header__action-btn">
-                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                    <path d="M8 1.5l2.5 2.5-7 7H1v-2.5l7-7Z" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                  Edit
-                </button>
-                <button onClick={() => setModal('confirm-delete')} className="trip-header__action-btn trip-header__action-btn--danger">
-                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                    <path d="M1.5 3h9M5 3V2h2v1M4.5 9.5l-.5-5M7.5 9.5l.5-5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                  Delete
-                </button>
-              </div>
+            <div>
+              <h1 className="trip-header__title">{trip?.title}</h1>
+              {trip?.destination && (
+                <p className="trip-header__meta">
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+                      <path d="M7 13s-5-4.5-5-8a5 5 0 0 1 10 0c0 3.5-5 8-5 8Z" stroke="currentColor" strokeWidth="1.4"/>
+                      <circle cx="7" cy="5" r="1.6" stroke="currentColor" strokeWidth="1.4"/>
+                    </svg>
+                    {trip.destination}
+                  </span>
+                </p>
+              )}
+              {(trip?.start_date || trip?.end_date) && (
+                <p className="trip-header__dates">
+                  {fmtLong(trip?.start_date)}{trip?.end_date ? ` → ${fmtLong(trip?.end_date)}` : ''}
+                </p>
+              )}
             </div>
           )}
         </div>
+
+        {/* Material action cluster — floats over photo bottom-right */}
+        {!loading && trip && (
+          <div className="trip-header__actions" role="toolbar" aria-label="Trip actions">
+            <button
+              onClick={() => exportTripToDocx({ trip, flights, accommodations, transports, activities, notes, stats, extras, packingItems })}
+              className="trip-header__action-btn"
+              title="Export as Word document"
+            >
+              <svg width="13" height="13" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+                <path d="M3 1h6l2 2v10H3z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/>
+                <path d="M5 6h4M5 8.5h4M5 11h2.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
+              </svg>
+              DOCX
+            </button>
+            <button
+              onClick={() => exportTripToPdf({ trip, flights, accommodations, transports, activities, notes, stats, extras, packingItems })}
+              className="trip-header__action-btn"
+              title="Export as PDF"
+            >
+              <svg width="13" height="13" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+                <path d="M3 1h6l2 2v10H3z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/>
+                <path d="M4.5 9h1.2c.5 0 .8-.3.8-.8s-.3-.8-.8-.8H4.5V11M8 7.5v3.5h.8c.7 0 1.2-.7 1.2-1.7s-.5-1.8-1.2-1.8H8Z" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+              PDF
+            </button>
+            <button onClick={() => setModal('edit-trip')} className="trip-header__action-btn" title="Edit trip">
+              <svg width="13" height="13" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+                <path d="M9.5 1.5l3 3-8 8H1.5v-3l8-8Z" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+              Edit
+            </button>
+            <button onClick={() => setModal('confirm-delete')} className="trip-header__action-btn trip-header__action-btn--danger" title="Delete trip">
+              <svg width="13" height="13" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+                <path d="M2 3.5h10M5.5 3.5V2h3v1.5M11 3.5l-.7 9.5H3.7L3 3.5M6 6.5v4M8 6.5v4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+              Delete
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Tabs */}
@@ -436,14 +448,14 @@ export default function TripDetailPage() {
       {modal === 'confirm-delete' && (
         <Modal title="Delete Trip" onClose={closeModal} size="sm">
           <div style={{ textAlign: 'center' }}>
-            <div style={{ width: 56, height: 56, background: '#fee2e2', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+            <div style={{ width: 60, height: 60, background: 'var(--destructive-wash)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 18px' }}>
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" stroke="#9b2020" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" stroke="var(--destructive)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
             </div>
-            <p style={{ fontWeight: 600, color: 'var(--charcoal)', marginBottom: 6 }}>Delete this trip?</p>
-            <p style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: 24 }}>
-              <strong>{trip?.title}</strong> and all associated data will be permanently removed.
+            <p style={{ fontWeight: 600, color: 'var(--charcoal)', marginBottom: 8, fontSize: '1.0625rem', letterSpacing: '-0.012em' }}>Delete this trip?</p>
+            <p style={{ fontSize: '0.9375rem', color: 'var(--fog)', marginBottom: 28, lineHeight: 1.55 }}>
+              <strong style={{ color: 'var(--charcoal)' }}>{trip?.title}</strong> and all associated data will be permanently removed.
             </p>
             <div style={{ display: 'flex', gap: 12 }}>
               <button className="btn-secondary" style={{ flex: 1, justifyContent: 'center' }} onClick={closeModal}>Cancel</button>

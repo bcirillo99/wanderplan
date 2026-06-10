@@ -118,8 +118,8 @@ export function TripCalendar({ trip, tripId, activities, dates }: Props) {
 
   if (!start || !end || months.length === 0) {
     return (
-      <div style={{ fontSize: '0.85rem', color: 'var(--sage)', fontStyle: 'italic' }}>
-        Set trip start/end dates to see calendar
+      <div style={{ fontSize: '0.875rem', color: 'var(--fog)' }}>
+        Set trip start and end dates to see the calendar.
       </div>
     )
   }
@@ -138,21 +138,20 @@ export function TripCalendar({ trip, tripId, activities, dates }: Props) {
             <div key={`${year}-${month}`}>
               {/* Month label */}
               <p style={{
-                fontFamily: "'Playfair Display', serif",
-                fontWeight: 600, fontSize: '0.9rem',
-                color: 'var(--forest)', marginBottom: 10,
-                textAlign: 'center',
+                fontWeight: 600, fontSize: '0.875rem',
+                color: 'var(--charcoal)', marginBottom: 12,
+                textAlign: 'center', letterSpacing: '-0.012em',
               }}>
                 {fmtMonthYear(year, month)}
               </p>
 
               {/* Days-of-week header */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', marginBottom: 2 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', marginBottom: 4 }}>
                 {DOW.map(d => (
                   <div key={d} style={{
-                    textAlign: 'center', fontSize: '0.58rem',
-                    fontWeight: 600, color: 'var(--sage)',
-                    textTransform: 'uppercase', paddingBottom: 3,
+                    textAlign: 'center', fontSize: '0.625rem',
+                    fontWeight: 600, color: 'var(--fog)',
+                    textTransform: 'uppercase', letterSpacing: '0.10em', paddingBottom: 4,
                   }}>{d}</div>
                 ))}
               </div>
@@ -172,26 +171,27 @@ export function TripCalendar({ trip, tripId, activities, dates }: Props) {
                     const dayNum = parseLocal(dateStr).getDate()
 
                     let bg = 'transparent'
-                    let color = inTrip ? 'var(--forest)' : '#c0c0c0'
+                    let color = inTrip ? 'var(--charcoal)' : 'var(--whisper)'
                     let fontWeight: number = inTrip ? 500 : 400
                     let borderRadius = '50%'
                     let border = 'none'
 
                     if (isStart || isEnd) {
-                      bg = 'var(--forest)'
-                      color = '#fff'
+                      bg = 'var(--coral)'
+                      color = 'var(--surface-white)'
                       fontWeight = 700
                     } else if (isSelected) {
-                      bg = 'var(--forest-light)'
-                      color = '#fff'
+                      bg = 'var(--charcoal)'
+                      color = 'var(--surface-white)'
                       fontWeight = 700
                     } else if (inTrip) {
-                      bg = 'var(--mist)'
+                      bg = 'var(--coral-wash)'
                       borderRadius = '6px'
+                      color = 'var(--coral-deep)'
                     }
 
                     if (isToday && !isStart && !isEnd) {
-                      border = '1.5px solid var(--forest-light)'
+                      border = '1.5px solid var(--coral)'
                     }
 
                     return (
@@ -210,7 +210,7 @@ export function TripCalendar({ trip, tripId, activities, dates }: Props) {
                           }}
                           onMouseEnter={e => {
                             if (inTrip && !isStart && !isEnd && !isSelected)
-                              e.currentTarget.style.background = 'var(--mint)'
+                              e.currentTarget.style.background = 'var(--coral-tint)'
                           }}
                           onMouseLeave={e => {
                             if (inTrip && !isStart && !isEnd && !isSelected)
@@ -221,8 +221,8 @@ export function TripCalendar({ trip, tripId, activities, dates }: Props) {
                         </button>
                         {/* Activity dot */}
                         <div style={{
-                          width: 3, height: 3, borderRadius: '50%', marginTop: 1,
-                          background: hasActs ? 'var(--forest-light)' : 'transparent',
+                          width: 4, height: 4, borderRadius: '50%', marginTop: 2,
+                          background: hasActs ? 'var(--coral)' : 'transparent',
                           flexShrink: 0,
                         }} />
                       </div>
@@ -247,22 +247,22 @@ export function TripCalendar({ trip, tripId, activities, dates }: Props) {
       )}
 
       {/* Legend */}
-      <div style={{ display: 'flex', gap: 16, marginTop: 16, flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', gap: 18, marginTop: 18, flexWrap: 'wrap' }}>
         {[
-          { bg: 'var(--forest)', label: 'Start / End', radius: '50%' },
-          { bg: 'var(--mist)', label: 'Trip days', radius: '4px' },
-          { bg: 'var(--forest-light)', label: 'Activities', dot: true },
+          { bg: 'var(--coral)', label: 'Start / End', radius: '50%' },
+          { bg: 'var(--coral-wash)', label: 'Trip days', radius: '4px' },
+          { bg: 'var(--coral)', label: 'Activities', dot: true },
         ].map(item => (
-          <div key={item.label} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <div key={item.label} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             {item.dot ? (
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
-                <div style={{ width: 16, height: 16, borderRadius: '4px', background: 'var(--mist)' }} />
-                <div style={{ width: 4, height: 4, borderRadius: '50%', background: 'var(--forest-light)' }} />
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
+                <div style={{ width: 16, height: 16, borderRadius: '4px', background: 'var(--coral-wash)' }} />
+                <div style={{ width: 4, height: 4, borderRadius: '50%', background: 'var(--coral)' }} />
               </div>
             ) : (
               <div style={{ width: 16, height: 16, borderRadius: item.radius, background: item.bg }} />
             )}
-            <span style={{ fontSize: '0.7rem', color: 'var(--sage)' }}>{item.label}</span>
+            <span style={{ fontSize: '0.6875rem', color: 'var(--fog)', textTransform: 'uppercase', letterSpacing: '0.10em', fontWeight: 500 }}>{item.label}</span>
           </div>
         ))}
       </div>
@@ -292,40 +292,38 @@ const Popover = forwardRef<HTMLDivElement, {
   return (
     <div
       ref={ref}
-      className="animate-scale-in"
+      className="material-panel animate-scale-in"
       style={{
         position: 'absolute',
         top, left,
-        width: 220,
-        background: '#fff',
-        border: '1px solid var(--cream-dark)',
-        borderRadius: 12,
-        boxShadow: '0 8px 24px rgba(15,23,42,0.14)',
-        padding: '12px 14px',
+        width: 240,
+        padding: '14px 16px',
         zIndex: 50,
+        boxShadow: 'var(--shadow-float)',
+        transformOrigin: 'top left',
       }}
     >
       <p style={{
-        fontFamily: "'Playfair Display', serif",
-        fontWeight: 600, fontSize: '0.8rem',
-        color: 'var(--forest)', marginBottom: 8,
+        fontWeight: 600, fontSize: '0.8125rem',
+        color: 'var(--charcoal)', marginBottom: 10,
+        letterSpacing: '-0.010em',
       }}>
         {fmtDayFull(data.date)}
       </p>
 
       {data.acts.length === 0 ? (
-        <p style={{ fontSize: '0.75rem', color: 'var(--sage)', fontStyle: 'italic', marginBottom: 10 }}>
-          No activities yet
+        <p style={{ fontSize: '0.8125rem', color: 'var(--fog)', marginBottom: 12 }}>
+          No activities yet.
         </p>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 5, marginBottom: 10, maxHeight: 160, overflowY: 'auto' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 12, maxHeight: 180, overflowY: 'auto' }}>
           {data.acts
             .sort((a, b) => (!a.start_time ? 1 : !b.start_time ? -1 : a.start_time.localeCompare(b.start_time)))
             .map(a => (
-              <div key={a.id} style={{ display: 'flex', alignItems: 'baseline', gap: 5 }}>
-                <span style={{ width: 4, height: 4, borderRadius: '50%', background: 'var(--sage)', flexShrink: 0, marginTop: 2, display: 'inline-block' }} />
-                <span style={{ fontSize: '0.75rem', color: 'var(--charcoal)', lineHeight: 1.4 }}>
-                  {a.start_time && <span style={{ color: 'var(--sage)', marginRight: 3, fontSize: '0.7rem' }}>{fmtTime(a.start_time)}</span>}
+              <div key={a.id} style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
+                <span style={{ width: 4, height: 4, borderRadius: '50%', background: 'var(--coral)', flexShrink: 0, marginTop: 4, display: 'inline-block' }} />
+                <span style={{ fontSize: '0.8125rem', color: 'var(--charcoal)', lineHeight: 1.45 }}>
+                  {a.start_time && <span className="tabular" style={{ color: 'var(--fog)', marginRight: 4 }}>{fmtTime(a.start_time)}</span>}
                   {a.title ?? 'Untitled'}
                 </span>
               </div>
@@ -336,23 +334,18 @@ const Popover = forwardRef<HTMLDivElement, {
       <div style={{ display: 'flex', gap: 6 }}>
         <button
           onClick={onNavigate}
-          style={{
-            flex: 1, padding: '6px 10px', borderRadius: 8,
-            background: 'var(--forest)', color: '#fff',
-            border: 'none', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 600,
-          }}
+          className="btn-primary"
+          style={{ flex: 1, padding: '8px 12px', justifyContent: 'center' }}
         >
-          Open day →
+          Open day
         </button>
         <button
           onClick={onClose}
-          style={{
-            padding: '6px 8px', borderRadius: 8,
-            background: 'var(--ivory)', color: 'var(--sage)',
-            border: '1px solid var(--cream-dark)', cursor: 'pointer', fontSize: '0.75rem',
-          }}
+          className="btn-secondary"
+          style={{ padding: '8px 12px', justifyContent: 'center', minWidth: 36 }}
+          aria-label="Close"
         >
-          ✕
+          ×
         </button>
       </div>
     </div>

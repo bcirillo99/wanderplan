@@ -17,33 +17,26 @@ export class ErrorBoundary extends Component<Props, State> {
     return (
       <div style={{
         minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
-        background: 'var(--ivory)', fontFamily: "'DM Sans', sans-serif",
+        background: 'var(--surface-warm)', fontFamily: 'var(--font-sans)',
       }}>
-        <div style={{ textAlign: 'center', maxWidth: 420, padding: '0 24px' }}>
+        <div style={{ textAlign: 'center', maxWidth: 440, padding: '0 28px' }}>
           <div style={{
-            width: 64, height: 64, borderRadius: '50%', background: '#fee2e2',
+            width: 64, height: 64, borderRadius: '50%', background: 'var(--destructive-wash)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             margin: '0 auto 24px',
           }}>
             <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
               <path d="M12 9v4M12 17h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"
-                stroke="#9b2020" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                stroke="var(--destructive)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
           </div>
-          <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.5rem', color: 'var(--forest)', marginBottom: 8 }}>
+          <h2 style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--charcoal)', marginBottom: 10, letterSpacing: '-0.022em' }}>
             Something went wrong
           </h2>
-          <p style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: 8 }}>
+          <p style={{ fontSize: '0.9375rem', color: 'var(--fog)', marginBottom: 24, lineHeight: 1.55 }}>
             {this.state.error.message}
           </p>
-          <button
-            onClick={() => window.location.reload()}
-            style={{
-              marginTop: 24, padding: '10px 24px', background: 'var(--forest)',
-              color: '#fff', border: 'none', borderRadius: 10, cursor: 'pointer',
-              fontSize: '0.875rem', fontWeight: 500,
-            }}
-          >
+          <button onClick={() => window.location.reload()} className="btn-primary">
             Reload page
           </button>
         </div>

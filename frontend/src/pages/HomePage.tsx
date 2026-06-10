@@ -54,13 +54,13 @@ function daysToGoLabel(start?: string | null, end?: string | null): CountdownRes
   const startDate = new Date(start)
   startDate.setHours(0, 0, 0, 0)
   const diff = Math.round((startDate.getTime() - today.getTime()) / 86_400_000)
-  if (diff > 1) return { label: `✈️ ${diff} days to go`, soon: false }
-  if (diff === 1) return { label: '🌅 Tomorrow', soon: true }
-  if (diff === 0) return { label: '🎉 Today!', soon: true }
+  if (diff > 1) return { label: `${diff} days to go`, soon: false }
+  if (diff === 1) return { label: 'Tomorrow', soon: true }
+  if (diff === 0) return { label: 'Today', soon: true }
   if (end) {
     const endDate = new Date(end)
     endDate.setHours(23, 59, 59, 999)
-    if (endDate >= new Date()) return { label: '📍 Ongoing', soon: true }
+    if (endDate >= new Date()) return { label: 'Ongoing', soon: true }
   }
   return null
 }
@@ -344,8 +344,9 @@ function HeroBar({ onSubmit }: { onSubmit: (destination: string) => void }) {
 
   return (
     <section className="home-hero" aria-label="Start planning">
-      <h1 className="home-hero__headline">Your travel organizer. 100% AI-free.<br /><span style={{ fontWeight: 400, fontSize: '0.8em', opacity: 0.6 }}>(For now...)</span></h1>
-      <p className="home-hero__sub">One place to keep everything.</p>
+      <span className="home-hero__eyebrow">Plan with intention</span>
+      <h1 className="home-hero__headline">Your travel organizer.<br />Crafted, not generated.</h1>
+      <p className="home-hero__sub">Flights, stays, days, budget, notes. One quiet place that holds every detail.</p>
       <form className="home-hero__bar" onSubmit={handleSubmit} role="search">
         <label htmlFor="hero-destination" className="sr-only">Where do you want to go?</label>
         <span className="home-hero__bar-icon">
@@ -515,7 +516,7 @@ export default function HomePage() {
   // ── Render ─────────────────────────────────────────────────────────────────
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: 'var(--surface-white)' }}>
+    <div style={{ minHeight: '100vh', backgroundColor: 'var(--surface-warm)' }}>
       <Navbar />
 
       <HeroBar onSubmit={handleHeroSubmit} />

@@ -91,29 +91,29 @@ export default function AirportInput({ label, value, onChange, placeholder = 'JF
   return (
     <div className="form-group" style={{ position: 'relative' }}>
       <label className="form-label">
-        {label}{required && <span style={{ color: '#f87171', marginLeft: 2 }}>*</span>}
+        {label}{required && <span style={{ color: 'var(--destructive)', marginLeft: 2 }}>*</span>}
       </label>
 
       {/* Main input area */}
       <div
         style={{
           display: 'flex', alignItems: 'center',
-          border: `1px solid ${open ? 'var(--forest-light)' : 'var(--cream-dark)'}`,
-          borderRadius: 12, background: '#fff',
-          boxShadow: open ? '0 0 0 3px rgba(184,221,200,0.35)' : 'none',
-          transition: 'border-color 0.2s, box-shadow 0.2s',
+          border: `1px solid ${open ? 'var(--charcoal)' : 'var(--border-subtle)'}`,
+          borderRadius: 'var(--radius-sm)', background: 'var(--surface-white)',
+          boxShadow: open ? '0 0 0 4px oklch(22% 0.012 50 / 0.06)' : 'none',
+          transition: 'border-color var(--dur-fast), box-shadow var(--dur-fast)',
           overflow: 'hidden',
-          minHeight: 42,
+          minHeight: 46,
         }}
       >
         {/* Code badge */}
         {displayCode && (
-          <span style={{
-            flexShrink: 0, padding: '0 10px',
-            fontFamily: 'Playfair Display, serif',
-            fontWeight: 700, fontSize: '1rem',
-            color: 'var(--forest)', borderRight: '1px solid var(--cream-dark)',
+          <span className="tabular" style={{
+            flexShrink: 0, padding: '0 14px',
+            fontWeight: 700, fontSize: '0.9375rem',
+            color: 'var(--coral-deep)', borderRight: '1px solid var(--border-subtle)',
             alignSelf: 'stretch', display: 'flex', alignItems: 'center',
+            letterSpacing: '0.02em',
           }}>
             {displayCode}
           </span>
@@ -122,8 +122,8 @@ export default function AirportInput({ label, value, onChange, placeholder = 'JF
         {selected ? (
           /* Resolved state: show city + name */
           <span style={{
-            flex: 1, padding: '0 10px',
-            fontSize: '0.8rem', color: '#6b7280',
+            flex: 1, padding: '0 14px',
+            fontSize: '0.875rem', color: 'var(--fog)',
             overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
           }}>
             {selected.city} · {selected.name}
@@ -140,9 +140,9 @@ export default function AirportInput({ label, value, onChange, placeholder = 'JF
             onKeyDown={onKeyDown}
             style={{
               flex: 1, border: 'none', outline: 'none',
-              padding: '10px 12px', fontSize: '0.875rem',
+              padding: '12px 14px', fontSize: '0.9375rem',
               color: 'var(--charcoal)', background: 'transparent',
-              fontFamily: 'DM Sans, sans-serif',
+              fontFamily: 'var(--font-sans)',
             }}
             autoComplete="off"
           />
@@ -150,15 +150,15 @@ export default function AirportInput({ label, value, onChange, placeholder = 'JF
 
         {/* Clear / loading icon */}
         {loading && (
-          <span style={{ padding: '0 10px', color: 'var(--sage)', fontSize: '0.75rem' }}>…</span>
+          <span style={{ padding: '0 12px', color: 'var(--fog)', fontSize: '0.75rem' }}>…</span>
         )}
         {(selected || value) && !loading && (
           <button
             type="button"
             onClick={clear}
             style={{
-              padding: '0 10px', border: 'none', background: 'transparent',
-              cursor: 'pointer', color: '#9ca3af', display: 'flex', alignItems: 'center',
+              padding: '0 12px', border: 'none', background: 'transparent',
+              cursor: 'pointer', color: 'var(--whisper)', display: 'flex', alignItems: 'center',
               alignSelf: 'stretch',
             }}
             title="Clear"
@@ -174,13 +174,13 @@ export default function AirportInput({ label, value, onChange, placeholder = 'JF
       {open && results.length > 0 && (
         <div
           ref={dropdownRef}
+          className="material-panel"
           style={{
-            position: 'absolute', top: 'calc(100% + 4px)', left: 0, right: 0,
-            background: '#fff', borderRadius: 12,
-            border: '1px solid var(--cream-dark)',
-            boxShadow: '0 8px 32px rgba(26,58,42,0.12)',
+            position: 'absolute', top: 'calc(100% + 6px)', left: 0, right: 0,
             zIndex: 300, overflow: 'hidden',
-            animation: 'fadeIn 0.15s ease both',
+            boxShadow: 'var(--shadow-float)',
+            animation: 'scaleIn 0.18s var(--ease-out-quart) both',
+            transformOrigin: 'top center',
           }}
         >
           {results.map((a, i) => (
@@ -189,32 +189,32 @@ export default function AirportInput({ label, value, onChange, placeholder = 'JF
               type="button"
               onMouseDown={e => { e.preventDefault(); pick(a) }}
               style={{
-                width: '100%', display: 'flex', alignItems: 'center', gap: 10,
-                padding: '9px 14px', border: 'none', textAlign: 'left', cursor: 'pointer',
-                background: i === activeIdx ? 'var(--mist)' : 'transparent',
-                borderBottom: i < results.length - 1 ? '1px solid var(--cream-dark)' : 'none',
-                transition: 'background 0.1s',
+                width: '100%', display: 'flex', alignItems: 'center', gap: 12,
+                padding: '11px 16px', border: 'none', textAlign: 'left', cursor: 'pointer',
+                background: i === activeIdx ? 'var(--surface-warm)' : 'transparent',
+                borderBottom: i < results.length - 1 ? '1px solid var(--border-subtle)' : 'none',
+                transition: 'background var(--dur-fast)',
               }}
               onMouseEnter={() => setActiveIdx(i)}
             >
-              <span style={{
-                fontFamily: 'Playfair Display, serif',
-                fontWeight: 700, fontSize: '0.95rem',
-                color: 'var(--forest)', width: 38, flexShrink: 0,
+              <span className="tabular" style={{
+                fontWeight: 700, fontSize: '0.9375rem',
+                color: 'var(--coral-deep)', width: 42, flexShrink: 0,
+                letterSpacing: '0.02em',
               }}>
                 {a.code}
               </span>
               <span style={{ flex: 1, minWidth: 0 }}>
-                <span style={{ fontSize: '0.82rem', color: 'var(--charcoal)', display: 'block',
-                  overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                <span style={{ fontSize: '0.875rem', color: 'var(--charcoal)', display: 'block',
+                  overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: 500 }}>
                   {a.city}
                 </span>
-                <span style={{ fontSize: '0.7rem', color: '#9ca3af', display: 'block',
+                <span style={{ fontSize: '0.75rem', color: 'var(--fog)', display: 'block',
                   overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {a.name}
                 </span>
               </span>
-              <span style={{ fontSize: '0.65rem', color: '#9ca3af', flexShrink: 0 }}>
+              <span style={{ fontSize: '0.6875rem', color: 'var(--fog)', flexShrink: 0, textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 500 }}>
                 {a.country}
               </span>
             </button>
