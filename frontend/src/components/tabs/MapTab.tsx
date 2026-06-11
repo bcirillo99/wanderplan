@@ -10,7 +10,7 @@ const DAY_COLORS = [
   '#06b6d4', '#6366f1', '#a855f7', '#ec4899',
 ]
 
-const ACCOM_COLOR = '#0369a1'
+const ACCOM_COLOR = '#222222'
 
 function makeActivityIcon(color: string) {
   return L.divIcon({
@@ -152,7 +152,7 @@ export function MapTab({ activities, accommodations, onEditActivity, onEditAccom
       </div>
 
       {/* Map */}
-      <div style={{ flex: 1, borderRadius: 12, overflow: 'hidden', border: '1px solid var(--border-light, #e5e7eb)', isolation: 'isolate' }}>
+      <div style={{ flex: 1, borderRadius: 12, overflow: 'hidden', border: '1px solid var(--border-subtle)', isolation: 'isolate' }}>
         <MapContainer
           center={[41.9, 12.5]}
           zoom={5}
@@ -172,16 +172,16 @@ export function MapTab({ activities, accommodations, onEditActivity, onEditAccom
               <Marker key={a.id} position={[a.latitude!, a.longitude!]} icon={makeActivityIcon(color)}>
                 <Popup>
                   <div style={{ minWidth: 160, fontFamily: 'inherit' }}>
-                    <div style={{ fontWeight: 700, fontSize: '0.9rem', marginBottom: 2, color: '#1f2937' }}>
+                    <div style={{ fontWeight: 700, fontSize: '0.9rem', marginBottom: 2, color: 'var(--charcoal)' }}>
                       {a.title}
                     </div>
                     {time && (
-                      <div style={{ fontSize: '0.78rem', color: '#6b7280', marginBottom: 2 }}>
+                      <div style={{ fontSize: '0.78rem', color: 'var(--fog)', marginBottom: 2 }}>
                         {time}{a.end_time ? ` – ${fmtTime(a.end_time)}` : ''}
                       </div>
                     )}
                     {a.location && (
-                      <div style={{ fontSize: '0.78rem', color: '#6b7280', marginBottom: 6 }}>
+                      <div style={{ fontSize: '0.78rem', color: 'var(--fog)', marginBottom: 6 }}>
                         {a.location}
                       </div>
                     )}
@@ -208,16 +208,16 @@ export function MapTab({ activities, accommodations, onEditActivity, onEditAccom
                   <div style={{ fontSize: '0.7rem', fontWeight: 700, color: ACCOM_COLOR, textTransform: 'uppercase', letterSpacing: '.04em', marginBottom: 2 }}>
                     Accommodation
                   </div>
-                  <div style={{ fontWeight: 700, fontSize: '0.9rem', marginBottom: 2, color: '#1f2937' }}>
+                  <div style={{ fontWeight: 700, fontSize: '0.9rem', marginBottom: 2, color: 'var(--charcoal)' }}>
                     {a.name}
                   </div>
                   {a.address && (
-                    <div style={{ fontSize: '0.78rem', color: '#6b7280', marginBottom: 2 }}>
+                    <div style={{ fontSize: '0.78rem', color: 'var(--fog)', marginBottom: 2 }}>
                       {a.address}
                     </div>
                   )}
                   {(a.check_in || a.check_out) && (
-                    <div style={{ fontSize: '0.78rem', color: '#6b7280', marginBottom: 6 }}>
+                    <div style={{ fontSize: '0.78rem', color: 'var(--fog)', marginBottom: 6 }}>
                       {a.check_in && fmt(a.check_in)}{a.check_out ? ` → ${fmt(a.check_out)}` : ''}
                     </div>
                   )}
@@ -251,7 +251,7 @@ export function MapTab({ activities, accommodations, onEditActivity, onEditAccom
                 onClick={() => onEditActivity(a)}
                 style={{
                   fontSize: '0.8rem', padding: '4px 12px', borderRadius: 8,
-                  border: '1px solid #e5e7eb', background: '#fff',
+                  border: '1px solid var(--border-subtle)', background: '#fff',
                   cursor: 'pointer', color: '#374151',
                 }}
               >

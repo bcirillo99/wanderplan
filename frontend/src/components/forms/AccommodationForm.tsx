@@ -6,11 +6,12 @@ import 'leaflet/dist/leaflet.css'
 import FormField from '../FormField'
 import type { Accommodation, AccommodationCreate, AccommodationType, Status } from '../../types'
 import { ACCOM_TYPES, STATUS_OPTIONS } from './formOptions'
+import { SearchIcon, PinIcon } from '../Icons'
 
 const pinIcon = L.divIcon({
   className: '',
   html: `<svg xmlns="http://www.w3.org/2000/svg" width="28" height="36" viewBox="0 0 28 36">
-    <path d="M14 0C6.27 0 0 6.27 0 14c0 9.25 14 22 14 22S28 23.25 28 14C28 6.27 21.73 0 14 0z" fill="#0369a1" stroke="#fff" stroke-width="2"/>
+    <path d="M14 0C6.27 0 0 6.27 0 14c0 9.25 14 22 14 22S28 23.25 28 14C28 6.27 21.73 0 14 0z" fill="#222222" stroke="#fff" stroke-width="2"/>
     <polygon points="14,8 8,14 20,14" fill="#fff" opacity="0.9"/>
     <rect x="10" y="14" width="8" height="5" fill="#fff" opacity="0.9"/>
   </svg>`,
@@ -127,37 +128,42 @@ export function AccommodationForm({ initial, onSubmit, loading, minDate, maxDate
             onClick={geocode}
             disabled={geocoding || !address.trim()}
             title="Find on map"
+            aria-label="Find on map"
             style={{
-              padding: '0 12px', borderRadius: 8, border: '1px solid var(--border, #d1d5db)',
-              background: '#f9fafb', cursor: 'pointer', fontSize: '0.8rem',
-              color: '#374151', whiteSpace: 'nowrap', flexShrink: 0,
+              padding: '0 12px', borderRadius: 8, border: '1px solid var(--border-subtle)',
+              background: 'var(--surface-white)', cursor: 'pointer',
+              color: 'var(--fog)', whiteSpace: 'nowrap', flexShrink: 0,
+              display: 'inline-flex', alignItems: 'center',
             }}
           >
-            {geocoding ? '…' : '🔍'}
+            {geocoding ? '…' : <SearchIcon size={15} />}
           </button>
           <button
             type="button"
             onClick={() => setShowMap((v) => !v)}
             title={showMap ? 'Hide map' : 'Pick on map'}
+            aria-label={showMap ? 'Hide map' : 'Pick on map'}
             style={{
-              padding: '0 12px', borderRadius: 8, border: '1px solid var(--border, #d1d5db)',
-              background: showMap ? '#dbeafe' : '#f9fafb', cursor: 'pointer',
-              fontSize: '0.8rem', color: '#374151', flexShrink: 0,
+              padding: '0 12px', borderRadius: 8,
+              border: `1px solid ${showMap ? 'var(--coral-tint)' : 'var(--border-subtle)'}`,
+              background: showMap ? 'var(--coral-wash)' : 'var(--surface-white)', cursor: 'pointer',
+              color: showMap ? 'var(--coral-deep)' : 'var(--fog)', flexShrink: 0,
+              display: 'inline-flex', alignItems: 'center',
             }}
           >
-            📍
+            <PinIcon size={15} />
           </button>
         </div>
 
         {latitude != null && longitude != null && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
-            <span style={{ fontSize: '0.75rem', color: '#6b7280', fontFamily: 'monospace' }}>
+            <span style={{ fontSize: '0.75rem', color: 'var(--fog)', fontFamily: 'var(--font-mono)' }}>
               {latitude.toFixed(5)}, {longitude.toFixed(5)}
             </span>
             <button
               type="button"
               onClick={clearPin}
-              style={{ fontSize: '0.72rem', color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+              style={{ fontSize: '0.72rem', color: 'var(--destructive)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
             >
               Remove pin
             </button>

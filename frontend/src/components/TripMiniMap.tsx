@@ -9,7 +9,7 @@ const DAY_COLORS = [
   '#ef4444', '#f97316', '#eab308', '#22c55e',
   '#06b6d4', '#6366f1', '#a855f7', '#ec4899',
 ]
-const ACCOM_COLOR = '#0369a1'
+const ACCOM_COLOR = '#222222'
 
 function makeActivityIcon(color: string) {
   return L.divIcon({
@@ -82,7 +82,7 @@ export function TripMiniMap({ activities, accommodations, height = 260 }: Props)
     new Date(d).toLocaleDateString('en-US', { weekday: 'short', day: 'numeric', month: 'short' })
 
   return (
-    <div style={{ borderRadius: 12, overflow: 'hidden', border: '1px solid var(--border-light, #e5e7eb)', height, isolation: 'isolate' }}>
+    <div style={{ borderRadius: 12, overflow: 'hidden', border: '1px solid var(--border-subtle)', height, isolation: 'isolate' }}>
       <MapContainer
         center={[41.9, 12.5]}
         zoom={5}
@@ -101,9 +101,9 @@ export function TripMiniMap({ activities, accommodations, height = 260 }: Props)
             <Marker key={a.id} position={[a.latitude!, a.longitude!]} icon={makeActivityIcon(color)}>
               <Popup>
                 <div style={{ minWidth: 140, fontFamily: 'inherit' }}>
-                  <div style={{ fontWeight: 700, fontSize: '0.85rem', color: '#1f2937', marginBottom: 2 }}>{a.title}</div>
+                  <div style={{ fontWeight: 700, fontSize: '0.85rem', color: 'var(--charcoal)', marginBottom: 2 }}>{a.title}</div>
                   {a.activity_date && (
-                    <div style={{ fontSize: '0.75rem', color: '#6b7280' }}>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--fog)' }}>
                       {fmtDate(a.activity_date)}{time ? ` · ${time}` : ''}
                     </div>
                   )}
@@ -118,8 +118,8 @@ export function TripMiniMap({ activities, accommodations, height = 260 }: Props)
             <Popup>
               <div style={{ minWidth: 140, fontFamily: 'inherit' }}>
                 <div style={{ fontSize: '0.68rem', fontWeight: 700, color: ACCOM_COLOR, textTransform: 'uppercase', letterSpacing: '.04em', marginBottom: 2 }}>Accommodation</div>
-                <div style={{ fontWeight: 700, fontSize: '0.85rem', color: '#1f2937', marginBottom: 2 }}>{a.name}</div>
-                {a.address && <div style={{ fontSize: '0.75rem', color: '#6b7280' }}>{a.address}</div>}
+                <div style={{ fontWeight: 700, fontSize: '0.85rem', color: 'var(--charcoal)', marginBottom: 2 }}>{a.name}</div>
+                {a.address && <div style={{ fontSize: '0.75rem', color: 'var(--fog)' }}>{a.address}</div>}
               </div>
             </Popup>
           </Marker>

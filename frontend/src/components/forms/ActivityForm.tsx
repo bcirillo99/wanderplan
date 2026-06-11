@@ -6,10 +6,11 @@ import 'leaflet/dist/leaflet.css'
 import FormField from '../FormField'
 import type { Activity, ActivityCreate, Status } from '../../types'
 import { STATUS_OPTIONS } from './formOptions'
+import { SearchIcon, PinIcon } from '../Icons'
 
 const pinIcon = L.divIcon({
   className: '',
-  html: `<div style="width:16px;height:16px;border-radius:50%;background:#4f7942;border:2.5px solid #fff;box-shadow:0 1px 5px rgba(0,0,0,.45)"></div>`,
+  html: `<div style="width:16px;height:16px;border-radius:50%;background:#FF5A5F;border:2.5px solid #fff;box-shadow:0 1px 5px rgba(0,0,0,.45)"></div>`,
   iconSize: [16, 16],
   iconAnchor: [8, 8],
 })
@@ -206,37 +207,42 @@ export function ActivityForm({
             onClick={geocode}
             disabled={geocoding || !location.trim()}
             title="Find on map"
+            aria-label="Find on map"
             style={{
-              padding: '0 12px', borderRadius: 8, border: '1px solid var(--border, #d1d5db)',
-              background: '#f9fafb', cursor: 'pointer', fontSize: '0.8rem',
-              color: '#374151', whiteSpace: 'nowrap', flexShrink: 0,
+              padding: '0 12px', borderRadius: 8, border: '1px solid var(--border-subtle)',
+              background: 'var(--surface-white)', cursor: 'pointer',
+              color: 'var(--fog)', whiteSpace: 'nowrap', flexShrink: 0,
+              display: 'inline-flex', alignItems: 'center',
             }}
           >
-            {geocoding ? '…' : '🔍'}
+            {geocoding ? '…' : <SearchIcon size={15} />}
           </button>
           <button
             type="button"
             onClick={() => setShowMap((v) => !v)}
             title={showMap ? 'Hide map' : 'Pick on map'}
+            aria-label={showMap ? 'Hide map' : 'Pick on map'}
             style={{
-              padding: '0 12px', borderRadius: 8, border: '1px solid var(--border, #d1d5db)',
-              background: showMap ? '#e0ece0' : '#f9fafb', cursor: 'pointer',
-              fontSize: '0.8rem', color: '#374151', flexShrink: 0,
+              padding: '0 12px', borderRadius: 8,
+              border: `1px solid ${showMap ? 'var(--coral-tint)' : 'var(--border-subtle)'}`,
+              background: showMap ? 'var(--coral-wash)' : 'var(--surface-white)', cursor: 'pointer',
+              color: showMap ? 'var(--coral-deep)' : 'var(--fog)', flexShrink: 0,
+              display: 'inline-flex', alignItems: 'center',
             }}
           >
-            📍
+            <PinIcon size={15} />
           </button>
         </div>
 
         {latitude != null && longitude != null && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
-            <span style={{ fontSize: '0.75rem', color: '#6b7280', fontFamily: 'monospace' }}>
+            <span style={{ fontSize: '0.75rem', color: 'var(--fog)', fontFamily: 'var(--font-mono)' }}>
               {latitude.toFixed(5)}, {longitude.toFixed(5)}
             </span>
             <button
               type="button"
               onClick={clearPin}
-              style={{ fontSize: '0.72rem', color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+              style={{ fontSize: '0.72rem', color: 'var(--destructive)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
             >
               Remove pin
             </button>

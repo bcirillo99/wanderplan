@@ -45,7 +45,7 @@ export function DaysTab({ tripId, dates, activities, flights, transports, accomm
     if (!date || !byDate[date]) continue
     byDate[date].push({
       time: timeOf(f.departure_time),
-      label: `✈ ${f.origin} → ${f.destination}`,
+      label: `${f.origin} → ${f.destination}`,
       kind: 'flight',
     })
   }
@@ -80,11 +80,12 @@ export function DaysTab({ tripId, dates, activities, flights, transports, accomm
     })
   }
 
+  // Warm role palette from the design tokens — no cool accents
   const kindDot: Record<DayItem['kind'], string> = {
     activity:      'var(--coral)',
-    flight:        '#3b82f6',
-    transport:     '#8b5cf6',
-    accommodation: '#10b981',
+    flight:        'var(--rust)',
+    transport:     'var(--saffron-deep)',
+    accommodation: 'var(--plum)',
   }
 
   return (

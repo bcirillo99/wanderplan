@@ -413,8 +413,15 @@ export function useTripData(tripId: string) {
     onError: () => toast.error('Failed to delete trip'),
   })
 
-  const updateTrip = (d: TripCreate, confirm = false) =>
-    mut(() => updateTripMut.mutateAsync({ data: d, confirm }))
+  // CascadeDeletionRequired must reach the caller so it can show the confirm
+  // modal; other errors are toasted via onError and swallowed like elsewhere.
+  const updateTrip = async (d: TripCreate, confirm = false): Promise<void> => {
+    try {
+      await updateTripMut.mutateAsync({ data: d, confirm })
+    } catch (err) {
+      if ((err as Error)?.name === 'CascadeDeletionRequired') throw err
+    }
+  }
   // deleteTrip propagates — caller (TripDetailPage) navigates only on success
   const deleteTrip = () => deleteTripMut.mutateAsync()
 

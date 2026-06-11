@@ -12,8 +12,13 @@ export default function App() {
         position="bottom-right"
         toastOptions={{
           style: {
-            fontFamily: "'DM Sans', sans-serif",
+            fontFamily: 'var(--font-sans)',
             fontSize: '0.875rem',
+            background: 'var(--surface-white)',
+            color: 'var(--charcoal)',
+            border: '1px solid var(--border-subtle)',
+            borderRadius: 'var(--radius-md)',
+            boxShadow: 'var(--shadow-float)',
           },
         }}
       />

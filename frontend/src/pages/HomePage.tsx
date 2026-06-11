@@ -179,7 +179,7 @@ function TripCard({
       {/* Image / placeholder zone */}
       <div className="trip-card__image">
         {photoUrl ? (
-          <img src={photoUrl} alt={trip.destination ?? trip.title} />
+          <img src={photoUrl} alt={trip.destination ?? trip.title} loading="lazy" />
         ) : (
           <div
             className="trip-card__placeholder"

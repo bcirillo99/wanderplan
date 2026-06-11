@@ -18,25 +18,26 @@ import type {
 import {
   ActivityForm, FlightForm, AccommodationForm, TransportForm,
 } from '../components/forms/Forms'
+import { PlaneIcon, BedIcon, CalendarIcon, BusIcon, PinIcon, ClockIcon } from '../components/Icons'
 
 
 function fmtDay(d?: string | null) {
   if (!d) return '—'
   return new Date(d).toLocaleDateString('en-US', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
 }
-function getIconForType(type: string): string {
+function getIconForType(type: string) {
   switch (type) {
-    case 'activity': return '🗓️'
-    case 'flight': return '✈️'
-    case 'transport': return '🚌'
-    case 'accommodation': return '🏨'
-    default: return '📍'
+    case 'activity': return CalendarIcon
+    case 'flight': return PlaneIcon
+    case 'transport': return BusIcon
+    case 'accommodation': return BedIcon
+    default: return PinIcon
   }
 }
 
 // ── Summary Item Card ─────────────────────────────────────────────────────────
 function SummaryItemCard({ item, onClick }: { item: DailySummaryItem; onClick?: () => void }) {
-  const icon = getIconForType(item.type)
+  const Icon = getIconForType(item.type)
   return (
     <div
       className="activity-card animate-fade-up"
@@ -44,15 +45,19 @@ function SummaryItemCard({ item, onClick }: { item: DailySummaryItem; onClick?: 
       style={onClick ? { cursor: 'pointer' } : undefined}
     >
       <div className="activity-card__inner">
-        <div className="activity-card__time" style={{ justifyContent: 'center', paddingTop: 4 }}>
-          <span style={{ fontSize: '1.5rem' }}>{icon}</span>
+        <div className="activity-card__time" style={{ justifyContent: 'center', paddingTop: 4, color: 'var(--fog)' }}>
+          <Icon size={20} />
         </div>
         <div className="activity-card__body">
           <div className="activity-card__header">
             <h4 className="activity-card__title">{item.label || `${item.type.charAt(0).toUpperCase() + item.type.slice(1)}`}</h4>
           </div>
           <div className="activity-card__meta">
-            {item.time && <span>🕐 {item.time}</span>}
+            {item.time && (
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                <ClockIcon size={13} /> {item.time}
+              </span>
+            )}
             {item.cost != null && <span className="activity-card__cost">€ {item.cost.toFixed(2)}</span>}
           </div>
         </div>

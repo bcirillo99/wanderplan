@@ -5,8 +5,10 @@ import { ItemCard } from './TabShared'
 import { fmt, PREVIEW_LIMIT } from './tabUtils'
 import { TripCalendar } from '../TripCalendar'
 import { TripMiniMap } from '../TripMiniMap'
+import { PlaneIcon, BedIcon, CalendarIcon, BusIcon, CoinsIcon } from '../Icons'
+import type { ComponentType } from 'react'
 
-type TodoItem = { icon: string; label: string; category: string }
+type TodoItem = { Icon: ComponentType<{ size?: number }>; label: string; category: string }
 
 export function SummaryTab({
   trip, tripId, activities, flights, accommodations, transports, stats, dates,
@@ -33,13 +35,13 @@ export function SummaryTab({
 
   const todoItems: TodoItem[] = [
     ...flights.filter((f) => f.status === 'to_book' || f.status === 'draft')
-      .map((f) => ({ icon: '✈️', label: `${f.origin} → ${f.destination}`, category: 'Flight' })),
+      .map((f) => ({ Icon: PlaneIcon, label: `${f.origin} → ${f.destination}`, category: 'Flight' })),
     ...accommodations.filter((a) => a.status === 'to_book' || a.status === 'draft')
-      .map((a) => ({ icon: '🏨', label: a.name, category: 'Accommodation' })),
+      .map((a) => ({ Icon: BedIcon, label: a.name, category: 'Accommodation' })),
     ...activities.filter((a) => a.status === 'to_book' || a.status === 'draft')
-      .map((a) => ({ icon: '🗓️', label: a.title ?? 'Activity', category: 'Activity' })),
+      .map((a) => ({ Icon: CalendarIcon, label: a.title ?? 'Activity', category: 'Activity' })),
     ...transports.filter((t) => t.status === 'to_book' || t.status === 'draft')
-      .map((t) => ({ icon: '🚌', label: `${t.origin} → ${t.destination}`, category: 'Transport' })),
+      .map((t) => ({ Icon: BusIcon, label: `${t.origin} → ${t.destination}`, category: 'Transport' })),
   ]
 
   return (
@@ -117,7 +119,9 @@ export function SummaryTab({
                     display: 'flex', alignItems: 'center', gap: 12,
                     padding: '10px 14px', background: 'var(--surface-warm)', borderRadius: 'var(--radius-sm)', flexShrink: 0,
                   }}>
-                    <span style={{ fontSize: '1rem' }} aria-hidden="true">{item.icon}</span>
+                    <span style={{ display: 'inline-flex', color: 'var(--fog)', flexShrink: 0 }}>
+                      <item.Icon size={16} />
+                    </span>
                     <div style={{ minWidth: 0 }}>
                       <p style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--charcoal)', margin: 0, letterSpacing: '-0.008em' }}>{item.label}</p>
                       <p style={{ fontSize: '0.6875rem', color: 'var(--fog)', margin: 0, textTransform: 'uppercase', letterSpacing: '0.10em', fontWeight: 500 }}>{item.category}</p>
@@ -148,18 +152,18 @@ export function SummaryTab({
               </div>
               <div style={{ display: 'flex', flexDirection: 'column' }}>
                 {[
-                  { icon: '✈️', label: 'Flights',        value: stats.flights },
-                  { icon: '🏨', label: 'Accommodations', value: stats.accommodation },
-                  { icon: '🚌', label: 'Transports',     value: stats.transport },
-                  { icon: '🗓️', label: 'Activities',     value: stats.activities },
-                  { icon: '💰', label: 'Extras',         value: stats.extras },
+                  { Icon: PlaneIcon,    label: 'Flights',        value: stats.flights },
+                  { Icon: BedIcon,      label: 'Accommodations', value: stats.accommodation },
+                  { Icon: BusIcon,      label: 'Transports',     value: stats.transport },
+                  { Icon: CalendarIcon, label: 'Activities',     value: stats.activities },
+                  { Icon: CoinsIcon,    label: 'Extras',         value: stats.extras },
                 ].map((row) => (
                   <div key={row.label} style={{
                     display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                     padding: '12px 0', borderBottom: '1px solid var(--border-subtle)',
                   }}>
-                    <span style={{ fontSize: '0.9375rem', color: 'var(--charcoal)', display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-                      <span aria-hidden="true">{row.icon}</span> {row.label}
+                    <span style={{ fontSize: '0.9375rem', color: 'var(--charcoal)', display: 'inline-flex', alignItems: 'center', gap: 10 }}>
+                      <span style={{ display: 'inline-flex', color: 'var(--fog)' }}><row.Icon size={16} /></span> {row.label}
                     </span>
                     <span className="tabular" style={{ fontSize: '0.9375rem', fontWeight: 600, color: 'var(--charcoal)' }}>€ {row.value.toFixed(2)}</span>
                   </div>
